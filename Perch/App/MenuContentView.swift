@@ -10,6 +10,7 @@ import SwiftUI
 struct MenuContentView: View {
     @Environment(\.openWindow) private var openWindow
     @Environment(ClipboardViewModel.self) private var clipboard
+    @Environment(SettingsViewModel.self) private var settings
     let app: AppDelegate
 
     var body: some View {
@@ -29,7 +30,7 @@ struct MenuContentView: View {
             Divider().padding(.vertical, 4)
 
             if clipboard.isEnabled {
-                menuButton("Open Clipboard", icon: "doc.on.clipboard", hint: "⌘⇧V") {
+                menuButton("Open Clipboard", icon: "doc.on.clipboard", hint: settings.hotKeyDisplay) {
                     app.dismissMenu()
                     app.clipboardPanel.show()
                 }

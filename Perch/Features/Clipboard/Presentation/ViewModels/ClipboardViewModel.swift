@@ -18,6 +18,9 @@ final class ClipboardViewModel {
     private(set) var rowDensity: RowDensity // popup row size
     private(set) var excludedRecordApps: [String]  // bundle ids we don't record copies from
     private(set) var excludedOpenApps: [String]     // bundle ids where ⌘⇧V won't open
+    private(set) var restoreAfterPaste: Bool        // put the old clipboard back after pasting
+
+    private var savedClipboard: [(data: Data, type: NSPasteboard.PasteboardType)]?
 
     private let repository: ClipboardRepository
     private let monitor: ClipboardMonitor
@@ -53,6 +56,7 @@ final class ClipboardViewModel {
         self.rowDensity = RowDensity(rawValue: defaults.string(forKey: Keys.Defaults.clipboardRowDensity) ?? "") ?? .regular
         self.excludedRecordApps = defaults.stringArray(forKey: Keys.Defaults.clipboardExcludeRecord) ?? []
         self.excludedOpenApps = defaults.stringArray(forKey: Keys.Defaults.clipboardExcludeOpen) ?? []
+        self.restoreAfterPaste = defaults.bool(forKey: Keys.Defaults.clipboardRestoreAfterPaste)
         self.items = repository.load()
         state = items.isEmpty ? .empty : .loaded(items)
     }
@@ -132,6 +136,11 @@ final class ClipboardViewModel {
         defaults.set(d.rawValue, forKey: Keys.Defaults.clipboardRowDensity)
     }
 
+    func setRestoreAfterPaste(_ on: Bool) {
+        restoreAfterPaste = on
+        defaults.set(on, forKey: Keys.Defaults.clipboardRestoreAfterPaste)
+    }
+
     // MARK: - Excluded apps (two independent lists)
 
     func addExcludedRecordApp(_ id: String) {
@@ -181,24 +190,42 @@ final class ClipboardViewModel {
         if isEnabled && isRecording { monitor.start() } else { monitor.stop() }
     }
 
-    /// Copy an item back to the pasteboard and move it to the top of history.
-    /// (Paste-on-Enter arrives with the Shift+Cmd+V panel milestone.)
+    /// Put an item on the clipboard and promote it to the top (⌘C / menu "copy").
     func copyToPasteboard(_ item: ClipboardItem) {
-        pasteboard.clearContents()
-        if let data = item.richData, let type = item.richType {
-            pasteboard.setData(data, forType: .init(type))   // formatted version
-        }
-        pasteboard.setString(item.text, forType: .string)    // + plain fallback
-        monitor.syncChangeCount()             // don't re-capture our own write
-        capture(item)                          // move to top, keep origin + rich
+        write(item, plain: false)
+        capture(item)   // becomes the current/newest copy
     }
 
-    /// Paste stripped of formatting — plain text only.
-    func copyPlainToPasteboard(_ item: ClipboardItem) {
+    /// Paste flow (restore-aware). When "restore after paste" is on: snapshot the current
+    /// clipboard and DON'T promote the item; the caller restores after ⌘V.
+    func pasteToPasteboard(_ item: ClipboardItem, plain: Bool = false) {
+        if restoreAfterPaste { savedClipboard = snapshotClipboard() }
+        write(item, plain: plain)
+        if !restoreAfterPaste { capture(item) }   // promote only when not restoring
+    }
+
+    /// Restore the clipboard to what it held before the paste (if the toggle is on).
+    func restoreClipboardIfNeeded() {
+        guard restoreAfterPaste, let saved = savedClipboard else { return }
         pasteboard.clearContents()
-        pasteboard.setString(item.text, forType: .string)
+        for entry in saved { pasteboard.setData(entry.data, forType: entry.type) }
         monitor.syncChangeCount()
-        capture(item)   // keep the item (with its rich data) at the top
+        savedClipboard = nil
+    }
+
+    private func write(_ item: ClipboardItem, plain: Bool) {
+        pasteboard.clearContents()
+        if !plain, let data = item.richData, let type = item.richType {
+            pasteboard.setData(data, forType: .init(type))   // formatted version
+        }
+        pasteboard.setString(item.text, forType: .string)    // plain (or only, when plain)
+        monitor.syncChangeCount()             // don't re-capture our own write
+    }
+
+    private func snapshotClipboard() -> [(data: Data, type: NSPasteboard.PasteboardType)] {
+        (pasteboard.types ?? []).compactMap { type in
+            pasteboard.data(forType: type).map { (data: $0, type: type) }
+        }
     }
 
     func clear() {

@@ -91,8 +91,11 @@ final class ClipboardPanelController {
     /// Focus never left the target app, so just close and fire ⌘V into it.
     func completePaste() {
         hide()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.03) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.03) { [weak self] in
             Self.sendCommandV()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                self?.model.restoreClipboardIfNeeded()
+            }
         }
     }
 
@@ -234,8 +237,11 @@ final class ClipboardPanelController {
     }
 
     func pasteKeepingOpen() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.03) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.03) { [weak self] in
             Self.sendCommandV()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                self?.model.restoreClipboardIfNeeded()
+            }
         }
     }
 

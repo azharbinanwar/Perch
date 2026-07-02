@@ -20,10 +20,14 @@ enum Keys {
         static let clipboardRowDensity = "dev.perch.clipboard.rowDensity.v1"
         static let clipboardExcludeRecord = "dev.perch.clipboard.excludeRecord.v1"  // don't record from these apps
         static let clipboardExcludeOpen   = "dev.perch.clipboard.excludeOpen.v1"    // don't open ⌘⇧V over these apps
+        static let clipboardRestoreAfterPaste = "dev.perch.clipboard.restoreAfterPaste.v1"
         static let scrollReversed   = "dev.perch.scroll.reversed.v1"
         static let remapRules       = "dev.perch.remap.rules.v1"
         static let remapEnabled     = "dev.perch.remap.enabled.v1"
         static let appSettings      = "dev.perch.settings.v1"
+        static let hotKeyCode       = "dev.perch.hotkey.code.v1"
+        static let hotKeyModifiers  = "dev.perch.hotkey.modifiers.v1"
+        static let hotKeyLabel      = "dev.perch.hotkey.label.v1"
     }
 }
 

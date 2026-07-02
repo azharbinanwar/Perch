@@ -64,6 +64,7 @@ final class ClipboardPopupModel {
     private let clipboard: ClipboardViewModel
     private var frozenItems: [ClipboardItem] = []   // snapshot taken when the popup opens
     private var acceptHover = false                 // ignore the cursor merely resting on open
+    private var suppressHover = false               // ignore hover right after arrow keys
 
     init(clipboard: ClipboardViewModel) {
         self.clipboard = clipboard
@@ -113,6 +114,7 @@ final class ClipboardPopupModel {
         guard !items.isEmpty else { return }
         let i = selectedIndex ?? -1
         selectedID = items[(i + 1) >= items.count ? 0 : i + 1].id   // wrap
+        suppressHoverBriefly()
     }
 
     func moveUp() {
@@ -120,10 +122,20 @@ final class ClipboardPopupModel {
         guard !items.isEmpty else { return }
         let i = selectedIndex ?? 0
         selectedID = items[(i - 1) < 0 ? items.count - 1 : i - 1].id  // wrap
+        suppressHoverBriefly()
     }
 
-    func selectFirst() { selectedID = visibleItems.first?.id }
-    func selectLast() { selectedID = visibleItems.last?.id }
+    func selectFirst() { selectedID = visibleItems.first?.id; suppressHoverBriefly() }
+    func selectLast() { selectedID = visibleItems.last?.id; suppressHoverBriefly() }
+
+    /// After an arrow key, ignore hover for a moment — otherwise a row scrolling under a
+    /// still cursor fires onHover and hijacks the selection.
+    private func suppressHoverBriefly() {
+        suppressHover = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+            self?.suppressHover = false
+        }
+    }
 
     // MARK: - Keyboard: search
 
@@ -141,16 +153,18 @@ final class ClipboardPopupModel {
 
     func pasteSelected() {
         guard let item = selectedItem else { return }
-        clipboard.copyToPasteboard(item)
+        clipboard.pasteToPasteboard(item)
         onPaste()
     }
 
     /// Paste without formatting.
     func pastePlainSelected() {
         guard let item = selectedItem else { return }
-        clipboard.copyPlainToPasteboard(item)
+        clipboard.pasteToPasteboard(item, plain: true)
         onPaste()
     }
+
+    func restoreClipboardIfNeeded() { clipboard.restoreClipboardIfNeeded() }
 
     func pasteSelectedKeepingOpen() {
         guard let item = selectedItem else { return }
@@ -181,7 +195,7 @@ final class ClipboardPopupModel {
 
     /// Hover moves the selection only after the popup has settled (so resting on open is ignored).
     func hover(_ item: ClipboardItem) {
-        guard acceptHover else { return }
+        guard acceptHover, !suppressHover else { return }
         selectedID = item.id
     }
 

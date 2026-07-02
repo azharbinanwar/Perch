@@ -53,9 +53,7 @@ struct ClipboardWindowView: View {
             Text("Keyboard Shortcuts")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
-            Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 16, verticalSpacing: 6) {
-                ForEach(PopupShortcuts.all) { ShortcutRow(keys: $0.keys, label: $0.label) }
-            }
+            ShortcutColumns()
         }
     }
 
@@ -175,7 +173,7 @@ struct ClipboardWindowView: View {
     private func numberFor(_ index: Int) -> Int? { index < 9 ? index + 1 : nil }
 
     private func itemRow(_ item: ClipboardItem, number: Int?) -> some View {
-        ClipboardItemRowV2(
+        ClipboardItemRow(
             item: item,
             density: model.rowDensity,
             number: number,
@@ -217,14 +215,17 @@ struct ClipboardWindowView: View {
 
     private var footer: some View {
         HStack(spacing: 12) {
-            ForEach(PopupShortcuts.footer) { legend($0.keys, $0.footerLabel ?? "") }
-            Spacer()
-            Button { model.toggleHelp() } label: {
-                Image(systemName: "questionmark.circle")
+            ForEach(PopupShortcuts.footer) { shortcut in
+                if shortcut.keys == "⌘/" {
+                    Button { model.toggleHelp() } label: {
+                        legend(shortcut.keys, shortcut.footerLabel ?? "")
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    legend(shortcut.keys, shortcut.footerLabel ?? "")
+                }
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
-            .help("All shortcuts (⌘/)")
+            Spacer()
             Button("Clear All") { model.clearAll() }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)

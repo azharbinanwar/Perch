@@ -22,6 +22,7 @@ struct ClipboardTabView: View {
                 togglesBox
                 limitsBox(vm: $vm.settings)
                 appearanceBox
+                behaviorBox
                 privacyBox
                 exclusionsBox
             }
@@ -73,7 +74,7 @@ struct ClipboardTabView: View {
             VStack(spacing: 10) {
                 SettingRow(
                     title: "Enable clipboard",
-                    subtitle: clipboard.isEnabled ? "⌘⇧V and menu peek are available" : "Off — clipboard is hidden everywhere"
+                    subtitle: clipboard.isEnabled ? "\(settings.hotKeyDisplay) and menu peek are available" : "Off — clipboard is hidden everywhere"
                 ) {
                     switchToggle(isOn: clipboard.isEnabled) { clipboard.setEnabled($0) }
                 }
@@ -111,7 +112,7 @@ struct ClipboardTabView: View {
     private func limitsBox(vm: Binding<AppSettings>) -> some View {
         GroupBox("How many to keep") {
             VStack(spacing: 10) {
-                SettingRow(title: "Clipboard", subtitle: "Items kept and shown in the ⌘⇧V clipboard.") {
+                SettingRow(title: "Clipboard", subtitle: "Items kept and shown in the \(settings.hotKeyDisplay) clipboard.") {
                     intPicker(selection: Binding(get: { clipboard.maxItems }, set: { clipboard.setMaxItems($0) })) {
                         ForEach(clipboardSizeOptions, id: \.self) { Text("\($0) items").tag($0) }
                     }
@@ -152,6 +153,28 @@ struct ClipboardTabView: View {
         .opacity(clipboard.isEnabled ? 1 : 0.5)
     }
 
+    // MARK: - Behavior
+
+    private var behaviorBox: some View {
+        GroupBox("Behavior") {
+            VStack(spacing: 10) {
+                SettingRow(title: "Keyboard shortcut", subtitle: "Click the shortcut to record a new one.") {
+                    HotKeyRecorder(display: settings.hotKeyDisplay) { code, mods, label in
+                        settings.setHotKey(code: code, modifiers: mods, label: label)
+                    }
+                }
+                Divider()
+                SettingRow(title: "Restore clipboard after paste",
+                           subtitle: "Paste an item without changing your current clipboard.") {
+                    switchToggle(isOn: clipboard.restoreAfterPaste) { clipboard.setRestoreAfterPaste($0) }
+                }
+            }
+            .padding(6)
+        }
+        .disabled(!clipboard.isEnabled)
+        .opacity(clipboard.isEnabled ? 1 : 0.5)
+    }
+
     // MARK: - Privacy
 
     private var privacyBox: some View {
@@ -178,7 +201,7 @@ struct ClipboardTabView: View {
     private var exclusionsBox: some View {
         GroupBox("Excluded apps") {
             VStack(alignment: .leading, spacing: 12) {
-                AppExcludeListV2(
+                AppExcludeList(
                     title: "Don't record here",
                     subtitle: "Copies made while these apps are focused aren't saved.",
                     bundleIDs: clipboard.excludedRecordApps,
@@ -186,9 +209,9 @@ struct ClipboardTabView: View {
                     onRemove: clipboard.removeExcludedRecordApp
                 )
                 Divider()
-                AppExcludeListV2(
+                AppExcludeList(
                     title: "Don't open here",
-                    subtitle: "⌘⇧V won't open while these apps are focused.",
+                    subtitle: "\(settings.hotKeyDisplay) won't open while these apps are focused.",
                     bundleIDs: clipboard.excludedOpenApps,
                     onAdd: clipboard.addExcludedOpenApp,
                     onRemove: clipboard.removeExcludedOpenApp

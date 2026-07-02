@@ -21,7 +21,7 @@ struct ClipboardPeekView: View {
         } else {
             VStack(spacing: 0) {
                 ForEach(Array(clipboard.recentItems.prefix(settings.settings.menuItemCount))) { item in
-                    ClipboardItemRowV2(item: item, compact: true) { onPick(item) }
+                    ClipboardItemRow(item: item, compact: true) { onPick(item) }
                 }
             }
             .padding(.horizontal, 4)
