@@ -204,6 +204,21 @@ final class ClipboardViewModel {
         if !restoreAfterPaste { capture(item) }   // promote only when not restoring
     }
 
+    /// Put plain text on the clipboard for a paste (snippets) — restore-aware, not recorded.
+    func pasteText(_ text: String) {
+        if restoreAfterPaste { savedClipboard = snapshotClipboard() }
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
+        monitor.syncChangeCount()
+    }
+
+    /// Put plain text on the clipboard (⌘C on a snippet) — not recorded.
+    func copyText(_ text: String) {
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
+        monitor.syncChangeCount()
+    }
+
     /// Restore the clipboard to what it held before the paste (if the toggle is on).
     func restoreClipboardIfNeeded() {
         guard restoreAfterPaste, let saved = savedClipboard else { return }

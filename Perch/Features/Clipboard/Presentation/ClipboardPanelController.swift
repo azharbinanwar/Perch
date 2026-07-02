@@ -203,6 +203,7 @@ final class ClipboardPanelController {
         case kVK_DownArrow:                    model.moveDown();         return nil
         case kVK_Return, kVK_ANSI_KeypadEnter: model.pasteSelected();    return nil
         case kVK_Escape:                       model.escape();           return nil
+        case kVK_Tab:                          model.toggleMode();       return nil   // Clipboard ⇄ Snippets
         case kVK_Space:
             // Empty search → Space previews; mid-search → Space is a real space (phrases).
             if model.search.isEmpty { model.togglePreview() } else { model.appendToSearch(" ") }

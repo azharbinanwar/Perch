@@ -19,6 +19,7 @@ struct MainWindowView: View {
         } detail: {
             switch selection {
             case .clipboard: ClipboardTabView()
+            case .snippets:  SnippetsTabView()
             case .scroll:    ScrollTabView()
             case .keys:      RemapTabView()
             case .general:   GeneralView()

@@ -16,6 +16,7 @@ struct PopupShortcut: Identifiable {
 enum PopupShortcuts {
     static let all: [PopupShortcut] = [
         .init(keys: "↑ ↓",     label: "Move (wraps)",       footerLabel: "Move"),
+        .init(keys: "⇥",       label: "Clipboard / Snippets", footerLabel: "Switch"),
         .init(keys: "⌘↑ / ⌘↓", label: "Top / Bottom",       footerLabel: nil),
         .init(keys: "Space",   label: "Preview (empty search)", footerLabel: nil),
         .init(keys: "⌘Y",      label: "Preview (always)",   footerLabel: nil),

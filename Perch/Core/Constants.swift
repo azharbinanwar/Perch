@@ -28,6 +28,7 @@ enum Keys {
         static let hotKeyCode       = "dev.perch.hotkey.code.v1"
         static let hotKeyModifiers  = "dev.perch.hotkey.modifiers.v1"
         static let hotKeyLabel      = "dev.perch.hotkey.label.v1"
+        static let snippets         = "dev.perch.snippets.v1"
     }
 }
 

@@ -30,5 +30,6 @@ private extension View {
             .environment(delegate.scrollVM)
             .environment(delegate.remapVM)
             .environment(delegate.settingsVM)
+            .environment(delegate.snippetVM)
     }
 }

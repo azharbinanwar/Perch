@@ -17,6 +17,7 @@ struct ClipboardWindowView: View {
             if !model.isRecording { pausedBanner }
             if let notice = model.notice { noticeBanner(notice) }
             searchBar
+            modeToggle
             Divider()
             list
             Divider()
@@ -127,19 +128,33 @@ struct ClipboardWindowView: View {
 
     // MARK: - List
 
+    private var modeToggle: some View {
+        Picker("", selection: Binding(get: { model.mode }, set: { model.setMode($0) })) {
+            Text("Clipboard").tag(PopupMode.clipboard)
+            Text("Snippets").tag(PopupMode.snippets)
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
+    }
+
     @ViewBuilder
     private var list: some View {
+        switch model.mode {
+        case .clipboard: clipboardList
+        case .snippets:  snippetsList
+        }
+    }
+
+    @ViewBuilder
+    private var clipboardList: some View {
         let items = model.visibleItems
         if items.isEmpty {
             if model.search.isEmpty {
                 emptyStart
             } else {
-                ContentUnavailableView(
-                    "No Matches",
-                    systemImage: "magnifyingglass",
-                    description: Text("Nothing matches “\(model.search)”.")
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                noMatches
             }
         } else {
             let pinned = items.filter(\.isPinned)
@@ -170,6 +185,41 @@ struct ClipboardWindowView: View {
         }
     }
 
+    @ViewBuilder
+    private var snippetsList: some View {
+        let snippets = model.visibleSnippets
+        if snippets.isEmpty {
+            if model.search.isEmpty {
+                ContentUnavailableView("No Snippets", systemImage: "note.text",
+                    description: Text("Create snippets in Perch → Snippets."))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                noMatches
+            }
+        } else {
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 2) {
+                        ForEach(Array(snippets.enumerated()), id: \.element.id) { i, snippet in
+                            snippetRow(snippet, number: numberFor(i))
+                        }
+                    }
+                    .padding(8)
+                }
+                .onChange(of: model.selectedID) { _, id in
+                    guard let id else { return }
+                    withAnimation(.easeOut(duration: 0.12)) { proxy.scrollTo(id, anchor: .center) }
+                }
+            }
+        }
+    }
+
+    private var noMatches: some View {
+        ContentUnavailableView("No Matches", systemImage: "magnifyingglass",
+            description: Text("Nothing matches “\(model.search)”."))
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
     private func numberFor(_ index: Int) -> Int? { index < 9 ? index + 1 : nil }
 
     private func itemRow(_ item: ClipboardItem, number: Int?) -> some View {
@@ -182,9 +232,20 @@ struct ClipboardWindowView: View {
             onCopy: { model.paste(item) },
             onDelete: { model.delete(item) },
             onPin: { withAnimation(.easeInOut(duration: 0.15)) { model.togglePin(item) } },
-            onHover: { model.hover(item) }
+            onHover: { model.hover(id: item.id) }
         )
         .id(item.id)
+    }
+
+    private func snippetRow(_ snippet: Snippet, number: Int?) -> some View {
+        SnippetPopupRow(
+            snippet: snippet,
+            number: number,
+            isSelected: snippet.id == model.selectedID,
+            onPaste: { model.pasteSnippet(snippet) },
+            onHover: { model.hover(id: snippet.id) }
+        )
+        .id(snippet.id)
     }
 
     // MARK: - Empty state (first launch / cleared)

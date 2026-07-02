@@ -15,10 +15,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) lazy var scrollVM = ScrollViewModel()
     private(set) lazy var remapVM = RemapViewModel()
     private(set) lazy var settingsVM = SettingsViewModel()
+    private(set) lazy var snippetVM = SnippetViewModel()
 
     // ⌘⇧V floating popup, hosted in its own NSPanel.
     private(set) lazy var clipboardPanel: ClipboardPanelController = {
-        let model = ClipboardPopupModel(clipboard: clipboardVM)
+        let model = ClipboardPopupModel(clipboard: clipboardVM, snippets: snippetVM)
         let controller = ClipboardPanelController(model: model)
         model.onPaste = { [weak controller] in controller?.completePaste() }
         model.onPasteKeepOpen = { [weak controller] in controller?.pasteKeepingOpen() }
@@ -129,6 +130,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ServiceLocator.shared.register(RemapRepository.self)     { RemapRepository() }
         ServiceLocator.shared.register(RemapManager.self)        { RemapManager() }
         ServiceLocator.shared.register(SettingsRepository.self)  { SettingsRepository() }
+        ServiceLocator.shared.register(SnippetRepository.self)   { SnippetRepository() }
     }
 }
 
