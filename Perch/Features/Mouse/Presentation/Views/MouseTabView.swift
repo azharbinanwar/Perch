@@ -25,14 +25,18 @@ struct MouseTabView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                Text("Mouse").font(.title2.bold())
+                PageHeader("Mouse", subtitle: mouse.deviceSubtitle)
                 if !trusted {
                     AccessibilityBanner(message: "Grant Accessibility so scroll, pointer, and buttons can work.")
                 }
-                buttonsGroup
-                pointerGroup
-                scrollGroup
-                reliabilityGroup
+                if mouse.hasMouse {
+                    buttonsGroup
+                    pointerGroup
+                    scrollGroup
+                    reliabilityGroup
+                } else {
+                    noMouse
+                }
             }
             .padding(20)
         }
@@ -208,6 +212,20 @@ struct MouseTabView: View {
             }
             .padding(6)
         }
+    }
+
+    // MARK: - No mouse
+
+    private var noMouse: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "computermouse")
+                .font(.system(size: 46, weight: .light)).foregroundStyle(.tertiary)
+            Text("No mouse connected").font(.headline)
+            Text("Connect a mouse to set up its buttons, scrolling, and gestures.")
+                .font(.system(size: 12)).foregroundStyle(.secondary).multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 70)
     }
 
     // MARK: - Buttons

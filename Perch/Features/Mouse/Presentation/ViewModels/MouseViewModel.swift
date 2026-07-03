@@ -34,10 +34,22 @@ final class MouseViewModel {
     private(set) var editingBundleID: String?   // nil = Default; which profile the UI edits
     private var activeBundleID: String?         // frontmost app; which profile the engine runs
 
+    // Connected mice (for the readout / no-mouse empty state).
+    private(set) var devices: [MouseDevice] = []
+    var hasMouse: Bool { !devices.isEmpty }
+    var deviceSubtitle: String {
+        switch devices.count {
+        case 0:  return "No mouse connected"
+        case 1:  return devices[0].summary
+        default: return "\(devices.count) mice connected — mappings apply to all"
+        }
+    }
+
     private let monitor: MouseButtonMonitor
     private let repository: MouseRepository
     private let capture: MouseCaptureManager
     private let debouncer: MouseDebounceManager
+    private let deviceMonitor: MouseDeviceMonitor
     private let keyRecorder = KeyChordRecorder()   // swallows the key so capture doesn't fire it
     private let defaults = UserDefaults.standard
     private var activationObserver: NSObjectProtocol?
@@ -46,11 +58,13 @@ final class MouseViewModel {
     init(monitor: MouseButtonMonitor = ServiceLocator.shared.resolve(MouseButtonMonitor.self),
          repository: MouseRepository = ServiceLocator.shared.resolve(MouseRepository.self),
          capture: MouseCaptureManager = ServiceLocator.shared.resolve(MouseCaptureManager.self),
-         debouncer: MouseDebounceManager = ServiceLocator.shared.resolve(MouseDebounceManager.self)) {
+         debouncer: MouseDebounceManager = ServiceLocator.shared.resolve(MouseDebounceManager.self),
+         deviceMonitor: MouseDeviceMonitor = ServiceLocator.shared.resolve(MouseDeviceMonitor.self)) {
         self.monitor = monitor
         self.repository = repository
         self.capture = capture
         self.debouncer = debouncer
+        self.deviceMonitor = deviceMonitor
         self.isEnabled = defaults.object(forKey: Keys.Defaults.mouseEnabled) as? Bool ?? true
         self.whitelist = repository.loadWhitelist()
         self.detectedButtons = repository.loadDetected()
@@ -58,6 +72,7 @@ final class MouseViewModel {
         self.debounceMs = defaults.object(forKey: Keys.Defaults.mouseDebounceMs) as? Double ?? 50
         self.profiles = repository.loadProfiles()
         monitor.onButton = { [weak self] in self?.handleAddButton($0) }
+        deviceMonitor.onChange = { [weak self] in self?.devices = $0 }
     }
 
     deinit {
@@ -66,6 +81,7 @@ final class MouseViewModel {
 
     func apply() {
         registerActivationObserver()
+        deviceMonitor.start()
         activeBundleID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
         applyActive()
         debouncer.apply(enabled: debounce, thresholdMs: debounceMs)
