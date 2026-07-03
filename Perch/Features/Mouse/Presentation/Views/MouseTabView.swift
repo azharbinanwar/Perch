@@ -170,7 +170,6 @@ struct MouseTabView: View {
                         slider(scroll.autoScrollSpeed, in: 0.1...4, step: 0.05, format: "%.2f×") { scroll.setAutoScrollSpeed($0) }
                     }
                 }
-                comingSoon("Modifier + scroll = zoom")
             }
             .padding(6)
         }
@@ -189,7 +188,6 @@ struct MouseTabView: View {
                         slider(pointer.value, in: 0...20, step: 0.5, format: "%.1f") { pointer.setValue($0) }
                     }
                 }
-                comingSoon("Pointer speed")
             }
             .padding(6)
         }
@@ -207,7 +205,6 @@ struct MouseTabView: View {
                         slider(mouse.debounceMs, in: 20...100, step: 5, format: "%.0f ms") { mouse.setDebounceMs($0) }
                     }
                 }
-                comingSoon("Swap primary / secondary")
             }
             .padding(6)
         }
@@ -396,13 +393,6 @@ struct MouseTabView: View {
         }
     }
 
-    private func comingSoon(_ title: String) -> some View {
-        SettingRow(title: title) {
-            Text("Coming soon").font(.system(size: 10, weight: .medium))
-                .padding(.horizontal, 7).padding(.vertical, 2).background(.quaternary, in: Capsule()).foregroundStyle(.secondary)
-        }
-        .opacity(0.55)
-    }
 
     // MARK: - Data helpers
 
