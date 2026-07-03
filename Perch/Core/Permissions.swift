@@ -6,6 +6,7 @@
 //
 
 import ApplicationServices
+import AppKit
 
 enum Permissions {
     /// True if the app is trusted for Accessibility (required to run event taps).
@@ -18,5 +19,12 @@ enum Permissions {
     static func requestAccessibility() -> Bool {
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
         return AXIsProcessTrustedWithOptions(options as CFDictionary)
+    }
+
+    /// Opens System Settings → Privacy & Security → Accessibility.
+    static func openAccessibilitySettings() {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+            NSWorkspace.shared.open(url)
+        }
     }
 }

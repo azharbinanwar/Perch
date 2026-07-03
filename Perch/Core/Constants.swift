@@ -22,6 +22,20 @@ enum Keys {
         static let clipboardExcludeOpen   = "dev.perch.clipboard.excludeOpen.v1"    // don't open ⌘⇧V over these apps
         static let clipboardRestoreAfterPaste = "dev.perch.clipboard.restoreAfterPaste.v1"
         static let scrollReversed   = "dev.perch.scroll.reversed.v1"
+        static let scrollLinear     = "dev.perch.scroll.linear.v1"    // flat, no acceleration
+        static let scrollSpeed      = "dev.perch.scroll.speed.v1"     // multiplier
+        static let autoScrollOn     = "dev.perch.scroll.auto.on.v1"          // hold button + move to scroll
+        static let autoScrollButton = "dev.perch.scroll.auto.button.v1"      // trigger button number
+        static let autoScrollSpeed  = "dev.perch.scroll.auto.speed.v1"       // sensitivity multiplier
+        static let pointerOverride  = "dev.perch.pointer.override.v1" // control pointer acceleration
+        static let pointerValue     = "dev.perch.pointer.value.v1"    // acceleration amount (0 = flat)
+        static let mouseMappings    = "dev.perch.mouse.mappings.v1"
+        static let mouseEnabled     = "dev.perch.mouse.enabled.v1"
+        static let mouseWhitelist   = "dev.perch.mouse.whitelist.v1"   // registered key-chord buttons
+        static let mouseDebounceOn  = "dev.perch.mouse.debounce.on.v1" // ignore accidental double-fires
+        static let mouseDebounceMs  = "dev.perch.mouse.debounce.ms.v1"
+        static let mouseGestures    = "dev.perch.mouse.gestures.v1"    // hold-and-move gestures (legacy/global)
+        static let mouseProfiles    = "dev.perch.mouse.profiles.v1"    // per-app mappings + gestures
         static let remapRules       = "dev.perch.remap.rules.v1"
         static let remapEnabled     = "dev.perch.remap.enabled.v1"
         static let appSettings      = "dev.perch.settings.v1"

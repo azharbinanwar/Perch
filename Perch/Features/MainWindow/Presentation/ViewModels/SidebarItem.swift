@@ -6,7 +6,7 @@
 enum SidebarItem: String, CaseIterable, Identifiable {
     case clipboard
     case snippets
-    case scroll
+    case mouse
     case keys
     case general
 
@@ -16,7 +16,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         switch self {
         case .clipboard: "Clipboard"
         case .snippets:  "Snippets"
-        case .scroll:    "Scroll"
+        case .mouse:     "Mouse"
         case .keys:      "Keys"
         case .general:   "General"
         }
@@ -26,7 +26,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         switch self {
         case .clipboard: "doc.on.clipboard"
         case .snippets:  "note.text"
-        case .scroll:    "arrow.up.arrow.down"
+        case .mouse:     "computermouse"
         case .keys:      "keyboard"
         case .general:   "gearshape"
         }
