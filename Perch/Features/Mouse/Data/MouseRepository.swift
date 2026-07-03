@@ -37,6 +37,20 @@ final class MouseRepository {
         defaults.set(data, forKey: Keys.Defaults.mouseWhitelist)
     }
 
+    // Scanned physical extra buttons (so the user doesn't re-scan every launch).
+    func loadDetected() -> [MouseTrigger] {
+        guard let data = defaults.data(forKey: Keys.Defaults.mouseDetected),
+              let list = try? JSONDecoder().decode([MouseTrigger].self, from: data) else {
+            return []
+        }
+        return list
+    }
+
+    func saveDetected(_ list: [MouseTrigger]) {
+        guard let data = try? JSONEncoder().encode(list) else { return }
+        defaults.set(data, forKey: Keys.Defaults.mouseDetected)
+    }
+
     func loadGestures() -> [MouseGesture] {
         guard let data = defaults.data(forKey: Keys.Defaults.mouseGestures),
               let list = try? JSONDecoder().decode([MouseGesture].self, from: data) else {

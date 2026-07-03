@@ -17,12 +17,13 @@ import AppKit
 final class MouseViewModel {
     private(set) var isEnabled: Bool
 
-    private(set) var detectingButtons = false   // auto-detect mouse buttons
-    private(set) var capturingKey = false       // one-shot: register a keystroke-button
+    private(set) var scanning = false            // scan mode: press buttons, they light up on the mouse
     private(set) var needsPermission = false
 
-    private(set) var detectedButtons: [MouseTrigger] = []   // session only
+    private(set) var detectedButtons: [MouseTrigger] = []   // scanned physical extra buttons (persisted)
     private(set) var whitelist: [MouseTrigger] = []          // persisted key chords (global)
+    private(set) var lastAdded: MouseTrigger?               // last button added (for auto-select)
+    private(set) var addCount = 0                            // bumps on every add (even a re-add)
 
     // Debounce (fix a worn switch that double-fires).
     private(set) var debounce: Bool
@@ -37,8 +38,10 @@ final class MouseViewModel {
     private let repository: MouseRepository
     private let capture: MouseCaptureManager
     private let debouncer: MouseDebounceManager
+    private let keyRecorder = KeyChordRecorder()   // swallows the key so capture doesn't fire it
     private let defaults = UserDefaults.standard
     private var activationObserver: NSObjectProtocol?
+    private var idleStop: DispatchWorkItem?        // auto-ends a scan after a few idle seconds
 
     init(monitor: MouseButtonMonitor = ServiceLocator.shared.resolve(MouseButtonMonitor.self),
          repository: MouseRepository = ServiceLocator.shared.resolve(MouseRepository.self),
@@ -50,11 +53,11 @@ final class MouseViewModel {
         self.debouncer = debouncer
         self.isEnabled = defaults.object(forKey: Keys.Defaults.mouseEnabled) as? Bool ?? true
         self.whitelist = repository.loadWhitelist()
+        self.detectedButtons = repository.loadDetected()
         self.debounce = defaults.bool(forKey: Keys.Defaults.mouseDebounceOn)
         self.debounceMs = defaults.object(forKey: Keys.Defaults.mouseDebounceMs) as? Double ?? 50
         self.profiles = repository.loadProfiles()
-        monitor.onButton = { [weak self] in self?.handleButton($0) }
-        monitor.onKey = { [weak self] code, mods in self?.handleKey(code, mods) }
+        monitor.onButton = { [weak self] in self?.handleAddButton($0) }
     }
 
     deinit {
@@ -80,10 +83,13 @@ final class MouseViewModel {
 
     func selectProfile(_ bundleID: String?) { editingBundleID = bundleID }
 
-    /// Add (or switch to) a profile for an app bundle id.
+    /// Add (or switch to) a profile for an app bundle id. New profiles start as a copy of
+    /// Default's actions, so every button carries over and the user only tweaks the differences.
     func addProfile(bundleID: String) {
         if profiles.contains(where: { $0.appBundleID == bundleID }) { editingBundleID = bundleID; return }
-        profiles.append(MouseProfile(appBundleID: bundleID, appName: Self.appName(for: bundleID)))
+        let base = defaultProfile
+        profiles.append(MouseProfile(appBundleID: bundleID, appName: Self.appName(for: bundleID),
+                                     mappings: base.mappings, gestures: base.gestures))
         repository.saveProfiles(profiles)
         editingBundleID = bundleID
     }
@@ -137,13 +143,6 @@ final class MouseViewModel {
 
     // MARK: - Gestures (of the editing profile)
 
-    func addGesture(for button: Int) {
-        mutateEditing { p in
-            guard !p.gestures.contains(where: { $0.button == button }) else { return }
-            p.gestures.append(MouseGesture(button: button))
-        }
-    }
-
     func setGestureAction(_ action: MouseAction, direction: GestureDirection, for id: UUID) {
         mutateEditing { p in
             guard let i = p.gestures.firstIndex(where: { $0.id == id }) else { return }
@@ -173,66 +172,61 @@ final class MouseViewModel {
         isEnabled = on
         defaults.set(on, forKey: Keys.Defaults.mouseEnabled)
         applyActive()
-        if !on { stopAll(); detectedButtons = [] }   // drop unset detections when turned off
+        if !on { stopScan() }
     }
 
-    // MARK: - Available triggers (to map)
+    // MARK: - Scan (press buttons; they light up on the mouse)
 
-    /// Detected buttons + whitelisted keys not yet mapped in this profile. Left/Right (0,1) never mappable.
-    var availableTriggers: [MouseTrigger] {
-        (detectedButtons + whitelist).filter { trigger in
-            if case .button(let n) = trigger, n <= 1 { return false }   // Left/Right: normal click
-            return !mappings.contains { $0.trigger == trigger }
-        }
+    /// Enter scan mode — mouse buttons (listen-only) and keystroke buttons (swallowed so they
+    /// don't fire) both light up their slot. Stays on until Done or a few idle seconds pass.
+    func startScan() {
+        if !Permissions.isAccessibilityTrusted { Permissions.requestAccessibility() }
+        let mouseOK = monitor.start()
+        keyRecorder.onCapture = { [weak self] code, mods in self?.handleAddKey(code, mods) }
+        let keyOK = keyRecorder.start()
+        needsPermission = !(mouseOK && keyOK)
+        scanning = mouseOK && keyOK
+        if scanning { armIdleStop() } else { monitor.stop(); keyRecorder.stop() }
     }
 
-    /// Detected extra buttons (not Left/Right) without a gesture in this profile.
-    var availableGestureButtons: [Int] {
-        let gestured = Set(gestures.map(\.button))
-        return detectedButtons.compactMap { if case .button(let n) = $0 { return n } else { return nil } }
-            .filter { $0 > 1 && !gestured.contains($0) }
+    func stopScan() {
+        scanning = false
+        idleStop?.cancel(); idleStop = nil
+        monitor.stop()
+        keyRecorder.stop()
     }
 
-    // MARK: - Button detection
-
-    func toggleButtonDetect() { detectingButtons ? stopButtonDetect() : startButtonDetect() }
-
-    private func startButtonDetect() {
-        capturingKey = false
-        ensureTap()
-        detectingButtons = !needsPermission
-    }
-    func stopButtonDetect() { detectingButtons = false; stopTapIfIdle() }
-
-    private func handleButton(_ number: Int) {
-        guard detectingButtons else { return }   // detect everything so you can see all buttons
+    private func handleAddButton(_ number: Int) {
+        guard scanning else { return }
         let trigger = MouseTrigger.button(number)
-        if !detectedButtons.contains(trigger) { detectedButtons.append(trigger) }
+        if number >= 3, !detectedButtons.contains(trigger) {
+            detectedButtons.append(trigger)
+            repository.saveDetected(detectedButtons)
+        }
+        registerAdded(trigger)
     }
 
-    /// Clear detected buttons that were never mapped in this profile.
-    func clearDetected() {
-        detectedButtons.removeAll { trigger in !mappings.contains { $0.trigger == trigger } }
-    }
-
-    // MARK: - Keystroke whitelist (one-shot capture, global)
-
-    func startKeyCapture() {
-        detectingButtons = false
-        ensureTap()
-        capturingKey = !needsPermission
-    }
-    func cancelKeyCapture() { capturingKey = false; stopTapIfIdle() }
-
-    private func handleKey(_ code: Int, _ modifiers: UInt64) {
-        guard capturingKey else { return }   // outside capture, all typing is ignored
+    private func handleAddKey(_ code: Int, _ modifiers: UInt64) {
+        guard scanning else { return }
         let trigger = MouseTrigger.key(code: code, modifiers: modifiers)
         if !whitelist.contains(trigger) {
             whitelist.append(trigger)
             repository.saveWhitelist(whitelist)
         }
-        capturingKey = false
-        stopTapIfIdle()
+        registerAdded(trigger)
+    }
+
+    private func registerAdded(_ trigger: MouseTrigger) {
+        lastAdded = trigger
+        addCount += 1
+        armIdleStop()   // keep scanning; reset the idle timeout
+    }
+
+    private func armIdleStop() {
+        idleStop?.cancel()
+        let work = DispatchWorkItem { [weak self] in self?.stopScan() }
+        idleStop = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 6, execute: work)
     }
 
     func removeWhitelisted(_ trigger: MouseTrigger) {
@@ -241,17 +235,6 @@ final class MouseViewModel {
     }
 
     // MARK: - Mappings (of the editing profile)
-
-    func addMapping(for trigger: MouseTrigger) {
-        mutateEditing { p in
-            guard !p.mappings.contains(where: { $0.trigger == trigger }) else { return }
-            p.mappings.append(MouseMapping(trigger: trigger, action: Self.suggestedAction(for: trigger)))
-        }
-    }
-
-    func setAction(_ action: MouseAction, for id: UUID) {
-        setAction(action, phase: .single, for: id)
-    }
 
     func setAction(_ action: MouseAction, phase: ClickPhase, for id: UUID) {
         mutateEditing { p in
@@ -264,23 +247,42 @@ final class MouseViewModel {
         mutateEditing { $0.mappings.removeAll { $0.id == id } }
     }
 
-    /// Left/Right/Middle default to their normal click (pass-through); side buttons to back/forward.
-    private static func suggestedAction(for trigger: MouseTrigger) -> MouseAction {
-        guard case .button(let n) = trigger else { return .disabled }
-        switch n {
-        case 0, 1, 2: return MouseAction(kind: .passThrough)   // stays a normal click until assigned
-        case 3:       return MouseAction(kind: .back)
-        case 4:       return MouseAction(kind: .forward)
-        default:      return .disabled
+    // MARK: - Trigger-based access (for the diagram UI: read/set by trigger, find-or-create)
+
+    func mapping(for trigger: MouseTrigger) -> MouseMapping? {
+        mappings.first { $0.trigger == trigger }
+    }
+
+    func action(for trigger: MouseTrigger, phase: ClickPhase) -> MouseAction {
+        mapping(for: trigger)?.action(for: phase) ?? .disabled
+    }
+
+    func setAction(_ action: MouseAction, for trigger: MouseTrigger, phase: ClickPhase) {
+        mutateEditing { p in
+            if let i = p.mappings.firstIndex(where: { $0.trigger == trigger }) {
+                p.mappings[i].setAction(action, for: phase)
+            } else {
+                var m = MouseMapping(trigger: trigger, action: .disabled)
+                m.setAction(action, for: phase)
+                p.mappings.append(m)
+            }
         }
     }
 
-    // MARK: - Tap lifecycle
-
-    private func ensureTap() {
-        if !Permissions.isAccessibilityTrusted { Permissions.requestAccessibility() }
-        needsPermission = !monitor.start()
+    func gestureAction(for button: Int, direction: GestureDirection) -> MouseAction {
+        gestures.first { $0.button == button }?.action(for: direction) ?? .disabled
     }
-    private func stopTapIfIdle() { if !detectingButtons && !capturingKey { monitor.stop() } }
-    private func stopAll() { detectingButtons = false; capturingKey = false; monitor.stop() }
+
+    func setGestureAction(_ action: MouseAction, for button: Int, direction: GestureDirection) {
+        mutateEditing { p in
+            if let i = p.gestures.firstIndex(where: { $0.button == button }) {
+                p.gestures[i].set(action, for: direction)
+            } else {
+                var g = MouseGesture(button: button)
+                g.set(action, for: direction)
+                p.gestures.append(g)
+            }
+        }
+    }
+
 }

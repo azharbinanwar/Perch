@@ -2,8 +2,8 @@
 //  RemapManager.swift
 //  Perch
 //
-//  Manager. CGEventTap on key events. When Ctrl (and only Ctrl) + a mapped key is
-//  pressed and the frontmost app isn't excluded, swap Ctrl → Cmd.
+//  Manager. CGEventTap on key events. When a key + its modifiers match a rule's input combo
+//  and the frontmost app isn't excluded, rewrite the event to the output combo (keycode + flags).
 //  Requires Accessibility permission.
 //
 //  ponytail: applies to ALL keyboards. Filtering to external-only isn't possible from a
@@ -20,11 +20,6 @@ final class RemapManager {
 
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
-
-    // Virtual keycodes for the letters we support.
-    private static let keyCodeForChar: [Int64: String] = [
-        0: "a", 6: "z", 7: "x", 8: "c", 9: "v", 35: "p", 37: "l"
-    ]
 
     @discardableResult
     func start() -> Bool {
@@ -47,7 +42,7 @@ final class RemapManager {
 
         eventTap = tap
         runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
-        CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, .commonModes)
+        CFRunLoopAddSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
         CGEvent.tapEnable(tap: tap, enable: true)
         return true
     }
@@ -56,8 +51,9 @@ final class RemapManager {
         guard let tap = eventTap else { return }
         CGEvent.tapEnable(tap: tap, enable: false)
         if let source = runLoopSource {
-            CFRunLoopRemoveSource(CFRunLoopGetCurrent(), source, .commonModes)
+            CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes)
         }
+        CFMachPortInvalidate(tap)
         eventTap = nil
         runLoopSource = nil
     }
@@ -70,22 +66,20 @@ final class RemapManager {
             return Unmanaged.passUnretained(event)
         }
 
-        let flags = event.flags
-        // Only act on Ctrl-and-not-Cmd, so we never touch existing Cmd shortcuts.
-        guard flags.contains(.maskControl), !flags.contains(.maskCommand) else {
+        let keyCode = Int(event.getIntegerValueField(.keyboardEventKeycode))
+        let mods = event.flags.intersection(KeyCombo.significant).rawValue
+
+        guard let rule = rules.first(where: {
+            $0.isEnabled && $0.input.keyCode == keyCode && $0.input.modifiers == mods
+        }), !isExcludedAppFrontmost(rule) else {
             return Unmanaged.passUnretained(event)
         }
 
-        let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
-        guard let char = RemapManager.keyCodeForChar[keyCode],
-              let rule = rules.first(where: { $0.isEnabled && $0.keyChar == char }),
-              !isExcludedAppFrontmost(rule) else {
-            return Unmanaged.passUnretained(event)
-        }
-
-        var newFlags = flags
-        newFlags.remove(.maskControl)
-        newFlags.insert(.maskCommand)
+        // Rewrite to the output combo: swap keycode and the significant modifier flags.
+        event.setIntegerValueField(.keyboardEventKeycode, value: Int64(rule.output.keyCode))
+        var newFlags = event.flags
+        newFlags.remove(KeyCombo.significant)
+        newFlags.insert(CGEventFlags(rawValue: rule.output.modifiers))
         event.flags = newFlags
         return Unmanaged.passUnretained(event)
     }

@@ -32,11 +32,12 @@ enum Keys {
         static let mouseMappings    = "dev.perch.mouse.mappings.v1"
         static let mouseEnabled     = "dev.perch.mouse.enabled.v1"
         static let mouseWhitelist   = "dev.perch.mouse.whitelist.v1"   // registered key-chord buttons
+        static let mouseDetected    = "dev.perch.mouse.detected.v1"    // scanned physical extra buttons
         static let mouseDebounceOn  = "dev.perch.mouse.debounce.on.v1" // ignore accidental double-fires
         static let mouseDebounceMs  = "dev.perch.mouse.debounce.ms.v1"
         static let mouseGestures    = "dev.perch.mouse.gestures.v1"    // hold-and-move gestures (legacy/global)
         static let mouseProfiles    = "dev.perch.mouse.profiles.v1"    // per-app mappings + gestures
-        static let remapRules       = "dev.perch.remap.rules.v1"
+        static let remapRules       = "dev.perch.remap.rules.v2"   // v2: general input→output combos
         static let remapEnabled     = "dev.perch.remap.enabled.v1"
         static let appSettings      = "dev.perch.settings.v1"
         static let hotKeyCode       = "dev.perch.hotkey.code.v1"

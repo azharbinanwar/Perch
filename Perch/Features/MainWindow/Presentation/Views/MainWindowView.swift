@@ -20,7 +20,7 @@ struct MainWindowView: View {
             switch selection {
             case .clipboard: ClipboardTabView()
             case .snippets:  SnippetsTabView()
-            case .mouse:     MouseTabViewV5()   // V1–V4 all kept
+            case .mouse:     MouseTabView()
             case .keys:      RemapTabView()
             case .general:   GeneralView()
             }
