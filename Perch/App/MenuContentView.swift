@@ -24,8 +24,7 @@ struct MenuContentView: View {
             sectionHeader("Toggles")
             ClipboardEnableToggleRow()
             if clipboard.isEnabled { ClipboardSaveToggleRow() }
-            ScrollSection()
-            RemapToggleRow()
+            // Scroll & Remap toggles land here once those features ship.
 
             Divider().padding(.vertical, 4)
 

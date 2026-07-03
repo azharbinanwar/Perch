@@ -2,14 +2,14 @@
 //  MenuToggleRow.swift
 //  Perch
 //
-//  Reusable menu-bar row: title + subtitle on the left, a switch on the right.
+//  Reusable menu-bar row: title (optional subtitle) on the left, a switch on the right.
 //
 
 import SwiftUI
 
 struct MenuToggleRow: View {
     let title: String
-    let subtitle: String
+    var subtitle: String? = nil
     var subtitleColor: Color = .secondary
     let isOn: Bool
     let onToggle: () -> Void
@@ -18,7 +18,9 @@ struct MenuToggleRow: View {
         HStack {
             VStack(alignment: .leading, spacing: 1) {
                 Text(title).font(.system(size: 12))
-                Text(subtitle).font(.system(size: 10)).foregroundStyle(subtitleColor)
+                if let subtitle {
+                    Text(subtitle).font(.system(size: 10)).foregroundStyle(subtitleColor)
+                }
             }
             Spacer()
             Toggle("", isOn: Binding(get: { isOn }, set: { _ in onToggle() }))

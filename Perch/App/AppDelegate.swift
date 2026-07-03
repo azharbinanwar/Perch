@@ -28,6 +28,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             controller?.hide()
             self?.openMainWindow()
         }
+        model.onBeginEdit = { [weak controller] in controller?.beginEdit() }
+        model.onEndEdit = { [weak controller] in controller?.endEdit() }
         controller.setRoot(AnyView(ClipboardWindowView(model: model)))
         return controller
     }()

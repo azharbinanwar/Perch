@@ -10,22 +10,25 @@
 import Foundation
 import Observation
 
-enum PopupMode { case clipboard, snippets }
-
 @Observable
 final class ClipboardPopupModel {
     var search = ""
-    var mode: PopupMode = .clipboard
+    var category: ClipboardCategory = .all
     var selectedID: UUID?
+    var scrollTarget: UUID?   // keyboard-driven only; the list scrolls to this, not to hover
     var needsPermission = false
     var showHelp = false
     var previewing = false
     var notice: String?
+    var editing = false
+    var editText = ""
 
     var onPaste: () -> Void = {}
     var onPasteKeepOpen: () -> Void = {}
     var onClose: () -> Void = {}
     var onOpenSettings: () -> Void = {}
+    var onBeginEdit: () -> Void = {}    // controller: pause key-tap, make panel key
+    var onEndEdit: () -> Void = {}      // controller: restart key-tap
 
     private let clipboard: ClipboardViewModel
     private let snippets: SnippetViewModel
@@ -40,15 +43,48 @@ final class ClipboardPopupModel {
 
     // MARK: - Visible content
 
-    /// Clipboard items, matched on text OR source-app name.
+    /// Clipboard items in the current category, matched on text OR source-app name.
     var visibleItems: [ClipboardItem] {
-        guard !search.isEmpty else { return frozenItems }
-        return frozenItems.filter { item in
-            if item.text.localizedCaseInsensitiveContains(search) { return true }
-            if let name = AppIcon.name(forBundleID: item.sourceApp),
-               name.localizedCaseInsensitiveContains(search) { return true }
-            return false
-        }
+        guard !category.isSnippets else { return [] }
+        return frozenItems.filter { category.matches($0) && matchesSearch($0) }
+    }
+
+    private func matchesSearch(_ item: ClipboardItem) -> Bool {
+        guard !search.isEmpty else { return true }
+        if item.text.localizedCaseInsensitiveContains(search) { return true }
+        if let name = AppIcon.name(forBundleID: item.sourceApp),
+           name.localizedCaseInsensitiveContains(search) { return true }
+        return false
+    }
+
+    /// The switcher's segments: All + content types that have items + Snippets.
+    var availableCategories: [ClipboardCategory] {
+        var cats: [ClipboardCategory] = [.all]
+        cats += ClipboardCategory.contentTypes.filter { type in frozenItems.contains { type.matches($0) } }
+        cats.append(.snippets)
+        return cats
+    }
+
+    func setCategory(_ newCategory: ClipboardCategory) {
+        guard newCategory != category else { return }
+        category = newCategory
+        search = ""
+        keyboardSelect(selectableIDs.first)
+    }
+
+    /// Tab → next, ⇧Tab → previous available category (both wrap).
+    func cycleCategory(_ delta: Int = 1) {
+        let cats = availableCategories
+        guard let i = cats.firstIndex(of: category) else { return }
+        let n = cats.count
+        setCategory(cats[((i + delta) % n + n) % n])
+    }
+
+    /// ⌥1–9 → jump to the Nth available category.
+    func selectCategory(_ number: Int) {
+        let cats = availableCategories
+        guard cats.indices.contains(number - 1) else { return }
+        setCategory(cats[number - 1])
     }
 
     /// Snippets, matched on name OR text.
@@ -59,26 +95,17 @@ final class ClipboardPopupModel {
         }
     }
 
-    /// Keyboard-selectable ids for the current mode only.
+    /// Keyboard-selectable ids for the current category only.
     private var selectableIDs: [UUID] {
-        switch mode {
-        case .clipboard: return visibleItems.map(\.id)
-        case .snippets:  return visibleSnippets.map(\.id)
-        }
+        category.isSnippets ? visibleSnippets.map(\.id) : visibleItems.map(\.id)
     }
 
-    func toggleMode() { setMode(mode == .clipboard ? .snippets : .clipboard) }
-
-    func setMode(_ newMode: PopupMode) {
-        guard newMode != mode else { return }
-        mode = newMode
-        search = ""
-        selectedID = selectableIDs.first
-        suppressHoverBriefly()
+    private var selectedSnippet: Snippet? {
+        category.isSnippets ? visibleSnippets.first { $0.id == selectedID } : nil
     }
-
-    private var selectedSnippet: Snippet? { visibleSnippets.first { $0.id == selectedID } }
-    private var selectedItem: ClipboardItem? { visibleItems.first { $0.id == selectedID } }
+    private var selectedItem: ClipboardItem? {
+        category.isSnippets ? nil : visibleItems.first { $0.id == selectedID }
+    }
     private var selectedIndex: Int? { selectedID.flatMap { id in selectableIDs.firstIndex(of: id) } }
 
     var isRecording: Bool { clipboard.isRecording }
@@ -90,9 +117,10 @@ final class ClipboardPopupModel {
     func open() {
         clipboard.pruneExpired()
         search = ""
-        mode = .clipboard
+        category = .all
         showHelp = false
         previewing = false
+        editing = false
         notice = nil
         if case .loaded(let items) = clipboard.state { frozenItems = items } else { frozenItems = [] }
         selectedID = selectableIDs.first
@@ -106,20 +134,26 @@ final class ClipboardPopupModel {
         let ids = selectableIDs
         guard !ids.isEmpty else { return }
         let i = selectedIndex ?? -1
-        selectedID = ids[(i + 1) >= ids.count ? 0 : i + 1]
-        suppressHoverBriefly()
+        keyboardSelect(ids[(i + 1) >= ids.count ? 0 : i + 1])
     }
 
     func moveUp() {
         let ids = selectableIDs
         guard !ids.isEmpty else { return }
         let i = selectedIndex ?? 0
-        selectedID = ids[(i - 1) < 0 ? ids.count - 1 : i - 1]
-        suppressHoverBriefly()
+        keyboardSelect(ids[(i - 1) < 0 ? ids.count - 1 : i - 1])
     }
 
-    func selectFirst() { selectedID = selectableIDs.first; suppressHoverBriefly() }
-    func selectLast() { selectedID = selectableIDs.last; suppressHoverBriefly() }
+    func selectFirst() { keyboardSelect(selectableIDs.first) }
+    func selectLast() { keyboardSelect(selectableIDs.last) }
+
+    /// Keyboard-driven selection: also sets the scroll target so the row is kept in view.
+    /// (Hover only sets `selectedID`, so the list never auto-scrolls under the mouse.)
+    private func keyboardSelect(_ id: UUID?) {
+        selectedID = id
+        scrollTarget = id
+        suppressHoverBriefly()
+    }
 
     private func suppressHoverBriefly() {
         suppressHover = true
@@ -128,8 +162,8 @@ final class ClipboardPopupModel {
 
     // MARK: - Search
 
-    func appendToSearch(_ text: String) { search += text; selectedID = selectableIDs.first }
-    func deleteSearchChar() { if !search.isEmpty { search.removeLast(); selectedID = selectableIDs.first } }
+    func appendToSearch(_ text: String) { search += text; keyboardSelect(selectableIDs.first) }
+    func deleteSearchChar() { if !search.isEmpty { search.removeLast(); keyboardSelect(selectableIDs.first) } }
 
     func escape() {
         if previewing { previewing = false }
@@ -146,8 +180,27 @@ final class ClipboardPopupModel {
         return selectedItem
     }
 
+    /// Carousel position within the previewed item (driven by ← →).
+    var previewIndex = 0
+
+    private var previewImageCount: Int {
+        switch previewItem?.content {
+        case .image: return previewItem?.imageFiles?.count ?? 0
+        case .files: return previewItem?.filePaths?.count ?? 0
+        default:     return 0
+        }
+    }
+
+    /// Move the carousel; wraps. No-op when there's nothing to page through.
+    func previewStep(_ delta: Int) {
+        let count = previewImageCount
+        guard count > 1 else { return }
+        previewIndex = (previewIndex + delta + count) % count
+    }
+
     func togglePreview() {
         guard selectedSnippet != nil || selectedItem != nil else { return }
+        previewIndex = 0
         previewing.toggle()
     }
 
@@ -171,6 +224,50 @@ final class ClipboardPopupModel {
     func copySelectedWithoutPaste() {
         if let snippet = selectedSnippet { clipboard.copyText(snippet.text); onClose() }
         else if let item = selectedItem { clipboard.copyToPasteboard(item); onClose() }
+    }
+
+    // MARK: - Item actions
+
+    func perform(_ action: ClipboardAction, on item: ClipboardItem) {
+        switch action {
+        case .openLink:       clipboard.openLink(item); onClose()
+        case .revealInFinder: clipboard.revealInFinder(item); onClose()
+        case .saveImage:
+            let n = clipboard.saveImageToDownloads(item)
+            showNotice(n > 0 ? "Saved \(n) image\(n == 1 ? "" : "s") to Downloads" : "Couldn't save image")
+        case .copyPlain:      clipboard.copyText(item.text); onClose()
+        }
+    }
+
+    /// Run an action from the keyboard against the selected item, if it applies.
+    func performOnSelected(_ action: ClipboardAction) {
+        guard let item = selectedItem, action.applies(to: item) else { return }
+        perform(action, on: item)
+    }
+
+    // MARK: - Edit before paste (text items only)
+
+    func startEditingSelected() {
+        guard let item = selectedItem, item.content == .text else { return }
+        editText = item.text
+        editing = true
+        onBeginEdit()   // controller pauses the key-tap and makes the panel key
+    }
+
+    /// Paste the edited text into the target app; the stored clip is untouched.
+    func commitEdit() {
+        guard editing else { return }
+        let text = editText
+        editing = false
+        onEndEdit()
+        clipboard.pasteText(text)
+        onPaste()
+    }
+
+    func cancelEdit() {
+        guard editing else { return }
+        editing = false
+        onEndEdit()   // controller restarts the key-tap; back to the list
     }
 
     func restoreClipboardIfNeeded() { clipboard.restoreClipboardIfNeeded() }
@@ -224,8 +321,22 @@ final class ClipboardPopupModel {
 
     // MARK: - Mouse
 
+    private var pointerActive = false   // true only while the pointer is actually moving
+    private var pointerGen = 0
+
+    /// Called on real pointer movement (not when content scrolls under a still cursor).
+    func pointerMoved() {
+        pointerActive = true
+        pointerGen += 1
+        let gen = pointerGen
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [weak self] in
+            guard let self, self.pointerGen == gen else { return }
+            self.pointerActive = false
+        }
+    }
+
     func hover(id: UUID) {
-        guard acceptHover, !suppressHover else { return }
+        guard acceptHover, !suppressHover, pointerActive else { return }   // moving mouse only
         selectedID = id
     }
 

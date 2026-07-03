@@ -99,11 +99,25 @@ final class ClipboardPanelController {
         }
     }
 
+    // MARK: - Edit before paste
+
+    /// Pause the key-tap and make the panel key so the edit text field receives typing.
+    func beginEdit() {
+        stopKeyTap()
+        panel?.makeKeyAndOrderFront(nil)
+    }
+
+    /// Back to list browsing: resume the key-tap (the panel stays visible, target keeps focus
+    /// because we never activated Perch).
+    func endEdit() {
+        startKeyTap()
+    }
+
     // MARK: - Panel
 
     private func makePanel() -> NSPanel {
-        let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 560, height: 480),
+        let panel = PerchPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 640, height: 500),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -190,10 +204,28 @@ final class ClipboardPanelController {
             case kVK_ANSI_C:                       model.copySelectedWithoutPaste(); return nil  // ⌘C copy only
             case kVK_ANSI_Y:                       model.togglePreview();            return nil  // ⌘Y preview (always)
             case kVK_ANSI_P:                       model.togglePinSelected();        return nil  // ⌘P pin/unpin
+            case kVK_ANSI_O:                       model.performOnSelected(.openLink);      return nil  // ⌘O open link
+            case kVK_ANSI_R:                       model.performOnSelected(.revealInFinder); return nil  // ⌘R reveal
+            case kVK_ANSI_S:                       model.performOnSelected(.saveImage);     return nil  // ⌘S save image
+            case kVK_ANSI_E:                       model.startEditingSelected();     return nil  // ⌘E edit & paste
             case kVK_ANSI_Slash:                   model.toggleHelp();               return nil  // ⌘/ shortcuts
             default:
                 if let n = Self.digit(forKeyCode: keyCode) { model.quickPick(n); return nil }   // ⌘1–9
                 return passThrough
+            }
+        }
+
+        // ⌥1–9 jump to a category.
+        if flags.contains(.maskAlternate), let n = Self.digit(forKeyCode: keyCode) {
+            model.selectCategory(n); return nil
+        }
+
+        // While previewing, ← → page the image carousel.
+        if model.previewing {
+            switch keyCode {
+            case kVK_LeftArrow:  model.previewStep(-1); return nil
+            case kVK_RightArrow: model.previewStep(1);  return nil
+            default: break
             }
         }
 
@@ -203,7 +235,8 @@ final class ClipboardPanelController {
         case kVK_DownArrow:                    model.moveDown();         return nil
         case kVK_Return, kVK_ANSI_KeypadEnter: model.pasteSelected();    return nil
         case kVK_Escape:                       model.escape();           return nil
-        case kVK_Tab:                          model.toggleMode();       return nil   // Clipboard ⇄ Snippets
+        case kVK_Tab:   // ⇥ next category, ⇧⇥ previous (both wrap)
+            model.cycleCategory(flags.contains(.maskShift) ? -1 : 1); return nil
         case kVK_Space:
             // Empty search → Space previews; mid-search → Space is a real space (phrases).
             if model.search.isEmpty { model.togglePreview() } else { model.appendToSearch(" ") }

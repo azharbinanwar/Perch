@@ -16,7 +16,8 @@ struct PopupShortcut: Identifiable {
 enum PopupShortcuts {
     static let all: [PopupShortcut] = [
         .init(keys: "↑ ↓",     label: "Move (wraps)",       footerLabel: "Move"),
-        .init(keys: "⇥",       label: "Clipboard / Snippets", footerLabel: "Switch"),
+        .init(keys: "⇥ / ⇧⇥",  label: "Next / previous category", footerLabel: "Category"),
+        .init(keys: "⌥1–9",    label: "Jump to category",   footerLabel: nil),
         .init(keys: "⌘↑ / ⌘↓", label: "Top / Bottom",       footerLabel: nil),
         .init(keys: "Space",   label: "Preview (empty search)", footerLabel: nil),
         .init(keys: "⌘Y",      label: "Preview (always)",   footerLabel: nil),
@@ -27,6 +28,10 @@ enum PopupShortcuts {
         .init(keys: "⌘⌫",      label: "Delete item",        footerLabel: nil),
         .init(keys: "⌘C",      label: "Copy (no paste)",    footerLabel: nil),
         .init(keys: "⌘P",      label: "Pin / Unpin",        footerLabel: nil),
+        .init(keys: "⌘O",      label: "Open link",          footerLabel: nil),
+        .init(keys: "⌘R",      label: "Reveal file in Finder", footerLabel: nil),
+        .init(keys: "⌘S",      label: "Save image to Downloads", footerLabel: nil),
+        .init(keys: "⌘E",      label: "Edit text & paste",  footerLabel: nil),
         .init(keys: "⌘K",      label: "Clear all",          footerLabel: nil),
         .init(keys: "⌫",       label: "Delete search char", footerLabel: nil),
         .init(keys: "⌘/",      label: "All shortcuts",      footerLabel: "Shortcuts"),

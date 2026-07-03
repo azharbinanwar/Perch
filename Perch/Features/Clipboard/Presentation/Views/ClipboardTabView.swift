@@ -12,6 +12,7 @@ struct ClipboardTabView: View {
     @Environment(ClipboardViewModel.self) private var clipboard
     @Environment(SettingsViewModel.self) private var settings
     @State private var showingShortcuts = false
+    @State private var imageBytes = 0
 
     var body: some View {
         @Bindable var vm = settings
@@ -28,6 +29,19 @@ struct ClipboardTabView: View {
             }
             .padding(20)
         }
+        .sheet(isPresented: $showingShortcuts) {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Keyboard Shortcuts").font(.headline)
+                ShortcutColumns()
+                HStack {
+                    Spacer()
+                    Button("Done") { showingShortcuts = false }
+                        .keyboardShortcut(.defaultAction)
+                }
+            }
+            .padding(20)
+        }
+        .onAppear { imageBytes = ImageStore.diskUsage() }
     }
 
     // MARK: - Header
@@ -36,7 +50,7 @@ struct ClipboardTabView: View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 1) {
                 Text("Clipboard").font(.title2.bold())
-                Text("\(itemCount) item\(itemCount == 1 ? "" : "s") stored")
+                Text(storageSubtitle)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -52,15 +66,11 @@ struct ClipboardTabView: View {
                 Label("Shortcuts", systemImage: "keyboard")
             }
             .help("Keyboard shortcuts")
-            .popover(isPresented: $showingShortcuts, arrowEdge: .bottom) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Keyboard Shortcuts").font(.headline)
-                    ShortcutColumns()
-                }
-                .padding(16)
-            }
 
-            Button(role: .destructive) { clipboard.clear() } label: {
+            Button(role: .destructive) {
+                clipboard.clear()
+                imageBytes = ImageStore.diskUsage()
+            } label: {
                 Label("Clear All", systemImage: "trash")
             }
             .disabled(itemCount == 0)
@@ -235,5 +245,13 @@ struct ClipboardTabView: View {
     private var itemCount: Int {
         if case .loaded(let items) = clipboard.state { return items.count }
         return 0
+    }
+
+    /// "N items stored" — plus image storage used, when there is any.
+    private var storageSubtitle: String {
+        let items = "\(itemCount) item\(itemCount == 1 ? "" : "s") stored"
+        guard imageBytes > 0 else { return items }
+        let size = ByteCountFormatter.string(fromByteCount: Int64(imageBytes), countStyle: .file)
+        return "\(items) · \(size) of images"
     }
 }

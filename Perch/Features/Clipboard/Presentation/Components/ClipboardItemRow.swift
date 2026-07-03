@@ -30,7 +30,9 @@ struct ClipboardItemRow: View {
     private var lineLimit: Int { compact ? 1 : density.lineLimit }
     private var verticalPadding: CGFloat { compact ? 5 : density.verticalPadding }
     private var showsTime: Bool { !compact && density.showsTime }
-    private var kind: ClipboardKind { ClipboardKind.detect(item.text) }
+    private var kind: ClipboardKind {
+        item.content == .text ? ClipboardKind.detect(item.text) : .text   // smart types are text-only
+    }
 
     private var previewFont: Font {
         if case .code = kind { return .system(size: fontSize, design: .monospaced) }
@@ -43,9 +45,13 @@ struct ClipboardItemRow: View {
         }
     }
 
-    /// Collapse all whitespace/newlines so every row is one clean line.
+    /// One clean line: "N images / N files" for multi-file copies, else the collapsed text.
     private var preview: String {
-        item.text
+        if item.content == .files, let paths = item.filePaths, paths.count > 1 {
+            let noun = paths.allSatisfy(Thumbnailer.isImage) ? "images" : "files"
+            return "\(paths.count) \(noun)"
+        }
+        return item.text
             .components(separatedBy: .whitespacesAndNewlines)
             .filter { !$0.isEmpty }
             .joined(separator: " ")
@@ -114,13 +120,32 @@ struct ClipboardItemRow: View {
 
     @ViewBuilder
     private var sourceIcon: some View {
-        if let appIcon = AppIcon.forBundleID(item.sourceApp) {
-            Image(nsImage: appIcon).resizable().aspectRatio(contentMode: .fit)
-        } else {
-            Image(systemName: "doc.on.clipboard")
-                .font(.system(size: compact ? 11 : 13))
-                .foregroundStyle(.secondary)
+        switch item.content {
+        case .image:
+            if let name = item.imageFile {
+                FileThumbnail(path: ImageStore.path(name), size: iconSize)   // small cached thumbnail
+            } else {
+                fallbackIcon("photo")
+            }
+        case .files:
+            if let path = item.filePaths?.first {
+                FileThumbnail(path: path, size: iconSize)
+            } else {
+                fallbackIcon("doc")
+            }
+        case .text:
+            if let appIcon = AppIcon.forBundleID(item.sourceApp) {
+                Image(nsImage: appIcon).resizable().aspectRatio(contentMode: .fit)
+            } else {
+                fallbackIcon("doc.on.clipboard")
+            }
         }
+    }
+
+    private func fallbackIcon(_ symbol: String) -> some View {
+        Image(systemName: symbol)
+            .font(.system(size: compact ? 11 : 13))
+            .foregroundStyle(.secondary)
     }
 
     // MARK: - Trailing (hover actions, else pin + time)

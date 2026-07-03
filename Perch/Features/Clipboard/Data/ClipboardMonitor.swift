@@ -8,12 +8,14 @@
 
 import AppKit
 
-/// One captured copy: plain text (always) + source app + optional rich representation.
+/// One captured copy: text / image / files, + source app.
 struct CapturedCopy {
     let text: String
     let source: String?
-    let richData: Data?
-    let richType: String?
+    var richData: Data? = nil
+    var richType: String? = nil
+    var imageDatas: [Data]? = nil    // PNGs, when one or more images were copied together
+    var filePaths: [String]? = nil   // when files were copied
 }
 
 final class ClipboardMonitor {
@@ -49,10 +51,49 @@ final class ClipboardMonitor {
         guard pasteboard.changeCount != lastChangeCount else { return }
         lastChangeCount = pasteboard.changeCount
         if isSensitive { return }   // skip passwords / transient copies
-        guard let text = pasteboard.string(forType: .string), !text.isEmpty else { return }
         let source = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-        let rich = richContent()
-        onCopy?(CapturedCopy(text: text, source: source, richData: rich?.data, richType: rich?.type))
+
+        // 1) files (references — cheap, no data copied)
+        if let paths = filePaths(), !paths.isEmpty {
+            let names = paths.map { ($0 as NSString).lastPathComponent }.joined(separator: ", ")
+            onCopy?(CapturedCopy(text: names, source: source, filePaths: paths))
+            return
+        }
+        // 2) text
+        if let text = pasteboard.string(forType: .string), !text.isEmpty {
+            let rich = richContent()
+            onCopy?(CapturedCopy(text: text, source: source, richData: rich?.data, richType: rich?.type))
+            return
+        }
+        // 3) images (bytes we must keep ourselves) — one copy may carry several
+        let pngs = images()
+        if !pngs.isEmpty {
+            let label = pngs.count > 1 ? "\(pngs.count) images" : "Image"
+            onCopy?(CapturedCopy(text: label, source: source, imageDatas: pngs))
+        }
+    }
+
+    private func filePaths() -> [String]? {
+        let options: [NSPasteboard.ReadingOptionKey: Any] = [.urlReadingFileURLsOnly: true]
+        guard let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: options) as? [URL] else {
+            return nil
+        }
+        return urls.map(\.path)
+    }
+
+    /// PNG data for every copied image (a full-screen copy on two displays yields two).
+    /// Skips any image over the size cap.
+    private func images() -> [Data] {
+        guard let objects = pasteboard.readObjects(forClasses: [NSImage.self]) as? [NSImage] else {
+            return []
+        }
+        return objects.compactMap { image in
+            guard let tiff = image.tiffRepresentation,
+                  let rep = NSBitmapImageRep(data: tiff),
+                  let png = rep.representation(using: .png, properties: [:]),
+                  png.count <= 10_000_000 else { return nil }   // cap ~10 MB
+            return png
+        }
     }
 
     /// The richest formatted representation the copy offers (RTF → RTFD → HTML), if any.

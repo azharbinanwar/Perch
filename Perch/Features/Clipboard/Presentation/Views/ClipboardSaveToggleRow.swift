@@ -13,7 +13,6 @@ struct ClipboardSaveToggleRow: View {
     var body: some View {
         MenuToggleRow(
             title: "Save clipboard history",
-            subtitle: vm.isRecording ? "Recording copies" : "Paused — not recording",
             isOn: vm.isRecording,
             onToggle: vm.toggleRecording
         )
