@@ -17,9 +17,8 @@ import Foundation
 
 final class MouseCaptureManager {
     private var buttonMappings: [Int: MouseMapping] = [:]
-    private var keyClicks: [MouseTrigger: MouseAction] = [:]
+    private var keyClicks: [MouseTrigger: Action] = [:]
     private var gestures: [Int: MouseGesture] = [:]
-    private var tapsKeyboard = false
 
     private let moveThreshold: CGFloat = 30
     private let holdDelay: TimeInterval = 0.30
@@ -49,21 +48,20 @@ final class MouseCaptureManager {
             }
         }
         gestures = Dictionary(gestureList.map { ($0.button, $0) }, uniquingKeysWith: { _, last in last })
-        tapsKeyboard = !keyClicks.isEmpty
-        stop()
-        if !buttonMappings.isEmpty || !keyClicks.isEmpty || !gestures.isEmpty { start() }
+        // Dictionaries only; the live tap reads them on the next event. Tap lifecycle is start()/stop(),
+        // driven by the ViewModel's enabled state — so editing mappings never recreates the tap.
     }
 
     // MARK: - Tap
 
     @discardableResult
-    private func start() -> Bool {
+    func start() -> Bool {
         guard eventTap == nil, Permissions.isAccessibilityTrusted else { return false }
-        var types: [CGEventType] = [
+        // Always include keyDown so adding a keystroke-button never needs a tap recreate.
+        let types: [CGEventType] = [
             .leftMouseDown, .leftMouseUp, .rightMouseDown, .rightMouseUp,
-            .otherMouseDown, .otherMouseUp, .otherMouseDragged,
+            .otherMouseDown, .otherMouseUp, .otherMouseDragged, .keyDown,
         ]
-        if tapsKeyboard { types.append(.keyDown) }
         let mask = types.reduce(CGEventMask(0)) { $0 | (1 << $1.rawValue) }
 
         guard let tap = CGEvent.tapCreate(
@@ -205,7 +203,7 @@ final class MouseCaptureManager {
         return dy >= 0 ? .down : .up
     }
 
-    private func run(_ action: MouseAction) {
-        DispatchQueue.main.async { MouseActionRunner.run(action) }
+    private func run(_ action: Action) {
+        DispatchQueue.main.async { ActionRunner.run(action) }
     }
 }

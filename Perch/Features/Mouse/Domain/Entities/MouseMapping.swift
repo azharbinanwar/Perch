@@ -11,14 +11,14 @@ import Foundation
 struct MouseMapping: Identifiable, Codable, Equatable {
     let id: UUID
     var trigger: MouseTrigger
-    var action: MouseAction        // single click
-    var doubleAction: MouseAction
-    var holdAction: MouseAction
+    var action: Action        // single click
+    var doubleAction: Action
+    var holdAction: Action
 
     init(id: UUID = UUID(), trigger: MouseTrigger,
-         action: MouseAction = .disabled,
-         doubleAction: MouseAction = .disabled,
-         holdAction: MouseAction = .disabled) {
+         action: Action = .disabled,
+         doubleAction: Action = .disabled,
+         holdAction: Action = .disabled) {
         self.id = id
         self.trigger = trigger
         self.action = action
@@ -31,12 +31,12 @@ struct MouseMapping: Identifiable, Codable, Equatable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(UUID.self, forKey: .id)
         trigger = try c.decode(MouseTrigger.self, forKey: .trigger)
-        action = try c.decode(MouseAction.self, forKey: .action)
-        doubleAction = try c.decodeIfPresent(MouseAction.self, forKey: .doubleAction) ?? .disabled
-        holdAction = try c.decodeIfPresent(MouseAction.self, forKey: .holdAction) ?? .disabled
+        action = try c.decode(Action.self, forKey: .action)
+        doubleAction = try c.decodeIfPresent(Action.self, forKey: .doubleAction) ?? .disabled
+        holdAction = try c.decodeIfPresent(Action.self, forKey: .holdAction) ?? .disabled
     }
 
-    func action(for phase: ClickPhase) -> MouseAction {
+    func action(for phase: ClickPhase) -> Action {
         switch phase {
         case .single: return action
         case .double: return doubleAction
@@ -44,7 +44,7 @@ struct MouseMapping: Identifiable, Codable, Equatable {
         }
     }
 
-    mutating func setAction(_ newAction: MouseAction, for phase: ClickPhase) {
+    mutating func setAction(_ newAction: Action, for phase: ClickPhase) {
         switch phase {
         case .single: action = newAction
         case .double: doubleAction = newAction

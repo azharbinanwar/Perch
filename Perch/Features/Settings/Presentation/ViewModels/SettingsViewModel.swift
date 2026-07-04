@@ -14,6 +14,7 @@ final class SettingsViewModel {
         didSet {
             repository.save(settings)
             if settings.openAtLogin != oldValue.openAtLogin { applyLoginItem() }
+            if settings.showInDock != oldValue.showInDock { applyDockPolicy() }
         }
     }
 
@@ -55,6 +56,11 @@ final class SettingsViewModel {
         defaults.set(modifiers.rawValue, forKey: Keys.Defaults.hotKeyModifiers)
         defaults.set(label, forKey: Keys.Defaults.hotKeyLabel)
         NotificationCenter.default.post(name: .hotKeyChanged, object: nil)
+    }
+
+    /// Show or hide the Dock icon to match the saved preference (menu-bar only = .accessory).
+    func applyDockPolicy() {
+        NSApp.setActivationPolicy(settings.showInDock ? .regular : .accessory)
     }
 
     /// Register/unregister the app as a login item to match the saved preference.

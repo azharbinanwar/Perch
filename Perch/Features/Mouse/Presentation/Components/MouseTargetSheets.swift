@@ -37,9 +37,11 @@ struct KeystrokeCaptureSheet: View {
     }
 }
 
-/// Enter a URL or file/folder path for an "Open…" action.
+/// Enter a single line of target text (URL, file path, script, shortcut name) for an action.
 struct TextTargetSheet: View {
-    let isFile: Bool
+    let title: String
+    var placeholder: String = ""
+    var allowFilePicker: Bool = false
     let onSubmit: (String) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -47,11 +49,11 @@ struct TextTargetSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text(isFile ? "Open File or Folder" : "Open URL").font(.headline)
-            TextField(isFile ? "/Users/…/file" : "https://…", text: $text)
+            Text(title).font(.headline)
+            TextField(placeholder, text: $text)
                 .textFieldStyle(.roundedBorder)
             HStack {
-                if isFile {
+                if allowFilePicker {
                     Button("Choose…") { chooseFile() }
                 }
                 Spacer()
@@ -62,7 +64,7 @@ struct TextTargetSheet: View {
             }
         }
         .padding(20)
-        .frame(width: 380)
+        .frame(width: 420)
     }
 
     private func submit() {

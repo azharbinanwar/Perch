@@ -11,14 +11,14 @@ import Foundation
 struct MouseGesture: Identifiable, Codable, Equatable {
     let id: UUID
     var button: Int
-    var up: MouseAction
-    var down: MouseAction
-    var left: MouseAction
-    var right: MouseAction
+    var up: Action
+    var down: Action
+    var left: Action
+    var right: Action
 
     init(id: UUID = UUID(), button: Int,
-         up: MouseAction = .disabled, down: MouseAction = .disabled,
-         left: MouseAction = .disabled, right: MouseAction = .disabled) {
+         up: Action = .disabled, down: Action = .disabled,
+         left: Action = .disabled, right: Action = .disabled) {
         self.id = id
         self.button = button
         self.up = up
@@ -27,7 +27,7 @@ struct MouseGesture: Identifiable, Codable, Equatable {
         self.right = right
     }
 
-    func action(for direction: GestureDirection) -> MouseAction {
+    func action(for direction: GestureDirection) -> Action {
         switch direction {
         case .up:    return up
         case .down:  return down
@@ -36,7 +36,7 @@ struct MouseGesture: Identifiable, Codable, Equatable {
         }
     }
 
-    mutating func set(_ action: MouseAction, for direction: GestureDirection) {
+    mutating func set(_ action: Action, for direction: GestureDirection) {
         switch direction {
         case .up:    up = action
         case .down:  down = action

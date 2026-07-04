@@ -10,14 +10,14 @@ struct PerchApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        MenuBarExtra("Perch", systemImage: "doc.on.clipboard") {
+        MenuBarExtra("Perch", image: "perch") {
             MenuContentView(app: appDelegate)
                 .injecting(appDelegate)
         }
         .menuBarExtraStyle(.window)
 
         Window("Perch", id: "main") {
-            MainWindowView().injecting(appDelegate)
+            RootWindowView().injecting(appDelegate)
         }
         .windowResizability(.contentSize)
     }

@@ -16,7 +16,6 @@ struct SnippetsTabView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            Divider()
             if vm.snippets.isEmpty { emptyState } else { list }
         }
         .sheet(item: $editing) { snippet in
@@ -29,16 +28,13 @@ struct SnippetsTabView: View {
 
     private var header: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 1) {
-                Text("Snippets").font(.title2.bold())
-                Text("Saved clips you reuse — always available in the clipboard.")
-                    .font(.subheadline).foregroundStyle(.secondary)
-            }
+            PageHeader("Snippets", subtitle: "Saved clips you reuse — always available in the clipboard.")
             Spacer()
             Button { showingNew = true } label: { Label("New", systemImage: "plus") }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 20)
+        .padding(.top, 20)
+        .padding(.bottom, 12)
     }
 
     private var emptyState: some View {
@@ -54,8 +50,9 @@ struct SnippetsTabView: View {
 
     private var list: some View {
         ScrollView {
-            LazyVStack(spacing: 2) {
-                ForEach(vm.snippets) { snippet in
+            LazyVStack(spacing: 0) {
+                ForEach(Array(vm.snippets.enumerated()), id: \.element.id) { index, snippet in
+                    if index > 0 { Divider() }
                     row(snippet)
                 }
             }

@@ -2,8 +2,9 @@
 //  RemapTabView.swift
 //  Perch
 //
-//  Keys page: a general remapper. Each rule maps an input combo → an output combo, recorded
-//  by pressing the keys. Matches the app's grouped, native style.
+//  Keys page. Two sections: Key mappings (single key → action) and Shortcuts (combo → action).
+//  Per-app profiles. One "Add mapping" flow: record the key/combo, then set the output by
+//  recording a key *or* picking an action from the catalogue.
 //
 
 import SwiftUI
@@ -12,27 +13,41 @@ struct RemapTabView: View {
     @Environment(RemapViewModel.self) private var vm
     @State private var trusted = Permissions.isAccessibilityTrusted
     @State private var addingRule = false
+    @State private var addingProfile = false
+    @State private var picking = false               // action catalogue for the output
+    @State private var targetPrompt: ActionKind?     // picked action still needs a target
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                Text("Keys").font(.title2.bold())
+                HStack {
+                    PageHeader("Keys", subtitle: "Remap keys and shortcuts, app by app.")
+                    Spacer()
+                    Button { vm.clearDraft(); addingRule = true } label: { Label("Add mapping", systemImage: "plus") }
+                        .disabled(!vm.isEnabled)
+                }
                 if !trusted {
                     AccessibilityBanner(message: "Grant Accessibility so key remapping can work.")
                 }
-                mappingsGroup
+                keyboardGroup
+                shortcutsGroup
             }
             .padding(20)
         }
         .onAppear { trusted = Permissions.isAccessibilityTrusted }
         .sheet(isPresented: $addingRule, onDismiss: { vm.clearDraft() }) { captureSheet }
+        .sheet(isPresented: $addingProfile) {
+            AppPickerSheet { ids in ids.forEach { vm.addProfile(bundleID: $0) } }
+        }
     }
 
-    private var mappingsGroup: some View {
-        GroupBox("Remap keys") {
+    // MARK: - Enable + profile + modifier-swap note
+
+    private var keyboardGroup: some View {
+        GroupBox("Keyboard") {
             VStack(alignment: .leading, spacing: 12) {
                 SettingRow(title: "Enable remapping",
-                           subtitle: "Rewrites each input shortcut to its output. Terminal is excluded so Ctrl+C still interrupts.") {
+                           subtitle: "Rewrites your keys and shortcuts. Applies to all keyboards.") {
                     Toggle("", isOn: Binding(get: { vm.isEnabled }, set: { _ in vm.toggleEnabled() }))
                         .toggleStyle(.switch).labelsHidden()
                 }
@@ -40,26 +55,53 @@ struct RemapTabView: View {
                     Label("Needs Accessibility — grant it in General.", systemImage: "exclamationmark.triangle.fill")
                         .font(.system(size: 12)).foregroundStyle(.orange)
                 }
-                Divider()
+            }
+            .padding(6)
+            .opacity(vm.isEnabled ? 1 : 0.5)
+        }
+    }
 
+    private var profileStrip: some View {
+        AppProfileStrip(
+            items: [AppProfileStrip.Item(bundleID: nil, name: "All apps")]
+                + vm.appProfiles.map { AppProfileStrip.Item(bundleID: $0.appBundleID, name: $0.displayName) },
+            selectedBundleID: vm.editingBundleID,
+            subtitle: vm.isEditingDefault
+                ? "Applies to every app without its own profile."
+                : "Active only while \(vm.editingProfileName) is frontmost.",
+            onSelect: { vm.selectProfile($0) },
+            onAdd: { addingProfile = true },
+            onRemove: { bundleID in vm.selectProfile(bundleID); vm.removeEditingProfile() }
+        )
+    }
+
+    // MARK: - Key mappings / Shortcuts
+
+    private var shortcutsGroup: some View {
+        GroupBox("Shortcuts") {
+            VStack(alignment: .leading, spacing: 10) {
+                profileStrip
+                Divider()
+                ruleList(vm.rules, empty: "No mappings yet — add one with “Add mapping”.")
+            }
+            .padding(6)
+            .opacity(vm.isEnabled ? 1 : 0.5)
+        }
+    }
+
+    private func ruleList(_ rules: [RemapRule], empty: String) -> some View {
+        Group {
+            if rules.isEmpty {
+                Text(empty).font(.system(size: 12)).foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .center).padding(.vertical, 12)
+            } else {
                 VStack(spacing: 0) {
-                    ForEach(Array(vm.rules.enumerated()), id: \.element.id) { index, rule in
+                    ForEach(Array(rules.enumerated()), id: \.element.id) { index, rule in
                         if index > 0 { Divider() }
                         ruleRow(rule)
                     }
                 }
-                .cardBorder()
-
-                HStack {
-                    Spacer()
-                    Button {
-                        vm.clearDraft()
-                        addingRule = true
-                    } label: { Label("Add mapping", systemImage: "plus") }
-                }
             }
-            .padding(6)
-            .opacity(vm.isEnabled ? 1 : 0.5)
         }
     }
 
@@ -67,62 +109,162 @@ struct RemapTabView: View {
         HStack(spacing: 10) {
             Toggle("", isOn: Binding(get: { rule.isEnabled }, set: { _ in vm.toggleRule(rule) }))
                 .toggleStyle(.switch).labelsHidden().scaleEffect(0.85)
-            comboChip(rule.input.displayName)
-            Image(systemName: "arrow.right").font(.system(size: 11)).foregroundStyle(.secondary)
-            comboChip(rule.output.displayName)
+            Button { vm.beginEdit(rule); addingRule = true } label: {
+                HStack(spacing: 10) {
+                    comboChip(rule.input.displayName)
+                    Image(systemName: "arrow.right").font(.system(size: 11)).foregroundStyle(.secondary)
+                    comboChip(rule.output.displayLabel)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).help("Edit this mapping")
             Spacer()
             Button(role: .destructive) { vm.removeRule(rule) } label: {
                 Image(systemName: "trash").font(.system(size: 12)).foregroundStyle(.secondary)
             }
             .buttonStyle(.borderless)
         }
-        .padding(.horizontal, 10).padding(.vertical, 8)
+        .padding(.horizontal, 6).padding(.vertical, 6)
     }
 
-    // MARK: - Add-mapping sheet
+    // MARK: - Add-mapping sheet (record the key, then record-or-pick the output)
 
     private var captureSheet: some View {
-        VStack(spacing: 18) {
-            Text("Add a key mapping").font(.headline)
-            Text("Record the shortcut to change, then what it should become.")
-                .font(.system(size: 12)).foregroundStyle(.secondary).multilineTextAlignment(.center)
-
-            HStack(spacing: 14) {
-                captureField(title: "From", combo: vm.draftInput, active: vm.recording == .input) { vm.record(.input) }
-                Image(systemName: "arrow.right").foregroundStyle(.secondary)
-                captureField(title: "To", combo: vm.draftOutput, active: vm.recording == .output) { vm.record(.output) }
+        let editing = vm.editingRuleID != nil
+        return VStack(spacing: 0) {
+            // Header (matches the app's other dialogs)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(editing ? "Edit mapping" : "Add mapping").font(.headline)
+                Text("Press a key or shortcut, then choose what it does.")
+                    .font(.system(size: 12)).foregroundStyle(.secondary)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20).padding(.top, 18).padding(.bottom, 14)
 
-            if let input = vm.draftInput, vm.draftOutput != nil, vm.rules.contains(where: { $0.input == input }) {
-                Text("\(input.displayName) is already mapped.")
-                    .font(.system(size: 11)).foregroundStyle(.orange)
+            Divider()
+
+            VStack(alignment: .leading, spacing: 12) {
+                fromColumn
+                Image(systemName: "arrow.down").font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.tertiary).frame(maxWidth: .infinity, alignment: .center)
+                toColumn
+                if let input = vm.draftInput, vm.draftOutput != nil,
+                   vm.rules.contains(where: { $0.input == input && $0.id != vm.editingRuleID }) {
+                    Label("\(input.displayName) is already mapped.", systemImage: "exclamationmark.triangle.fill")
+                        .font(.system(size: 11)).foregroundStyle(.orange)
+                }
             }
+            .padding(20)
 
-            HStack {
-                Button("Cancel") { addingRule = false }.keyboardShortcut(.cancelAction)
+            Divider()
+
+            HStack(spacing: 8) {
                 Spacer()
-                Button("Add") { vm.addDraft(); addingRule = false }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(!vm.canAddDraft)
+                Button("Cancel") { addingRule = false }.keyboardShortcut(.cancelAction)
+                Button(editing ? "Save" : "Add") { vm.addDraft(); addingRule = false }
+                    .keyboardShortcut(.defaultAction).buttonStyle(.borderedProminent).disabled(!vm.canAddDraft)
+            }
+            .padding(16)
+        }
+        .frame(width: 540)
+        .onAppear { if vm.editingRuleID == nil { vm.clearDraft(); vm.record(.input) } }   // add: auto-record · edit: keep prefill
+        .sheet(isPresented: $picking) {
+            ActionPicker(excluding: [.passThrough]) { kind in
+                if kind.target == .none { vm.setOutputAction(Action(kind: kind)) }
+                else { targetPrompt = kind }
             }
         }
-        .padding(24)
-        .frame(width: 420)
+        .sheet(item: $targetPrompt) { targetSheet($0) }
     }
 
-    private func captureField(title: String, combo: KeyCombo?, active: Bool, record: @escaping () -> Void) -> some View {
-        VStack(spacing: 6) {
-            Text(title.uppercased()).font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary)
-            Button(action: record) {
-                Text(active ? "Press keys…" : (combo?.displayName ?? "Record"))
-                    .font(.system(size: 15, weight: .medium))
-                    .frame(width: 130, height: 44)
-                    .background(RoundedRectangle(cornerRadius: 8)
-                        .fill(active ? Color.accentColor.opacity(0.15) : Color.gray.opacity(0.12)))
-                    .overlay(RoundedRectangle(cornerRadius: 8)
-                        .strokeBorder(active ? Color.accentColor : Color.gray.opacity(0.4), lineWidth: active ? 1.5 : 1))
+    // FROM row: click the full-width box to record the key/shortcut you press (click again to cancel).
+    private var fromColumn: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            fieldLabel("FROM")
+            Button { toggleRecord(.input) } label: {
+                fieldBox(text: vm.recording == .input ? "Recording — press keys now" : (vm.draftInput?.displayName ?? "Click to record"),
+                         active: vm.recording == .input, placeholder: vm.draftInput == nil && vm.recording != .input)
             }
             .buttonStyle(.plain)
+            Text(vm.recording == .input ? "Press the key or shortcut you want to change."
+                                        : "Click the box, then press a key or shortcut.")
+                .font(.system(size: 10.5)).foregroundStyle(.tertiary)
+        }
+    }
+
+    // TO row: a full-width record box + a compact icon-only "Pick action" button beside it.
+    private var toColumn: some View {
+        let active = vm.recording == .output
+        return VStack(alignment: .leading, spacing: 7) {
+            fieldLabel("TO")
+            HStack(spacing: 8) {
+                Button { toggleRecord(.output) } label: {
+                    fieldBox(text: active ? "Recording — press keys now" : (vm.draftOutput?.displayLabel ?? "Click to record a key"),
+                             active: active, placeholder: vm.draftOutput == nil && !active)
+                }
+                .buttonStyle(.plain)
+                Button { vm.cancelRecording(); picking = true } label: {   // stop recording, then pick
+                    Image(systemName: "square.grid.2x2").font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 52, height: 52)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Color.gray.opacity(0.10)))
+                        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.gray.opacity(0.35), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .help("Pick a ready-made action")
+            }
+            Text(active ? "Press the key or shortcut it should become."
+                        : "Click the box to record a key, or use the grid to pick an action.")
+                .font(.system(size: 10.5)).foregroundStyle(.tertiary)
+        }
+    }
+
+    /// Click a box to start recording; click it again (while recording) to cancel.
+    private func toggleRecord(_ field: RemapField) {
+        if vm.recording == field { vm.cancelRecording() } else { vm.record(field) }
+    }
+
+    private func fieldLabel(_ text: String) -> some View {
+        Text(text).font(.system(size: 10, weight: .semibold)).tracking(0.6).foregroundStyle(.tertiary)
+    }
+
+    private func fieldBox(text: String, active: Bool, placeholder: Bool = false) -> some View {
+        Text(text)
+            .font(.system(size: 15, weight: .medium))
+            .foregroundStyle(placeholder ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.primary))
+            .lineLimit(1).minimumScaleFactor(0.7)
+            .frame(maxWidth: .infinity).frame(height: 52).padding(.horizontal, 10)
+            .background(RoundedRectangle(cornerRadius: 10)
+                .fill(active ? Color.accentColor.opacity(0.12) : Color.gray.opacity(0.10)))
+            .overlay(RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(active ? Color.accentColor : Color.gray.opacity(0.35), lineWidth: active ? 1.5 : 1))
+            .overlay(alignment: .topTrailing) {
+                if active {
+                    Image(systemName: "circle.fill").font(.system(size: 8))
+                        .foregroundStyle(.green).symbolEffect(.pulse).padding(8)
+                }
+            }
+    }
+
+    @ViewBuilder
+    private func targetSheet(_ kind: ActionKind) -> some View {
+        switch kind.target {
+        case .app:
+            AppPickerSheet(allowsMultipleSelection: false) { ids in if let b = ids.first { vm.setOutputAction(Action(kind: .openApp, target: b)) } }
+        case .keystroke:
+            KeystrokeCaptureSheet { code, mods in
+                vm.setOutputAction(Action(kind: .customKeystroke, keyCode: Int(code), modifiers: mods))
+            }
+        case .url:
+            TextTargetSheet(title: "Open URL", placeholder: "https://…") { vm.setOutputAction(Action(kind: .openURL, target: $0)) }
+        case .file:
+            TextTargetSheet(title: "Open File or Folder", placeholder: "/Users/…/file", allowFilePicker: true) { vm.setOutputAction(Action(kind: .openFile, target: $0)) }
+        case .shellScript:
+            PresetPickerSheet(title: "Run Shell Script", customPlaceholder: "echo hello", load: { ActionPresets.shell }) { vm.setOutputAction(Action(kind: .runShell, target: $0)) }
+        case .appleScript:
+            PresetPickerSheet(title: "Run AppleScript", customPlaceholder: "display dialog \"Hi\"", load: { ActionPresets.appleScript }) { vm.setOutputAction(Action(kind: .runAppleScript, target: $0)) }
+        default:
+            EmptyView()
         }
     }
 
@@ -131,12 +273,5 @@ struct RemapTabView: View {
             .font(.system(size: 13, weight: .medium, design: .rounded))
             .padding(.horizontal, 10).padding(.vertical, 4)
             .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 6))
-    }
-}
-
-private extension View {
-    func cardBorder() -> some View {
-        background(RoundedRectangle(cornerRadius: 8).fill(.quaternary.opacity(0.2)))
-            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.quaternary.opacity(0.5)))
     }
 }

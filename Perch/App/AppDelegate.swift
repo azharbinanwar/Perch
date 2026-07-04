@@ -95,7 +95,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        NSApp.setActivationPolicy(.accessory)   // menu-bar only, no dock icon
+        settingsVM.applyDockPolicy()   // menu-bar only, or a Dock icon if the user chose it
         clipboardVM.start()
         scrollVM.apply()          // re-enable saved scroll reversal
         mouseVM.apply()           // re-enable saved button mappings
@@ -125,6 +125,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             forName: .openClipboardPopup, object: nil, queue: .main
         ) { [weak self] _ in
             self?.clipboardPanel.show()
+        }
+
+        // First run → show onboarding; otherwise honor "Open window at launch".
+        let onboarded = UserDefaults.standard.bool(forKey: "perch.onboarded")
+        if !onboarded || settingsVM.settings.openWindowAtLaunch {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                self?.openMainWindow()
+            }
         }
     }
 

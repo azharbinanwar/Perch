@@ -20,9 +20,11 @@ enum Thumbnailer {
     private static let imageExtensions: Set<String> =
         ["png", "jpg", "jpeg", "gif", "heic", "heif", "webp", "tiff", "tif", "bmp", "icns"]
 
-    /// Whether a file path points at an image (by extension, then type).
+    /// Whether a file path points at an image ImageIO can decode directly (rows use this to pick
+    /// the fast bitmap path). SVG is excluded — ImageIO can't rasterize it, so it goes to Quick Look.
     static func isImage(_ path: String) -> Bool {
         let ext = (path as NSString).pathExtension.lowercased()
+        if ext == "svg" { return false }
         if imageExtensions.contains(ext) { return true }
         guard let type = UTType(filenameExtension: ext) else { return false }
         return type.conforms(to: .image)

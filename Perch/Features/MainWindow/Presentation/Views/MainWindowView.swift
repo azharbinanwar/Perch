@@ -2,7 +2,7 @@
 //  MainWindowView.swift
 //  Perch
 //
-//  The customize hub — sidebar with one page per feature + General.
+//  The customize hub — a native sidebar with one page per feature + General.
 //
 
 import SwiftUI
@@ -15,7 +15,8 @@ struct MainWindowView: View {
             List(SidebarItem.allCases, selection: $selection) { item in
                 Label(item.title, systemImage: item.icon).tag(item)
             }
-            .navigationSplitViewColumnWidth(180)
+            .navigationSplitViewColumnWidth(190)
+            .toolbar(removing: .sidebarToggle)   // no collapse control — always-visible native sidebar
         } detail: {
             switch selection {
             case .clipboard: ClipboardTabView()

@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct AppPickerSheet: View {
+    var allowsMultipleSelection = true   // false = tap an app to pick it and close (e.g. "Open App")
     let onAdd: ([String]) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -23,12 +24,12 @@ struct AppPickerSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Add Apps").font(.headline)
+                Text(allowsMultipleSelection ? "Add Apps" : "Choose App").font(.headline)
                 Spacer()
             }
             .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 8)
 
-            SearchField(placeholder: "Search apps", text: $search)
+            SearchField(placeholder: "Search apps", text: $search, autofocus: true)
                 .padding(.horizontal, 16).padding(.bottom, 8)
 
             Divider()
@@ -43,18 +44,20 @@ struct AppPickerSheet: View {
             Divider()
 
             HStack {
-                Button("Cancel") { dismiss() }
                 Spacer()
-                Button(selected.isEmpty ? "Add" : "Add \(selected.count)") {
-                    onAdd(Array(selected))
-                    dismiss()
+                Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
+                if allowsMultipleSelection {
+                    Button(selected.isEmpty ? "Add" : "Add \(selected.count)") {
+                        onAdd(Array(selected))
+                        dismiss()
+                    }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(selected.isEmpty)
                 }
-                .keyboardShortcut(.defaultAction)
-                .disabled(selected.isEmpty)
             }
             .padding(12)
         }
-        .frame(width: 360, height: 440)
+        .frame(width: 540, height: 480)
     }
 
     private func row(_ app: AppCatalog.App) -> some View {
@@ -63,8 +66,10 @@ struct AppPickerSheet: View {
             Image(nsImage: app.icon).resizable().frame(width: 28, height: 28)
             Text(app.name).font(.system(size: 13))
             Spacer()
-            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+            if allowsMultipleSelection {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+            }
         }
         .padding(.vertical, 4)
         .padding(.horizontal, 8)
@@ -72,7 +77,11 @@ struct AppPickerSheet: View {
         .clipShape(RoundedRectangle(cornerRadius: 6))
         .contentShape(Rectangle())
         .onTapGesture {
-            if isSelected { selected.remove(app.id) } else { selected.insert(app.id) }
+            if allowsMultipleSelection {
+                if isSelected { selected.remove(app.id) } else { selected.insert(app.id) }
+            } else {
+                onAdd([app.id]); dismiss()   // single-select: pick and close immediately
+            }
         }
     }
 }

@@ -1,17 +1,17 @@
 //
-//  MouseActionRunner.swift
+//  ActionRunner.swift
 //  Perch
 //
-//  Performs a MouseAction: most are a synthesized keyboard shortcut; some launch an app/URL,
+//  Performs a Action: most are a synthesized keyboard shortcut; some launch an app/URL,
 //  fire a media key, or hand off to Perch. Premium/automation kinds are no-ops for now.
 //
 
 import AppKit
 import CoreGraphics
 
-enum MouseActionRunner {
+enum ActionRunner {
 
-    static func run(_ action: MouseAction) {
+    static func run(_ action: Action) {
         switch action.kind {
         case .disabled, .passThrough:
             return
@@ -24,6 +24,11 @@ enum MouseActionRunner {
         case .openApp:   openApp(action.target)
         case .openFile:  if let p = action.target { NSWorkspace.shared.open(URL(fileURLWithPath: p)) }
         case .openURL:   if let s = action.target, let url = URL(string: s) { NSWorkspace.shared.open(url) }
+
+        // App control — act on the front app directly (reliable, no dialog, no held-modifier bleed).
+        case .quitApp:   frontApp()?.terminate()
+        case .hideApp:   frontApp()?.hide()
+        case .forceQuit: frontApp()?.forceTerminate()
 
         case .openClipboard:
             NotificationCenter.default.post(name: .openClipboardPopup, object: nil)
@@ -49,39 +54,11 @@ enum MouseActionRunner {
         case .brightnessUp:   mediaKey(2)
         case .brightnessDown: mediaKey(3)
 
-        case .runShortcut, .runAppleScript, .runShell, .macro:
-            return   // premium — not wired yet
+        case .runAppleScript: if let src = action.target { runAppleScript(src) }
+        case .runShell:       if let cmd = action.target { runShell(cmd) }
 
         default:
-            if let (code, flags) = Self.keystroke(for: action.kind) { press(code, flags: flags) }
-        }
-    }
-
-    // MARK: - Keyboard shortcut table (the bulk of the catalogue)
-
-    private static func keystroke(for kind: MouseActionKind) -> (CGKeyCode, CGEventFlags)? {
-        switch kind {
-        case .copy:            return (8,  .maskCommand)
-        case .cut:             return (7,  .maskCommand)
-        case .paste:           return (9,  .maskCommand)
-        case .pastePlain:      return (9,  [.maskCommand, .maskShift, .maskAlternate])
-        case .undo:            return (6,  .maskCommand)
-        case .redo:            return (6,  [.maskCommand, .maskShift])
-        case .selectAll:       return (0,  .maskCommand)
-        case .deleteKey:       return (51, [])
-        case .back:            return (33, .maskCommand)   // ⌘[
-        case .forward:         return (30, .maskCommand)   // ⌘]
-        case .appExpose:       return (125, .maskControl)  // ⌃↓
-        case .spotlight:       return (49, .maskCommand)   // ⌘Space
-        case .prevSpace:       return (123, .maskControl)  // ⌃←
-        case .nextSpace:       return (124, .maskControl)  // ⌃→
-        case .screenshotArea:  return (21, [.maskCommand, .maskShift])  // ⌘⇧4
-        case .screenshotFull:  return (20, [.maskCommand, .maskShift])  // ⌘⇧3
-        case .screenshotTool:  return (23, [.maskCommand, .maskShift])  // ⌘⇧5
-        case .minimizeWindow:  return (46, .maskCommand)   // ⌘M
-        case .closeWindow:     return (13, .maskCommand)   // ⌘W
-        case .lockScreen:      return (12, [.maskCommand, .maskControl])   // ⌃⌘Q
-        default:               return nil
+            if let s = action.kind.shortcut { press(s.code, flags: s.flags) }
         }
     }
 
@@ -111,6 +88,29 @@ enum MouseActionRunner {
                 event?.post(tap: .cgSessionEventTap)
             }
         }
+    }
+
+    // MARK: - Automation
+
+    private static func runShell(_ command: String) {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/bin/sh")
+        p.arguments = ["-c", command]
+        try? p.run()
+    }
+
+    private static func runAppleScript(_ source: String) {
+        // Via osascript (separate process) so `display dialog` etc. actually show and don't block us.
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        p.arguments = ["-e", source]
+        try? p.run()
+    }
+
+    /// The frontmost app, unless it's Perch itself — never quit/hide ourselves.
+    private static func frontApp() -> NSRunningApplication? {
+        let app = NSWorkspace.shared.frontmostApplication
+        return app?.bundleIdentifier == Bundle.main.bundleIdentifier ? nil : app
     }
 
     private static func openApp(_ bundleID: String?) {

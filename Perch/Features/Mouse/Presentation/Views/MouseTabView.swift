@@ -46,104 +46,28 @@ struct MouseTabView: View {
             AppPickerSheet { ids in ids.forEach { mouse.addProfile(bundleID: $0) } }
         }
         .sheet(item: $clickPick) { pick in
-            MouseActionPicker { kind in pickClick(kind, trigger: pick.trigger, phase: pick.phase) }
+            ActionPicker { kind in pickClick(kind, trigger: pick.trigger, phase: pick.phase) }
         }
         .sheet(item: $gesturePick) { pick in
-            MouseActionPicker { kind in mouse.setGestureAction(MouseAction(kind: kind), for: pick.button, direction: pick.direction) }
+            ActionPicker { kind in mouse.setGestureAction(Action(kind: kind), for: pick.button, direction: pick.direction) }
         }
         .sheet(item: $targetPrompt) { targetSheet($0) }
     }
 
-    // MARK: - Per-app profile (horizontal app tiles)
+    // MARK: - Per-app profile (shared component)
 
     private var profileStrip: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Per-app profile").font(.system(size: 12.5, weight: .medium))
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    defaultTile
-                    ForEach(mouse.appProfiles) { appTile($0) }
-                    addTile
-                }
-                .padding(.vertical, 2)
-            }
-            Text(mouse.isEditingDefault
-                 ? "Applies to every app without its own profile."
-                 : "Active only while \(mouse.editingProfileName) is frontmost.")
-                .font(.system(size: 11)).foregroundStyle(.secondary)
-        }
-    }
-
-    private var defaultTile: some View {
-        profileTile(label: "All apps", selected: mouse.isEditingDefault, action: { mouse.selectProfile(nil) }) {
-            RoundedRectangle(cornerRadius: 9)
-                .fill(LinearGradient(colors: [.blue, .indigo], startPoint: .topLeading, endPoint: .bottomTrailing))
-                .frame(width: 38, height: 38)
-                .overlay(Image(systemName: "square.grid.2x2.fill").font(.system(size: 15)).foregroundStyle(.white))
-        }
-    }
-
-    private func appTile(_ p: MouseProfile) -> some View {
-        profileTile(label: p.displayName, selected: mouse.editingBundleID == p.appBundleID,
-                    action: { mouse.selectProfile(p.appBundleID) }) {
-            appIcon(p.appBundleID)
-        }
-        .overlay(alignment: .topTrailing) {
-            if hoveredProfile == p.appBundleID {
-                Button { removeProfile(p) } label: {
-                    Image(systemName: "xmark.circle.fill").font(.system(size: 14))
-                        .symbolRenderingMode(.palette).foregroundStyle(.white, Color.black.opacity(0.55))
-                }
-                .buttonStyle(.plain)
-                .offset(x: -8, y: -2)
-            }
-        }
-        .onHover { hovering in hoveredProfile = hovering ? p.appBundleID : (hoveredProfile == p.appBundleID ? nil : hoveredProfile) }
-    }
-
-    private func removeProfile(_ p: MouseProfile) {
-        mouse.selectProfile(p.appBundleID)
-        mouse.removeEditingProfile()
-        hoveredProfile = nil
-    }
-
-    private var addTile: some View {
-        Button { addingProfile = true } label: {
-            VStack(spacing: 5) {
-                RoundedRectangle(cornerRadius: 9)
-                    .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [4]))
-                    .foregroundStyle(.secondary).frame(width: 38, height: 38)
-                    .overlay(Image(systemName: "plus").font(.system(size: 15)).foregroundStyle(.secondary))
-                Text("Add app").font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1)
-            }
-            .frame(width: 62)
-        }
-        .buttonStyle(.plain)
-    }
-
-    @ViewBuilder
-    private func appIcon(_ bundleID: String?) -> some View {
-        if let icon = AppIcon.forBundleID(bundleID) {
-            Image(nsImage: icon).resizable().frame(width: 38, height: 38)
-        } else {
-            RoundedRectangle(cornerRadius: 9).fill(.quaternary).frame(width: 38, height: 38)
-                .overlay(Image(systemName: "app.dashed").foregroundStyle(.secondary))
-        }
-    }
-
-    private func profileTile<Icon: View>(label: String, selected: Bool, action: @escaping () -> Void,
-                                         @ViewBuilder icon: () -> Icon) -> some View {
-        Button(action: action) {
-            VStack(spacing: 5) {
-                icon()
-                    .clipShape(RoundedRectangle(cornerRadius: 9))
-                    .overlay(RoundedRectangle(cornerRadius: 9).stroke(selected ? Color.accentColor : Color.clear, lineWidth: 2))
-                Text(label).font(.system(size: 10, weight: selected ? .semibold : .regular))
-                    .foregroundStyle(selected ? Color.accentColor : .secondary).lineLimit(1)
-            }
-            .frame(width: 62)
-        }
-        .buttonStyle(.plain)
+        AppProfileStrip(
+            items: [AppProfileStrip.Item(bundleID: nil, name: "All apps")]
+                + mouse.appProfiles.map { AppProfileStrip.Item(bundleID: $0.appBundleID, name: $0.displayName) },
+            selectedBundleID: mouse.editingBundleID,
+            subtitle: mouse.isEditingDefault
+                ? "Applies to every app without its own profile."
+                : "Active only while \(mouse.editingProfileName) is frontmost.",
+            onSelect: { mouse.selectProfile($0) },
+            onAdd: { addingProfile = true },
+            onRemove: { bundleID in mouse.selectProfile(bundleID); mouse.removeEditingProfile() }
+        )
     }
 
     // MARK: - Scroll / Pointer / Reliability
@@ -367,7 +291,7 @@ struct MouseTabView: View {
 
     // Clean detail row: name on the left, current action on the right, a chevron. When unset,
     // a `fallback` (the button's predefined default, e.g. Back/Forward) shows tagged "default".
-    private func panelRow(_ title: String, action: MouseAction, fallback: String? = nil,
+    private func panelRow(_ title: String, action: Action, fallback: String? = nil,
                           onTap: @escaping () -> Void) -> some View {
         let off = action.kind == .disabled
         let value = off ? (fallback ?? "—") : action.displayLabel
@@ -512,9 +436,9 @@ struct MouseTabView: View {
         return ClickPhase.allCases
     }
 
-    private func pickClick(_ kind: MouseActionKind, trigger: MouseTrigger, phase: ClickPhase) {
+    private func pickClick(_ kind: ActionKind, trigger: MouseTrigger, phase: ClickPhase) {
         if kind.target == .none {
-            mouse.setAction(MouseAction(kind: kind), for: trigger, phase: phase)
+            mouse.setAction(Action(kind: kind), for: trigger, phase: phase)
         } else {
             targetPrompt = MappingTarget(trigger: trigger, phase: phase, kind: kind)
         }
@@ -524,20 +448,23 @@ struct MouseTabView: View {
     private func targetSheet(_ prompt: MappingTarget) -> some View {
         switch prompt.kind.target {
         case .app:
-            AppPickerSheet { ids in
+            AppPickerSheet(allowsMultipleSelection: false) { ids in
                 if let bundle = ids.first {
-                    mouse.setAction(MouseAction(kind: .openApp, target: bundle), for: prompt.trigger, phase: prompt.phase)
+                    mouse.setAction(Action(kind: .openApp, target: bundle), for: prompt.trigger, phase: prompt.phase)
                 }
             }
         case .keystroke:
             KeystrokeCaptureSheet { code, mods in
-                mouse.setAction(MouseAction(kind: .customKeystroke, keyCode: Int(code), modifiers: mods), for: prompt.trigger, phase: prompt.phase)
+                mouse.setAction(Action(kind: .customKeystroke, keyCode: Int(code), modifiers: mods), for: prompt.trigger, phase: prompt.phase)
             }
-        case .url, .file:
-            TextTargetSheet(isFile: prompt.kind.target == .file) { text in
-                let kind: MouseActionKind = prompt.kind.target == .file ? .openFile : .openURL
-                mouse.setAction(MouseAction(kind: kind, target: text), for: prompt.trigger, phase: prompt.phase)
-            }
+        case .url:
+            TextTargetSheet(title: "Open URL", placeholder: "https://…") { mouse.setAction(Action(kind: .openURL, target: $0), for: prompt.trigger, phase: prompt.phase) }
+        case .file:
+            TextTargetSheet(title: "Open File or Folder", placeholder: "/Users/…/file", allowFilePicker: true) { mouse.setAction(Action(kind: .openFile, target: $0), for: prompt.trigger, phase: prompt.phase) }
+        case .shellScript:
+            PresetPickerSheet(title: "Run Shell Script", customPlaceholder: "echo hello", load: { ActionPresets.shell }) { mouse.setAction(Action(kind: .runShell, target: $0), for: prompt.trigger, phase: prompt.phase) }
+        case .appleScript:
+            PresetPickerSheet(title: "Run AppleScript", customPlaceholder: "display dialog \"Hi\"", load: { ActionPresets.appleScript }) { mouse.setAction(Action(kind: .runAppleScript, target: $0), for: prompt.trigger, phase: prompt.phase) }
         default:
             EmptyView()
         }
@@ -553,4 +480,4 @@ private extension View {
 
 private struct ClickPick: Identifiable { let id = UUID(); let trigger: MouseTrigger; let phase: ClickPhase }
 private struct GesturePick: Identifiable { let id = UUID(); let button: Int; let direction: GestureDirection }
-private struct MappingTarget: Identifiable { let id = UUID(); let trigger: MouseTrigger; let phase: ClickPhase; let kind: MouseActionKind }
+private struct MappingTarget: Identifiable { let id = UUID(); let trigger: MouseTrigger; let phase: ClickPhase; let kind: ActionKind }

@@ -37,7 +37,8 @@ enum Keys {
         static let mouseDebounceMs  = "dev.perch.mouse.debounce.ms.v1"
         static let mouseGestures    = "dev.perch.mouse.gestures.v1"    // hold-and-move gestures (legacy/global)
         static let mouseProfiles    = "dev.perch.mouse.profiles.v1"    // per-app mappings + gestures
-        static let remapRules       = "dev.perch.remap.rules.v2"   // v2: general input→output combos
+        static let remapRules       = "dev.perch.remap.rules.v2"   // v2: general input→output combos (legacy/migration)
+        static let remapProfiles    = "dev.perch.remap.profiles.v1"  // per-app rule sets
         static let remapEnabled     = "dev.perch.remap.enabled.v1"
         static let appSettings      = "dev.perch.settings.v1"
         static let hotKeyCode       = "dev.perch.hotkey.code.v1"

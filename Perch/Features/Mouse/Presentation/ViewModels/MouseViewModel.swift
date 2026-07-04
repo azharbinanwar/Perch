@@ -138,6 +138,7 @@ final class MouseViewModel {
         let active = profiles.first { $0.appBundleID == activeBundleID } ?? defaultProfile
         capture.apply(mappings: isEnabled ? active.mappings : [],
                       gestures: isEnabled ? active.gestures : [])
+        if isEnabled { capture.start() }   // idempotent; keeps the tap alive & retries if permission was just granted
     }
 
     private func registerActivationObserver() {
@@ -159,7 +160,7 @@ final class MouseViewModel {
 
     // MARK: - Gestures (of the editing profile)
 
-    func setGestureAction(_ action: MouseAction, direction: GestureDirection, for id: UUID) {
+    func setGestureAction(_ action: Action, direction: GestureDirection, for id: UUID) {
         mutateEditing { p in
             guard let i = p.gestures.firstIndex(where: { $0.id == id }) else { return }
             p.gestures[i].set(action, for: direction)
@@ -187,7 +188,8 @@ final class MouseViewModel {
     func setEnabled(_ on: Bool) {
         isEnabled = on
         defaults.set(on, forKey: Keys.Defaults.mouseEnabled)
-        applyActive()
+        if on, !Permissions.isAccessibilityTrusted { Permissions.requestAccessibility() }
+        applyActive()          // starts/keeps the tap alive when on; empties mappings (passthrough) when off
         if !on { stopScan() }
     }
 
@@ -252,7 +254,7 @@ final class MouseViewModel {
 
     // MARK: - Mappings (of the editing profile)
 
-    func setAction(_ action: MouseAction, phase: ClickPhase, for id: UUID) {
+    func setAction(_ action: Action, phase: ClickPhase, for id: UUID) {
         mutateEditing { p in
             guard let i = p.mappings.firstIndex(where: { $0.id == id }) else { return }
             p.mappings[i].setAction(action, for: phase)
@@ -269,11 +271,11 @@ final class MouseViewModel {
         mappings.first { $0.trigger == trigger }
     }
 
-    func action(for trigger: MouseTrigger, phase: ClickPhase) -> MouseAction {
+    func action(for trigger: MouseTrigger, phase: ClickPhase) -> Action {
         mapping(for: trigger)?.action(for: phase) ?? .disabled
     }
 
-    func setAction(_ action: MouseAction, for trigger: MouseTrigger, phase: ClickPhase) {
+    func setAction(_ action: Action, for trigger: MouseTrigger, phase: ClickPhase) {
         mutateEditing { p in
             if let i = p.mappings.firstIndex(where: { $0.trigger == trigger }) {
                 p.mappings[i].setAction(action, for: phase)
@@ -285,11 +287,11 @@ final class MouseViewModel {
         }
     }
 
-    func gestureAction(for button: Int, direction: GestureDirection) -> MouseAction {
+    func gestureAction(for button: Int, direction: GestureDirection) -> Action {
         gestures.first { $0.button == button }?.action(for: direction) ?? .disabled
     }
 
-    func setGestureAction(_ action: MouseAction, for button: Int, direction: GestureDirection) {
+    func setGestureAction(_ action: Action, for button: Int, direction: GestureDirection) {
         mutateEditing { p in
             if let i = p.gestures.firstIndex(where: { $0.button == button }) {
                 p.gestures[i].set(action, for: direction)

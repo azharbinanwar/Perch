@@ -1,18 +1,19 @@
 //
-//  MouseAction.swift
+//  Action.swift
 //  Perch
 //
-//  What a mouse trigger does. `MouseActionKind` is the pickable catalogue — every case
+//  What a mouse trigger does. `ActionKind` is the pickable catalogue — every case
 //  defines all of its metadata in ONE record (name / icon / category / description /
-//  tryable / target / premium). `MouseAction` pairs a kind with its optional target.
-//  How an action actually fires lives in MouseActionRunner, not here.
+//  tryable / target / premium). `Action` pairs a kind with its optional target.
+//  How an action actually fires lives in ActionRunner, not here.
 //
 
+import CoreGraphics
 import Foundation
 
 // MARK: - Categories (picker sections, in display order)
 
-enum MouseActionGroup: String, CaseIterable, Identifiable {
+enum ActionGroup: String, CaseIterable, Identifiable {
     case none, editing, navigation, window, media, perch, clicks, launch, custom, automation
     var id: String { rawValue }
 
@@ -27,31 +28,32 @@ enum MouseActionGroup: String, CaseIterable, Identifiable {
         case .clicks:     return "Clicks"
         case .launch:     return "Launch"
         case .custom:     return "Custom"
-        case .automation: return "Automation (Premium)"
+        case .automation: return "Automation"
         }
     }
 }
 
 // MARK: - Target a kind needs (drives the "…" prompt)
 
-enum MouseActionTarget {
+enum ActionTarget {
     case none, app, file, url, keystroke, appleScript, shellScript, shortcut, macro
 }
 
 // MARK: - Pickable catalogue
 
-enum MouseActionKind: String, Codable, CaseIterable, Identifiable {
+enum ActionKind: String, Codable, CaseIterable, Identifiable {
     case disabled, passThrough
     case copy, cut, paste, pastePlain, undo, redo, selectAll, deleteKey
+    case find, save, emojiPicker
     case back, forward, missionControl, appExpose, spotlight, prevSpace, nextSpace
     case screenshotArea, screenshotWindow, screenshotFull, screenshotTool
-    case minimizeWindow, closeWindow, lockScreen
+    case minimizeWindow, closeWindow, quitApp, hideApp, forceQuit, toggleFullScreen, lockScreen
     case playPause, nextTrack, prevTrack, volumeUp, volumeDown, mute, brightnessUp, brightnessDown
     case openClipboard, pasteLast
     case doubleClick, tripleClick, middleClick
     case openApp, openFile, openURL
     case customKeystroke
-    case runShortcut, runAppleScript, runShell, macro
+    case runAppleScript, runShell
 
     var id: String { rawValue }
 
@@ -59,20 +61,20 @@ enum MouseActionKind: String, Codable, CaseIterable, Identifiable {
     struct Meta {
         let name: String
         let icon: String
-        let category: MouseActionGroup
+        let category: ActionGroup
         let description: String           // plain "what it does"
         let tryable: Bool                 // can it be previewed here (self-contained)?
-        let target: MouseActionTarget     // what the picker prompts for
+        let target: ActionTarget     // what the picker prompts for
         let premium: Bool
     }
 
     // Convenience accessors — all read from the single record.
     var title: String { meta.name }
     var icon: String { meta.icon }
-    var group: MouseActionGroup { meta.category }
+    var group: ActionGroup { meta.category }
     var detail: String { meta.description }
     var isTryable: Bool { meta.tryable }
-    var target: MouseActionTarget { meta.target }
+    var target: ActionTarget { meta.target }
     var isPremium: Bool { meta.premium }
 
     var meta: Meta {
@@ -88,6 +90,9 @@ enum MouseActionKind: String, Codable, CaseIterable, Identifiable {
         case .redo:            return .init(name: "Redo", icon: "arrow.uturn.forward", category: .editing, description: "Redo (⌘⇧Z).", tryable: false, target: .none, premium: false)
         case .selectAll:       return .init(name: "Select All", icon: "selection.pin.in.out", category: .editing, description: "Selects everything (⌘A).", tryable: false, target: .none, premium: false)
         case .deleteKey:       return .init(name: "Delete", icon: "delete.left", category: .editing, description: "Presses Delete.", tryable: false, target: .none, premium: false)
+        case .find:            return .init(name: "Find", icon: "text.magnifyingglass", category: .editing, description: "Opens Find (⌘F).", tryable: false, target: .none, premium: false)
+        case .save:            return .init(name: "Save", icon: "square.and.arrow.down", category: .editing, description: "Saves (⌘S).", tryable: false, target: .none, premium: false)
+        case .emojiPicker:     return .init(name: "Emoji & Symbols", icon: "face.smiling", category: .editing, description: "Opens the emoji & symbols viewer (⌃⌘Space).", tryable: true, target: .none, premium: false)
 
         case .back:            return .init(name: "Back", icon: "chevron.left", category: .navigation, description: "Go back (⌘[) — browsers, Finder.", tryable: false, target: .none, premium: false)
         case .forward:         return .init(name: "Forward", icon: "chevron.right", category: .navigation, description: "Go forward (⌘]).", tryable: false, target: .none, premium: false)
@@ -103,7 +108,11 @@ enum MouseActionKind: String, Codable, CaseIterable, Identifiable {
         case .screenshotTool:  return .init(name: "Screenshot – Tool", icon: "camera.on.rectangle", category: .window, description: "Opens the screenshot toolbar.", tryable: true, target: .none, premium: false)
         case .minimizeWindow:  return .init(name: "Minimize Window", icon: "minus.rectangle", category: .window, description: "Minimizes the front window (⌘M).", tryable: false, target: .none, premium: false)
         case .closeWindow:     return .init(name: "Close Window", icon: "xmark.rectangle", category: .window, description: "Closes the front window (⌘W).", tryable: false, target: .none, premium: false)
-        case .lockScreen:      return .init(name: "Lock Screen", icon: "lock", category: .window, description: "Locks the screen.", tryable: true, target: .none, premium: false)
+        case .quitApp:         return .init(name: "Quit App", icon: "xmark.circle", category: .window, description: "Quits the front app.", tryable: false, target: .none, premium: false)
+        case .hideApp:         return .init(name: "Hide App", icon: "eye.slash", category: .window, description: "Hides the front app.", tryable: false, target: .none, premium: false)
+        case .forceQuit:       return .init(name: "Force Quit App", icon: "exclamationmark.octagon", category: .window, description: "Immediately force-quits the front app.", tryable: false, target: .none, premium: false)
+        case .toggleFullScreen: return .init(name: "Toggle Full Screen", icon: "arrow.up.left.and.arrow.down.right", category: .window, description: "Enters or exits full screen (⌃⌘F).", tryable: false, target: .none, premium: false)
+        case .lockScreen:      return .init(name: "Lock Screen", icon: "lock", category: .window, description: "Locks the screen (⌃⌘Q).", tryable: true, target: .none, premium: false)
 
         case .playPause:       return .init(name: "Play/Pause", icon: "playpause", category: .media, description: "Play / pause media.", tryable: true, target: .none, premium: false)
         case .nextTrack:       return .init(name: "Next Track", icon: "forward.end", category: .media, description: "Next track.", tryable: true, target: .none, premium: false)
@@ -127,30 +136,66 @@ enum MouseActionKind: String, Codable, CaseIterable, Identifiable {
 
         case .customKeystroke: return .init(name: "Custom Keystroke…", icon: "keyboard", category: .custom, description: "Sends a keyboard shortcut you record.", tryable: false, target: .keystroke, premium: false)
 
-        case .runShortcut:     return .init(name: "Run Apple Shortcut…", icon: "sparkles", category: .automation, description: "Runs an Apple Shortcut.", tryable: false, target: .shortcut, premium: true)
-        case .runAppleScript:  return .init(name: "Run AppleScript…", icon: "applescript", category: .automation, description: "Runs an AppleScript.", tryable: false, target: .appleScript, premium: true)
-        case .runShell:        return .init(name: "Run Shell Script…", icon: "terminal", category: .automation, description: "Runs a shell script.", tryable: false, target: .shellScript, premium: true)
-        case .macro:           return .init(name: "Macro (key sequence)…", icon: "list.bullet", category: .automation, description: "Plays a sequence of keys.", tryable: false, target: .macro, premium: true)
+        case .runAppleScript:  return .init(name: "Run AppleScript…", icon: "applescript", category: .automation, description: "Runs AppleScript you enter.", tryable: false, target: .appleScript, premium: false)
+        case .runShell:        return .init(name: "Run Shell Script…", icon: "terminal", category: .automation, description: "Runs a shell command you enter.", tryable: false, target: .shellScript, premium: false)
         }
     }
 
     /// Kinds in a category, catalogue order.
-    static func inGroup(_ group: MouseActionGroup) -> [MouseActionKind] {
+    static func inGroup(_ group: ActionGroup) -> [ActionKind] {
         allCases.filter { $0.group == group }
+    }
+
+    /// The single keystroke this kind performs, when it's just one shortcut. Source of truth for
+    /// both running (ActionRunner) and display. nil for actions that aren't a plain keypress.
+    var shortcut: (code: CGKeyCode, flags: CGEventFlags)? {
+        switch self {
+        case .copy:             return (8,  .maskCommand)
+        case .cut:              return (7,  .maskCommand)
+        case .paste:            return (9,  .maskCommand)
+        case .pastePlain:       return (9,  [.maskCommand, .maskShift, .maskAlternate])
+        case .undo:             return (6,  .maskCommand)
+        case .redo:             return (6,  [.maskCommand, .maskShift])
+        case .selectAll:        return (0,  .maskCommand)
+        case .deleteKey:        return (51, [])
+        case .find:             return (3,  .maskCommand)                    // ⌘F
+        case .save:             return (1,  .maskCommand)                    // ⌘S
+        case .emojiPicker:      return (49, [.maskControl, .maskCommand])    // ⌃⌘Space
+        case .back:             return (33, .maskCommand)                    // ⌘[
+        case .forward:          return (30, .maskCommand)                    // ⌘]
+        case .appExpose:        return (125, .maskControl)                   // ⌃↓
+        case .spotlight:        return (49, .maskCommand)                    // ⌘Space
+        case .prevSpace:        return (123, .maskControl)                   // ⌃←
+        case .nextSpace:        return (124, .maskControl)                   // ⌃→
+        case .screenshotArea:   return (21, [.maskCommand, .maskShift])      // ⌘⇧4
+        case .screenshotFull:   return (20, [.maskCommand, .maskShift])      // ⌘⇧3
+        case .screenshotTool:   return (23, [.maskCommand, .maskShift])      // ⌘⇧5
+        case .minimizeWindow:   return (46, .maskCommand)                    // ⌘M
+        case .closeWindow:      return (13, .maskCommand)                    // ⌘W
+        case .toggleFullScreen: return (3,  [.maskControl, .maskCommand])    // ⌃⌘F
+        case .lockScreen:       return (12, [.maskCommand, .maskControl])    // ⌃⌘Q
+        default:                return nil
+        }
+    }
+
+    /// The shortcut as symbols (⌘C) for display, when the kind is a plain keypress.
+    var shortcutSymbols: String? {
+        guard let s = shortcut else { return nil }
+        return KeyCombo(keyCode: Int(s.code), modifiers: s.flags.rawValue).displayName
     }
 }
 
 // MARK: - A concrete action (kind + its target)
 
-struct MouseAction: Codable, Equatable {
-    var kind: MouseActionKind
+struct Action: Codable, Equatable {
+    var kind: ActionKind
     var target: String?      // bundle id / file path / URL / script text / shortcut name
     var keyCode: Int?        // for .customKeystroke
     var modifiers: UInt64?   // for .customKeystroke
 
-    static let disabled = MouseAction(kind: .disabled)
+    static let disabled = Action(kind: .disabled)
 
-    init(kind: MouseActionKind, target: String? = nil, keyCode: Int? = nil, modifiers: UInt64? = nil) {
+    init(kind: ActionKind, target: String? = nil, keyCode: Int? = nil, modifiers: UInt64? = nil) {
         self.kind = kind
         self.target = target
         self.keyCode = keyCode
@@ -161,10 +206,13 @@ struct MouseAction: Codable, Equatable {
     var displayLabel: String {
         switch kind.target {
         case .keystroke:
-            let mods = modifiers.map(MouseTrigger.modifierSymbols) ?? ""
-            return keyCode.map { "\(mods)key\($0)" } ?? kind.title
+            return keyCode.map { KeyCombo(keyCode: $0, modifiers: modifiers ?? 0).displayName } ?? kind.title
         case .none:
+            if let sym = kind.shortcutSymbols { return "\(kind.title)  \(sym)" }
             return kind.title
+        case .app:
+            guard let bundle = target, !bundle.isEmpty else { return kind.title }
+            return "\(kind.title.replacingOccurrences(of: "…", with: "")): \(AppIcon.name(forBundleID: bundle) ?? bundle)"
         default:
             if let target, !target.isEmpty { return "\(kind.title.replacingOccurrences(of: "…", with: "")): \(target)" }
             return kind.title

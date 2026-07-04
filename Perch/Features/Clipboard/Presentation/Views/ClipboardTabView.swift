@@ -48,12 +48,7 @@ struct ClipboardTabView: View {
 
     private var header: some View {
         HStack(alignment: .firstTextBaseline) {
-            VStack(alignment: .leading, spacing: 1) {
-                Text("Clipboard").font(.title2.bold())
-                Text(storageSubtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
+            PageHeader("Clipboard", subtitle: storageSubtitle)
             Spacer()
             Button {
                 NotificationCenter.default.post(name: .openClipboardPopup, object: nil)
