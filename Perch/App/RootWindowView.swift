@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct RootWindowView: View {
-    @AppStorage("perch.onboarded") private var onboarded = false
+    @AppStorage(Keys.Defaults.onboarded) private var onboarded = false
 
     var body: some View {
         if onboarded {

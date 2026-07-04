@@ -3,48 +3,49 @@
 //  Perch
 //
 //  All UserDefaults keys and tunable config. No raw strings inline.
-//  Key format: dev.perch.<name>.vN — bump vN when stored format changes.
+//  Key format: <feature>.<field> — no per-key version; the config carries one version.
 //
 
 import Foundation
 
 enum Keys {
     enum Defaults {
-        static let clipboardHistory   = "dev.perch.clipboard.history.v1"
-        static let clipboardEnabled   = "dev.perch.clipboard.enabled.v1"    // master: feature on/off
-        static let clipboardRecording = "dev.perch.clipboard.recording.v1"  // capture new copies
-        static let clipboardAutoClear = "dev.perch.clipboard.autoClearMinutes.v1"  // 0 = never
-        static let clipboardMaxItems  = "dev.perch.clipboard.maxItems.v1"
-        static let clipboardClearOnQuit = "dev.perch.clipboard.clearOnQuit.v1"
-        static let clipboardPinLimit  = "dev.perch.clipboard.pinLimit.v1"
-        static let clipboardRowDensity = "dev.perch.clipboard.rowDensity.v1"
-        static let clipboardExcludeRecord = "dev.perch.clipboard.excludeRecord.v1"  // don't record from these apps
-        static let clipboardExcludeOpen   = "dev.perch.clipboard.excludeOpen.v1"    // don't open ⌘⇧V over these apps
-        static let clipboardRestoreAfterPaste = "dev.perch.clipboard.restoreAfterPaste.v1"
-        static let scrollReversed   = "dev.perch.scroll.reversed.v1"
-        static let scrollLinear     = "dev.perch.scroll.linear.v1"    // flat, no acceleration
-        static let scrollSpeed      = "dev.perch.scroll.speed.v1"     // multiplier
-        static let autoScrollOn     = "dev.perch.scroll.auto.on.v1"          // hold button + move to scroll
-        static let autoScrollButton = "dev.perch.scroll.auto.button.v1"      // trigger button number
-        static let autoScrollSpeed  = "dev.perch.scroll.auto.speed.v1"       // sensitivity multiplier
-        static let pointerOverride  = "dev.perch.pointer.override.v1" // control pointer acceleration
-        static let pointerValue     = "dev.perch.pointer.value.v1"    // acceleration amount (0 = flat)
-        static let mouseMappings    = "dev.perch.mouse.mappings.v1"
-        static let mouseEnabled     = "dev.perch.mouse.enabled.v1"
-        static let mouseWhitelist   = "dev.perch.mouse.whitelist.v1"   // registered key-chord buttons
-        static let mouseDetected    = "dev.perch.mouse.detected.v1"    // scanned physical extra buttons
-        static let mouseDebounceOn  = "dev.perch.mouse.debounce.on.v1" // ignore accidental double-fires
-        static let mouseDebounceMs  = "dev.perch.mouse.debounce.ms.v1"
-        static let mouseGestures    = "dev.perch.mouse.gestures.v1"    // hold-and-move gestures (legacy/global)
-        static let mouseProfiles    = "dev.perch.mouse.profiles.v1"    // per-app mappings + gestures
-        static let remapRules       = "dev.perch.remap.rules.v2"   // v2: general input→output combos (legacy/migration)
-        static let remapProfiles    = "dev.perch.remap.profiles.v1"  // per-app rule sets
-        static let remapEnabled     = "dev.perch.remap.enabled.v1"
-        static let appSettings      = "dev.perch.settings.v1"
-        static let hotKeyCode       = "dev.perch.hotkey.code.v1"
-        static let hotKeyModifiers  = "dev.perch.hotkey.modifiers.v1"
-        static let hotKeyLabel      = "dev.perch.hotkey.label.v1"
-        static let snippets         = "dev.perch.snippets.v1"
+        static let clipboardHistory   = "clipboard.history"
+        static let clipboardEnabled   = "clipboard.enabled"    // master: feature on/off
+        static let clipboardRecording = "clipboard.recording"  // capture new copies
+        static let clipboardAutoClear = "clipboard.autoClearMinutes"  // 0 = never
+        static let clipboardMaxItems  = "clipboard.maxItems"
+        static let clipboardClearOnQuit = "clipboard.clearOnQuit"
+        static let clipboardPinLimit  = "clipboard.pinLimit"
+        static let clipboardRowDensity = "clipboard.rowDensity"
+        static let clipboardExcludeRecord = "clipboard.excludeRecord"  // don't record from these apps
+        static let clipboardExcludeOpen   = "clipboard.excludeOpen"    // don't open ⌘⇧V over these apps
+        static let clipboardRestoreAfterPaste = "clipboard.restoreAfterPaste"
+        static let scrollReversed   = "mouse.scroll.reversed"
+        static let scrollLinear     = "mouse.scroll.linear"    // flat, no acceleration
+        static let scrollSpeed      = "mouse.scroll.speed"     // multiplier
+        static let autoScrollOn     = "mouse.scroll.auto.on"          // hold button + move to scroll
+        static let autoScrollButton = "mouse.scroll.auto.button"      // trigger button number
+        static let autoScrollSpeed  = "mouse.scroll.auto.speed"       // sensitivity multiplier
+        static let pointerOverride  = "mouse.pointer.override" // control pointer acceleration
+        static let pointerValue     = "mouse.pointer.value"    // acceleration amount (0 = flat)
+        static let mouseMappings    = "mouse.mappings"
+        static let mouseEnabled     = "mouse.enabled"
+        static let mouseWhitelist   = "mouse.whitelist"   // registered key-chord buttons
+        static let mouseDetected    = "mouse.detected"    // scanned physical extra buttons
+        static let mouseDebounceOn  = "mouse.debounce.on" // ignore accidental double-fires
+        static let mouseDebounceMs  = "mouse.debounce.ms"
+        static let mouseGestures    = "mouse.gestures"    // hold-and-move gestures (legacy/global)
+        static let mouseProfiles    = "mouse.profiles"    // per-app mappings + gestures
+        static let remapRules       = "keys.rules"       // legacy flat rules (migration source)
+        static let remapProfiles    = "keys.profiles"    // per-app rule sets
+        static let remapEnabled     = "keys.enabled"
+        static let appSettings      = "settings"
+        static let hotKeyCode       = "hotkey.code"
+        static let hotKeyModifiers  = "hotkey.modifiers"
+        static let hotKeyLabel      = "hotkey.label"
+        static let snippets         = "snippets"
+        static let onboarded        = "onboarded"   // first-run onboarding completed
     }
 }
 

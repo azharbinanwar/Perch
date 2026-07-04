@@ -128,7 +128,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // First run → show onboarding; otherwise honor "Open window at launch".
-        let onboarded = UserDefaults.standard.bool(forKey: "perch.onboarded")
+        let onboarded = UserDefaults.standard.bool(forKey: Keys.Defaults.onboarded)
         if !onboarded || settingsVM.settings.openWindowAtLaunch {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
                 self?.openMainWindow()
