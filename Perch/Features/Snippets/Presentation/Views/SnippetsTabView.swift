@@ -12,6 +12,7 @@ struct SnippetsTabView: View {
 
     @State private var editing: Snippet?
     @State private var showingNew = false
+    @State private var showingClearAll = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -24,12 +25,22 @@ struct SnippetsTabView: View {
         .sheet(isPresented: $showingNew) {
             SnippetEditor(snippet: nil) { vm.upsert($0) }
         }
+        .alert("Clear all snippets?", isPresented: $showingClearAll) {
+            Button("Cancel", role: .cancel) {}
+            Button("Clear All", role: .destructive) { vm.clearAll() }
+        } message: {
+            Text("This permanently deletes all \(vm.snippets.count) saved snippets. This can't be undone.")
+        }
     }
 
     private var header: some View {
         HStack {
             PageHeader("Snippets", subtitle: "Saved clips you reuse — always available in the clipboard.")
             Spacer()
+            Button(role: .destructive) { showingClearAll = true } label: {
+                Label("Clear All", systemImage: "trash")
+            }
+            .disabled(vm.snippets.isEmpty)
             Button { showingNew = true } label: { Label("New", systemImage: "plus") }
         }
         .padding(.horizontal, 20)

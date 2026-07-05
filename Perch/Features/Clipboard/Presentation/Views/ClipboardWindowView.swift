@@ -161,6 +161,7 @@ struct ClipboardWindowView: View {
                         }
                     }
                     .padding(8)
+                    .id(model.listGen)   // pin/unpin → whole list rebuilt fresh, no stale row state
                 }
                 .onContinuousHover { phase in
                     if case .active = phase { model.pointerMoved() }   // real movement only
@@ -222,7 +223,7 @@ struct ClipboardWindowView: View {
             highlightsOnHover: false,
             onCopy: { model.paste(item) },
             onDelete: { model.delete(item) },
-            onPin: { withAnimation(.easeInOut(duration: 0.15)) { model.togglePin(item) } },
+            onPin: { model.togglePin(item) },
             onHover: { model.hover(id: item.id) }
         )
         .id(item.id)
@@ -283,22 +284,14 @@ struct ClipboardWindowView: View {
     // MARK: - Empty state (first launch / cleared)
 
     private var emptyStart: some View {
-        VStack(spacing: 22) {
-            VStack(spacing: 6) {
-                Image(systemName: "doc.on.clipboard")
-                    .font(.system(size: 30))
-                    .foregroundStyle(.secondary)
-                Text("Nothing copied yet").font(.headline)
-                Text("Copy anything and it'll show up here.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-            }
-            VStack(alignment: .center, spacing: 10) {
-                Text("Keyboard Shortcuts")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                ShortcutColumns()
-            }
+        VStack(spacing: 6) {
+            Image(systemName: "doc.on.clipboard")
+                .font(.system(size: 30))
+                .foregroundStyle(.secondary)
+            Text("Nothing copied yet").font(.headline)
+            Text("Copy anything and it'll show up here.")
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(24)

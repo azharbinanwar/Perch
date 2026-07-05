@@ -40,6 +40,17 @@ final class ScrollViewModel {
     /// Re-apply saved settings at launch.
     func apply() { push(); pushAuto() }
 
+    /// Re-read from storage and re-apply (used after Import).
+    func reload() {
+        isEnabled = defaults.bool(forKey: Keys.Defaults.scrollReversed)
+        linear = defaults.bool(forKey: Keys.Defaults.scrollLinear)
+        speed = defaults.object(forKey: Keys.Defaults.scrollSpeed) as? Double ?? 1
+        autoScroll = defaults.bool(forKey: Keys.Defaults.autoScrollOn)
+        autoScrollButton = defaults.object(forKey: Keys.Defaults.autoScrollButton) as? Int ?? 2
+        autoScrollSpeed = defaults.object(forKey: Keys.Defaults.autoScrollSpeed) as? Double ?? 1
+        apply()
+    }
+
     func toggle() {
         isEnabled.toggle()
         defaults.set(isEnabled, forKey: Keys.Defaults.scrollReversed)

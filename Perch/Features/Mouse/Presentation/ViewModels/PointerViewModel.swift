@@ -29,6 +29,13 @@ final class PointerViewModel {
     /// Re-apply at launch.
     func apply() { push() }
 
+    /// Re-read from storage and re-apply (used after Import).
+    func reload() {
+        override = defaults.bool(forKey: Keys.Defaults.pointerOverride)
+        value = defaults.object(forKey: Keys.Defaults.pointerValue) as? Double ?? 0
+        apply()
+    }
+
     /// Restore the system default (call on quit so we don't leave the system changed).
     func restoreDefault() { manager.setAcceleration(systemDefault) }
 

@@ -58,7 +58,7 @@ final class ClipboardViewModel {
         self.excludedOpenApps = defaults.stringArray(forKey: Keys.Defaults.clipboardExcludeOpen) ?? []
         self.restoreAfterPaste = defaults.bool(forKey: Keys.Defaults.clipboardRestoreAfterPaste)
         self.items = repository.load()
-        state = items.isEmpty ? .empty : .loaded(items)
+        state = items.isEmpty ? .empty : .loaded(orderedItems)   // pinned-first, matching didSet
         ImageStore.pruneOrphans(keeping: referencedBlobs)   // drop blobs left over from a crash
     }
 
@@ -304,6 +304,26 @@ final class ClipboardViewModel {
 
     /// Save an image item's blobs into ~/Downloads. Returns how many were written.
     @discardableResult
+    /// Re-read the history list from storage (used after Import). Never touches the system clipboard.
+    func reloadHistory() { items = repository.load() }
+
+    /// Re-read every setting from storage (after an import or a reset-to-default) and re-apply.
+    func reloadSettings() {
+        isEnabled = defaults.object(forKey: Keys.Defaults.clipboardEnabled) as? Bool ?? true
+        isRecording = defaults.object(forKey: Keys.Defaults.clipboardRecording) as? Bool ?? true
+        autoClearMinutes = defaults.object(forKey: Keys.Defaults.clipboardAutoClear) as? Int ?? 0
+        maxItems = defaults.object(forKey: Keys.Defaults.clipboardMaxItems) as? Int ?? AppConfig.clipboardHistoryLimit
+        clearOnQuit = defaults.object(forKey: Keys.Defaults.clipboardClearOnQuit) as? Bool ?? false
+        pinLimit = defaults.object(forKey: Keys.Defaults.clipboardPinLimit) as? Int ?? 5
+        rowDensity = RowDensity(rawValue: defaults.string(forKey: Keys.Defaults.clipboardRowDensity) ?? "") ?? .regular
+        excludedRecordApps = defaults.stringArray(forKey: Keys.Defaults.clipboardExcludeRecord) ?? []
+        excludedOpenApps = defaults.stringArray(forKey: Keys.Defaults.clipboardExcludeOpen) ?? []
+        restoreAfterPaste = defaults.bool(forKey: Keys.Defaults.clipboardRestoreAfterPaste)
+        if isEnabled && isRecording { monitor.start() } else { monitor.stop() }
+    }
+
+    var historyCount: Int { items.count }   // for the import debug summary
+
     func saveImageToDownloads(_ item: ClipboardItem) -> Int {
         guard let names = item.imageFiles else { return 0 }
         let downloads = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask)[0]

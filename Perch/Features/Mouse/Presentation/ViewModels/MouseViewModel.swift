@@ -87,6 +87,18 @@ final class MouseViewModel {
         debouncer.apply(enabled: debounce, thresholdMs: debounceMs)
     }
 
+    /// Re-read from storage and re-apply (used after Import).
+    func reload() {
+        isEnabled = defaults.object(forKey: Keys.Defaults.mouseEnabled) as? Bool ?? true
+        whitelist = repository.loadWhitelist()
+        detectedButtons = repository.loadDetected()
+        debounce = defaults.bool(forKey: Keys.Defaults.mouseDebounceOn)
+        debounceMs = defaults.object(forKey: Keys.Defaults.mouseDebounceMs) as? Double ?? 50
+        profiles = repository.loadProfiles()
+        applyActive()
+        debouncer.apply(enabled: debounce, thresholdMs: debounceMs)
+    }
+
     // MARK: - Profiles
 
     /// The mappings/gestures currently shown & edited in the UI.

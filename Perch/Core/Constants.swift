@@ -40,7 +40,11 @@ enum Keys {
         static let remapRules       = "keys.rules"       // legacy flat rules (migration source)
         static let remapProfiles    = "keys.profiles"    // per-app rule sets
         static let remapEnabled     = "keys.enabled"
-        static let appSettings      = "settings"
+        static let appSettings      = "settings"   // legacy blob — migrated to the keys below on first load
+        static let settingsMenuItemCount     = "settings.menuItemCount"
+        static let settingsOpenAtLogin       = "settings.openAtLogin"
+        static let settingsOpenWindowAtLaunch = "settings.openWindowAtLaunch"
+        static let settingsShowInDock        = "settings.showInDock"
         static let hotKeyCode       = "hotkey.code"
         static let hotKeyModifiers  = "hotkey.modifiers"
         static let hotKeyLabel      = "hotkey.label"

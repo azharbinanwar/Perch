@@ -36,6 +36,10 @@ final class ClipboardPopupModel {
     private var acceptHover = false
     private var suppressHover = false
 
+    /// Bumped whenever the list is rebuilt (pin/unpin). The view uses it as the list's identity,
+    /// so every row view is recreated fresh — no reused row can keep a stale highlight.
+    var listGen = 0
+
     init(clipboard: ClipboardViewModel, snippets: SnippetViewModel) {
         self.clipboard = clipboard
         self.snippets = snippets
@@ -295,7 +299,8 @@ final class ClipboardPopupModel {
         let pinnedSorted = frozenItems.filter(\.isPinned).sorted { $0.copiedAt > $1.copiedAt }
         let recentSorted = frozenItems.filter { !$0.isPinned }.sorted { $0.copiedAt > $1.copiedAt }
         frozenItems = pinnedSorted + recentSorted
-        selectedID = item.id
+        listGen += 1                        // new list identity → every row view is rebuilt fresh (no stale highlight)
+        selectedID = selectableIDs.first    // fresh list starts with exactly one focused item
     }
 
     func togglePinSelected() {

@@ -17,6 +17,9 @@ final class SnippetViewModel {
     }
 
     /// Add a new snippet or update an existing one (matched by id).
+    /// Re-read from storage (used after Import).
+    func reload() { snippets = repository.load() }
+
     func upsert(_ snippet: Snippet) {
         if let index = snippets.firstIndex(where: { $0.id == snippet.id }) {
             snippets[index] = snippet
@@ -28,6 +31,11 @@ final class SnippetViewModel {
 
     func delete(_ snippet: Snippet) {
         snippets.removeAll { $0.id == snippet.id }
+        repository.save(snippets)
+    }
+
+    func clearAll() {
+        snippets.removeAll()
         repository.save(snippets)
     }
 }

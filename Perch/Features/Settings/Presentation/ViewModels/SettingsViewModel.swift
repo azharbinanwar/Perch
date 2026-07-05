@@ -63,6 +63,19 @@ final class SettingsViewModel {
         NSApp.setActivationPolicy(settings.showInDock ? .regular : .accessory)
     }
 
+    /// Re-read from storage and re-apply login item, dock policy, and hotkey (used after Import).
+    func reload() {
+        settings = repository.load()
+        hotKeyCode = UInt32(defaults.object(forKey: Keys.Defaults.hotKeyCode) as? Int ?? 9)
+        let rawMods = defaults.object(forKey: Keys.Defaults.hotKeyModifiers) as? UInt
+            ?? NSEvent.ModifierFlags([.command, .shift]).rawValue
+        hotKeyModifiers = NSEvent.ModifierFlags(rawValue: rawMods)
+        hotKeyLabel = defaults.string(forKey: Keys.Defaults.hotKeyLabel) ?? "V"
+        applyLoginItem()
+        applyDockPolicy()
+        NotificationCenter.default.post(name: .hotKeyChanged, object: nil)
+    }
+
     /// Register/unregister the app as a login item to match the saved preference.
     func applyLoginItem() {
         do {

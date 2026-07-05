@@ -12,6 +12,8 @@ struct ClipboardTabView: View {
     @Environment(ClipboardViewModel.self) private var clipboard
     @Environment(SettingsViewModel.self) private var settings
     @State private var showingShortcuts = false
+    @State private var showingReset = false
+    @State private var showingClearAll = false
     @State private var imageBytes = 0
 
     var body: some View {
@@ -28,6 +30,32 @@ struct ClipboardTabView: View {
                 exclusionsBox
             }
             .padding(20)
+        }
+        .alert("Reset Clipboard settings to default?", isPresented: $showingReset) {
+            Button("Cancel", role: .cancel) {}
+            Button("Reset to Default") {
+                ConfigService.resetSettings(.clipboard)
+                clipboard.reloadSettings()
+            }
+        } message: {
+            Text("""
+            These go back to default:
+            • Enable & recording toggles
+            • How many to keep (clipboard, menu, pins)
+            • Row size, shortcut, restore-after-paste
+            • Auto-clear, clear-on-quit, excluded apps
+
+            Your clipboard items aren't affected.
+            """)
+        }
+        .alert("Clear all clipboard items?", isPresented: $showingClearAll) {
+            Button("Cancel", role: .cancel) {}
+            Button("Clear All", role: .destructive) {
+                clipboard.clear()
+                imageBytes = ImageStore.diskUsage()
+            }
+        } message: {
+            Text("This permanently removes every item in your clipboard history. This can't be undone.")
         }
         .sheet(isPresented: $showingShortcuts) {
             VStack(alignment: .leading, spacing: 14) {
@@ -62,9 +90,13 @@ struct ClipboardTabView: View {
             }
             .help("Keyboard shortcuts")
 
+            Button { showingReset = true } label: {
+                Label("Reset to Default", systemImage: "arrow.counterclockwise")
+            }
+            .help("Reset clipboard settings to default — your items aren't affected")
+
             Button(role: .destructive) {
-                clipboard.clear()
-                imageBytes = ImageStore.diskUsage()
+                showingClearAll = true
             } label: {
                 Label("Clear All", systemImage: "trash")
             }

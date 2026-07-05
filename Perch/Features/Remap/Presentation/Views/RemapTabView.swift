@@ -12,6 +12,7 @@ import SwiftUI
 struct RemapTabView: View {
     @Environment(RemapViewModel.self) private var vm
     @State private var trusted = Permissions.isAccessibilityTrusted
+    @State private var showingReset = false
     @State private var addingRule = false
     @State private var addingProfile = false
     @State private var picking = false               // action catalogue for the output
@@ -23,6 +24,10 @@ struct RemapTabView: View {
                 HStack {
                     PageHeader("Keys", subtitle: "Remap keys and shortcuts, app by app.")
                     Spacer()
+                    Button { showingReset = true } label: {
+                        Label("Reset to Default", systemImage: "arrow.counterclockwise")
+                    }
+                    .help("Reset Keys settings to default — your mappings and profiles aren't affected")
                     Button { vm.clearDraft(); addingRule = true } label: { Label("Add mapping", systemImage: "plus") }
                         .disabled(!vm.isEnabled)
                 }
@@ -38,6 +43,20 @@ struct RemapTabView: View {
         .sheet(isPresented: $addingRule, onDismiss: { vm.clearDraft() }) { captureSheet }
         .sheet(isPresented: $addingProfile) {
             AppPickerSheet { ids in ids.forEach { vm.addProfile(bundleID: $0) } }
+        }
+        .alert("Reset Keys to default?", isPresented: $showingReset) {
+            Button("Cancel", role: .cancel) {}
+            Button("Reset to Default", role: .destructive) {
+                ConfigService.resetAll(prefix: "keys.")
+                vm.reload()
+            }
+        } message: {
+            Text("""
+            This clears everything on the Keys tab and can't be undone:
+            • All key and shortcut mappings
+            • Every per-app profile
+            • The remapping on/off setting
+            """)
         }
     }
 

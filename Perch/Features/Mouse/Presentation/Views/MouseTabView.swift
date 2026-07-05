@@ -15,6 +15,7 @@ struct MouseTabView: View {
     @Environment(PointerViewModel.self) private var pointer
 
     @State private var trusted = Permissions.isAccessibilityTrusted
+    @State private var showingReset = false
     @State private var clickPick: ClickPick?
     @State private var gesturePick: GesturePick?
     @State private var targetPrompt: MappingTarget?
@@ -25,7 +26,14 @@ struct MouseTabView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                PageHeader("Mouse", subtitle: mouse.deviceSubtitle)
+                HStack {
+                    PageHeader("Mouse", subtitle: mouse.deviceSubtitle)
+                    Spacer()
+                    Button { showingReset = true } label: {
+                        Label("Reset to Default", systemImage: "arrow.counterclockwise")
+                    }
+                    .help("Reset Mouse settings to default — your mappings, gestures and profiles aren't affected")
+                }
                 if !trusted {
                     AccessibilityBanner(message: "Grant Accessibility so scroll, pointer, and buttons can work.")
                 }
@@ -52,6 +60,21 @@ struct MouseTabView: View {
             ActionPicker { kind in mouse.setGestureAction(Action(kind: kind), for: pick.button, direction: pick.direction) }
         }
         .sheet(item: $targetPrompt) { targetSheet($0) }
+        .alert("Reset Mouse to default?", isPresented: $showingReset) {
+            Button("Cancel", role: .cancel) {}
+            Button("Reset to Default", role: .destructive) {
+                ConfigService.resetAll(prefix: "mouse.")
+                mouse.reload(); scroll.reload(); pointer.reload()
+            }
+        } message: {
+            Text("""
+            This clears everything on the Mouse tab and can't be undone:
+            • All button mappings and gestures
+            • Detected & added buttons
+            • Every per-app profile
+            • Pointer, scrolling and reliability settings
+            """)
+        }
     }
 
     // MARK: - Per-app profile (shared component)

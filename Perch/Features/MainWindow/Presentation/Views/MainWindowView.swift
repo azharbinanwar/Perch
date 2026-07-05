@@ -16,7 +16,6 @@ struct MainWindowView: View {
                 Label(item.title, systemImage: item.icon).tag(item)
             }
             .navigationSplitViewColumnWidth(190)
-            .toolbar(removing: .sidebarToggle)   // no collapse control — always-visible native sidebar
         } detail: {
             switch selection {
             case .clipboard: ClipboardTabView()

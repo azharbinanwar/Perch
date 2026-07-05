@@ -55,6 +55,14 @@ final class RemapViewModel {
         needsPermission = !manager.start()
     }
 
+    /// Re-read from storage and re-apply (used after Import).
+    func reload() {
+        isEnabled = defaults.bool(forKey: Keys.Defaults.remapEnabled)
+        profiles = repository.loadProfiles()
+        if isEnabled { needsPermission = !manager.start() }
+        applyActive()
+    }
+
     // MARK: - Profiles
 
     /// The rules currently shown & edited in the UI.
