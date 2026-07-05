@@ -52,10 +52,8 @@ enum ConfigSection: String, CaseIterable, Identifiable {
         case .keys:
             return [K.remapEnabled, K.hyperEnabled, K.hyperTap, K.hyperDoubleTap, K.hyperShift]
         case .mouse:
-            return [K.mouseEnabled, K.mouseSwap, K.mouseDebounceOn, K.mouseDebounceMs,
-                    K.scrollReversed, K.scrollLinear, K.scrollSmooth, K.scrollSpeed,
-                    K.autoScrollOn, K.autoScrollButton, K.autoScrollSpeed,
-                    K.pointerOverride, K.pointerValue]
+            // Scroll/pointer moved into the per-app profiles (content) — no scalar keys left.
+            return [K.mouseEnabled, K.mouseSwap, K.mouseDebounceOn, K.mouseDebounceMs]
         case .clipboard:
             return [K.clipboardEnabled, K.clipboardRecording, K.clipboardAutoClear,
                     K.clipboardMaxItems, K.clipboardClearOnQuit, K.clipboardPinLimit,

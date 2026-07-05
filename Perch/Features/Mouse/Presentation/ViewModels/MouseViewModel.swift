@@ -53,6 +53,10 @@ final class MouseViewModel {
     private let capture: MouseCaptureManager
     private let debouncer: MouseDebounceManager
     private let deviceMonitor: MouseDeviceMonitor
+    private let scrollManager: ScrollManager
+    private let autoScrollManager: AutoScrollManager
+    private let pointerManager: PointerManager
+    private let pointerSystemDefault: Double       // captured before we ever touch acceleration
     private let keyRecorder = KeyChordRecorder()   // swallows the key so capture doesn't fire it
     private let defaults = UserDefaults.standard
     private var activationObserver: NSObjectProtocol?
@@ -62,12 +66,19 @@ final class MouseViewModel {
          repository: MouseRepository = ServiceLocator.shared.resolve(MouseRepository.self),
          capture: MouseCaptureManager = ServiceLocator.shared.resolve(MouseCaptureManager.self),
          debouncer: MouseDebounceManager = ServiceLocator.shared.resolve(MouseDebounceManager.self),
-         deviceMonitor: MouseDeviceMonitor = ServiceLocator.shared.resolve(MouseDeviceMonitor.self)) {
+         deviceMonitor: MouseDeviceMonitor = ServiceLocator.shared.resolve(MouseDeviceMonitor.self),
+         scrollManager: ScrollManager = ServiceLocator.shared.resolve(ScrollManager.self),
+         autoScrollManager: AutoScrollManager = ServiceLocator.shared.resolve(AutoScrollManager.self),
+         pointerManager: PointerManager = ServiceLocator.shared.resolve(PointerManager.self)) {
         self.monitor = monitor
         self.repository = repository
         self.capture = capture
         self.debouncer = debouncer
         self.deviceMonitor = deviceMonitor
+        self.scrollManager = scrollManager
+        self.autoScrollManager = autoScrollManager
+        self.pointerManager = pointerManager
+        self.pointerSystemDefault = pointerManager.acceleration() ?? 0.6875   // macOS default-ish
         self.isEnabled = defaults.object(forKey: Keys.Defaults.mouseEnabled) as? Bool ?? true
         self.whitelist = repository.loadWhitelist()
         self.detectedButtons = repository.loadDetected()
@@ -116,13 +127,14 @@ final class MouseViewModel {
 
     func selectProfile(_ bundleID: String?) { editingBundleID = bundleID }
 
-    /// Add (or switch to) a profile for an app bundle id. New profiles start as a copy of
-    /// Default's actions, so every button carries over and the user only tweaks the differences.
+    /// Add (or switch to) a profile for an app bundle id. New profiles start as a FULL copy of
+    /// Default — mappings, gestures, scroll and pointer — so the user only tweaks differences.
     func addProfile(bundleID: String) {
         if profiles.contains(where: { $0.appBundleID == bundleID }) { editingBundleID = bundleID; return }
         let base = defaultProfile
         profiles.append(MouseProfile(appBundleID: bundleID, appName: Self.appName(for: bundleID),
-                                     mappings: base.mappings, gestures: base.gestures))
+                                     mappings: base.mappings, gestures: base.gestures,
+                                     scroll: base.scroll, pointer: base.pointer))
         repository.saveProfiles(profiles)
         editingBundleID = bundleID
     }
@@ -150,14 +162,63 @@ final class MouseViewModel {
         applyActive()
     }
 
-    /// Push the frontmost app's profile to the engine (Default if the app has none).
+    /// Push the frontmost app's profile to ALL engines (Default if the app has none):
+    /// buttons + gestures, and its scroll/pointer settings.
     private func applyActive() {
         let active = profiles.first { $0.appBundleID == activeBundleID } ?? defaultProfile
         capture.apply(mappings: isEnabled ? active.mappings : [],
                       gestures: isEnabled ? active.gestures : [])
         capture.swapEnabled = isEnabled && swapButtons
         if isEnabled { capture.start() }   // idempotent; keeps the tap alive & retries if permission was just granted
+
+        // Scroll AND auto-scroll follow the app under the CURSOR — hand the engines every
+        // profile's config. Pointer follows the frontmost app (it's screen-wide, focus-bound).
+        let perAppScroll = Dictionary(uniqueKeysWithValues: profiles.compactMap { p in
+            p.appBundleID.map { ($0, ScrollConfig(p.scroll)) }
+        })
+        scrollManager.apply(default: ScrollConfig(defaultProfile.scroll), perApp: perAppScroll)
+
+        let perAppAuto = Dictionary(uniqueKeysWithValues: profiles.compactMap { p in
+            p.appBundleID.map { ($0, AutoScrollConfig(on: p.scroll.autoOn, button: p.scroll.autoButton, speed: p.scroll.autoSpeed)) }
+        })
+        let d = defaultProfile.scroll
+        _ = autoScrollManager.apply(default: AutoScrollConfig(on: d.autoOn, button: d.autoButton, speed: d.autoSpeed),
+                                    perApp: perAppAuto)
+        pushPointer(active.pointer)
     }
+
+    // MARK: - Scroll / pointer (per-profile)
+
+    /// What the UI edits — the selected profile's settings.
+    var editingScroll: ScrollSettings { editingProfile.scroll }
+    var editingPointer: PointerSettings { editingProfile.pointer }
+
+    func updateScroll(_ change: (inout ScrollSettings) -> Void) {
+        if !Permissions.isAccessibilityTrusted { Permissions.requestAccessibility() }
+        mutateEditing { change(&$0.scroll) }
+    }
+
+    func updatePointer(_ change: (inout PointerSettings) -> Void) {
+        mutateEditing { change(&$0.pointer) }
+    }
+
+    /// The Default ("All apps") scroll settings — the menu-bar quick toggle edits these.
+    var defaultScroll: ScrollSettings { defaultProfile.scroll }
+
+    func updateDefaultScroll(_ change: (inout ScrollSettings) -> Void) {
+        guard let i = profiles.firstIndex(where: { $0.isDefault }) else { return }
+        change(&profiles[i].scroll)
+        repository.saveProfiles(profiles)
+        applyActive()
+    }
+
+    private func pushPointer(_ p: PointerSettings) {
+        guard p.override else { pointerManager.setAcceleration(pointerSystemDefault); return }
+        pointerManager.setAcceleration(p.value <= 0 ? -1 : p.value)   // 0 → flat 1:1
+    }
+
+    /// Restore the system pointer default (called on quit).
+    func restorePointerDefault() { pointerManager.setAcceleration(pointerSystemDefault) }
 
     func setSwapButtons(_ on: Bool) {
         swapButtons = on

@@ -45,16 +45,7 @@ enum ConfigService {
                                 ms: defaults.object(forKey: K.mouseDebounceMs) as? Double ?? 50),
                 detected: mouseRepo.loadDetected(),
                 whitelist: mouseRepo.loadWhitelist(),
-                profiles: mouseRepo.loadProfiles(),
-                scroll: .init(reversed: defaults.bool(forKey: K.scrollReversed),
-                              linear: defaults.bool(forKey: K.scrollLinear),
-                              speed: defaults.object(forKey: K.scrollSpeed) as? Double ?? 1,
-                              auto: .init(on: defaults.bool(forKey: K.autoScrollOn),
-                                          button: defaults.object(forKey: K.autoScrollButton) as? Int ?? 2,
-                                          speed: defaults.object(forKey: K.autoScrollSpeed) as? Double ?? 1),
-                              smooth: defaults.bool(forKey: K.scrollSmooth)),
-                pointer: .init(override: defaults.bool(forKey: K.pointerOverride),
-                               value: defaults.object(forKey: K.pointerValue) as? Double ?? 0),
+                profiles: mouseRepo.loadProfiles(),   // each profile carries its scroll/pointer
                 swap: defaults.bool(forKey: K.mouseSwap)),
             clipboard: .init(
                 enabled: defaults.object(forKey: K.clipboardEnabled) as? Bool ?? true,
@@ -112,19 +103,24 @@ enum ConfigService {
             put(K.mouseEnabled, c.mouse.enabled)
             put(K.mouseDebounceOn, c.mouse.debounce.on)
             put(K.mouseDebounceMs, c.mouse.debounce.ms)
+            put(K.mouseSwap, c.mouse.swap ?? false)
             mouseRepo.saveDetected(c.mouse.detected)
             mouseRepo.saveWhitelist(c.mouse.whitelist)
-            mouseRepo.saveProfiles(c.mouse.profiles)
-            put(K.scrollReversed, c.mouse.scroll.reversed)
-            put(K.scrollLinear, c.mouse.scroll.linear)
-            put(K.scrollSmooth, c.mouse.scroll.smooth ?? false)
-            put(K.scrollSpeed, c.mouse.scroll.speed)
-            put(K.autoScrollOn, c.mouse.scroll.auto.on)
-            put(K.autoScrollButton, c.mouse.scroll.auto.button)
-            put(K.autoScrollSpeed, c.mouse.scroll.auto.speed)
-            put(K.pointerOverride, c.mouse.pointer.override)
-            put(K.pointerValue, c.mouse.pointer.value)
-            put(K.mouseSwap, c.mouse.swap ?? false)
+
+            // Old backup files carried global scroll/pointer — fold them into the Default profile.
+            var profiles = c.mouse.profiles
+            if let i = profiles.firstIndex(where: { $0.isDefault }) {
+                if let s = c.mouse.scroll {
+                    profiles[i].scroll = ScrollSettings(
+                        reversed: s.reversed, linear: s.linear, speed: s.speed,
+                        smooth: s.smooth ?? false,
+                        autoOn: s.auto.on, autoButton: s.auto.button, autoSpeed: s.auto.speed)
+                }
+                if let p = c.mouse.pointer {
+                    profiles[i].pointer = PointerSettings(override: p.override, value: p.value)
+                }
+            }
+            mouseRepo.saveProfiles(profiles)
         }
 
         if sections.contains(.clipboard) {

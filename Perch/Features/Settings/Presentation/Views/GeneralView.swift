@@ -9,8 +9,6 @@ struct GeneralView: View {
     @Environment(SettingsViewModel.self) private var settings
     @Environment(RemapViewModel.self) private var remap
     @Environment(MouseViewModel.self) private var mouse
-    @Environment(ScrollViewModel.self) private var scroll
-    @Environment(PointerViewModel.self) private var pointer
     @Environment(SnippetViewModel.self) private var snippet
     @Environment(ClipboardViewModel.self) private var clipboard
 
@@ -94,9 +92,7 @@ struct GeneralView: View {
     private func reloadViewModels() {
         settings.reload()
         remap.reload()
-        mouse.reload()
-        scroll.reload()
-        pointer.reload()
+        mouse.reload()               // buttons, gestures, scroll AND pointer (per-app profiles)
         snippet.reload()
         clipboard.reloadSettings()   // limits, toggles, exclusions — applied live
         clipboard.reloadHistory()    // the saved item list (system clipboard untouched)

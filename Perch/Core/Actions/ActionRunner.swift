@@ -70,7 +70,25 @@ enum ActionRunner {
 
     // MARK: - Primitives
 
+    /// Extra event flags real hardware attaches to certain keys. Synthesized events must carry
+    /// them too, or system consumers (Mission Control's ⌃←/⌃→, Exposé's ⌃↓, …) reject the press.
+    /// Lookup rule: key present → union its flags in; absent → nothing added.
+    private static let hardwareFlags: [CGKeyCode: CGEventFlags] = [
+        // Arrow keys
+        123: [.maskSecondaryFn, .maskNumericPad],   // ←
+        124: [.maskSecondaryFn, .maskNumericPad],   // →
+        125: [.maskSecondaryFn, .maskNumericPad],   // ↓
+        126: [.maskSecondaryFn, .maskNumericPad],   // ↑
+        // Navigation cluster
+        115: [.maskSecondaryFn],                    // Home
+        119: [.maskSecondaryFn],                    // End
+        116: [.maskSecondaryFn],                    // Page Up
+        121: [.maskSecondaryFn],                    // Page Down
+        117: [.maskSecondaryFn],                    // Forward Delete
+    ]
+
     private static func press(_ keyCode: CGKeyCode, flags: CGEventFlags) {
+        let flags = flags.union(hardwareFlags[keyCode] ?? [])
         let source = CGEventSource(stateID: .combinedSessionState)
         let down = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: true)
         let up = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: false)

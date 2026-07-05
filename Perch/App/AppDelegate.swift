@@ -12,9 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // ViewModels — created once, injected into views via .environment().
     private(set) lazy var clipboardVM = ClipboardViewModel()
-    private(set) lazy var scrollVM = ScrollViewModel()
-    private(set) lazy var mouseVM = MouseViewModel()
-    private(set) lazy var pointerVM = PointerViewModel()
+    private(set) lazy var mouseVM = MouseViewModel()   // owns buttons, gestures, scroll AND pointer (per-app profiles)
     private(set) lazy var remapVM = RemapViewModel()
     private(set) lazy var settingsVM = SettingsViewModel()
     private(set) lazy var snippetVM = SnippetViewModel()
@@ -63,7 +61,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         clipboardVM.handleTerminate()
-        pointerVM.restoreDefault()   // don't leave the system's pointer acceleration changed
+        mouseVM.restorePointerDefault()   // don't leave the system's pointer acceleration changed
         remapVM.hyperCleanupForQuit()   // never leave Caps Lock remapped to a dead key
     }
 
@@ -98,9 +96,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         settingsVM.applyDockPolicy()   // menu-bar only, or a Dock icon if the user chose it
         clipboardVM.start()
-        scrollVM.apply()          // re-enable saved scroll reversal
         mouseVM.apply()           // re-enable saved button mappings
-        pointerVM.apply()         // re-apply saved pointer-acceleration override
         remapVM.apply()           // re-enable saved key remaps
         snippetVM.applyExpansion() // re-arm text expansion
         settingsVM.applyLoginItem()

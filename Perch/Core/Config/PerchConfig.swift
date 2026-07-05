@@ -48,10 +48,13 @@ extension PerchConfig {
         var debounce: Debounce
         var detected: [MouseTrigger]
         var whitelist: [MouseTrigger]
-        var profiles: [MouseProfile]
-        var scroll: Scroll
-        var pointer: Pointer
-        var swap: Bool? = nil   // optional so files from before this field still decode
+        var profiles: [MouseProfile]   // scroll/pointer now live INSIDE each profile
+        var swap: Bool? = nil          // optional so files from before this field still decode
+
+        // Legacy fields — old backup files carried global scroll/pointer; import folds them
+        // into the Default profile. New exports leave them nil.
+        var scroll: Scroll? = nil
+        var pointer: Pointer? = nil
 
         struct Debounce: Codable { var on: Bool; var ms: Double }
         struct Scroll: Codable { var reversed: Bool; var linear: Bool; var speed: Double; var auto: Auto; var smooth: Bool? = nil }

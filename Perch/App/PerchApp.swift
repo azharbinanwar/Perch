@@ -27,9 +27,7 @@ private extension View {
     /// Inject every ViewModel the app's views need.
     func injecting(_ delegate: AppDelegate) -> some View {
         self.environment(delegate.clipboardVM)
-            .environment(delegate.scrollVM)
             .environment(delegate.mouseVM)
-            .environment(delegate.pointerVM)
             .environment(delegate.remapVM)
             .environment(delegate.settingsVM)
             .environment(delegate.snippetVM)

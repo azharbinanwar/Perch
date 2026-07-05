@@ -7,6 +7,7 @@
 //  Requires Accessibility permission.
 //
 
+import AppKit
 import CoreGraphics
 import Foundation
 
@@ -16,22 +17,57 @@ struct ScrollConfig: Equatable {
     var linear = false        // flat, no acceleration
     var speed: Double = 1     // multiplier (or fixed step when linear)
     var smooth = false        // glide wheel ticks instead of jumping
+    var turboOn = false       // hold a modifier while scrolling → extra speed
+    var turboFlag: CGEventFlags = .maskAlternate
+    var turboSpeed: Double = 4
 
-    var active: Bool { reversed || linear || speed != 1 || smooth }
+    var active: Bool { reversed || linear || speed != 1 || smooth || turboOn }
+
+    /// Engine input from a profile's settings — the single mapping point between the two.
+    init(_ settings: ScrollSettings) {
+        self.init(reversed: settings.reversed, linear: settings.linear,
+                  speed: settings.speed, smooth: settings.smooth,
+                  turboOn: settings.turboOn, turboFlag: Self.flag(for: settings.turboKey),
+                  turboSpeed: settings.turboSpeed)
+    }
+
+    init(reversed: Bool = false, linear: Bool = false, speed: Double = 1, smooth: Bool = false,
+         turboOn: Bool = false, turboFlag: CGEventFlags = .maskAlternate, turboSpeed: Double = 4) {
+        self.reversed = reversed
+        self.linear = linear
+        self.speed = speed
+        self.smooth = smooth
+        self.turboOn = turboOn
+        self.turboFlag = turboFlag
+        self.turboSpeed = turboSpeed
+    }
+
+    private static func flag(for key: TurboKey) -> CGEventFlags {
+        switch key {
+        case .option:  return .maskAlternate
+        case .command: return .maskCommand
+        case .control: return .maskControl
+        }
+    }
 }
 
 final class ScrollManager {
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private(set) var isRunning = false
-    private var config = ScrollConfig()
 
-    /// Apply a config; starts or stops the tap as needed. Returns false if a transform is
-    /// wanted but Accessibility is missing.
+    // Per-app configs. Scrolling goes to the window under the CURSOR (macOS scrolls it without
+    // activating the app), so the config is chosen by the app under the pointer, not frontmost.
+    private var defaultConfig = ScrollConfig()
+    private var appConfigs: [String: ScrollConfig] = [:]   // bundle id → config
+
+    /// Apply the Default + per-app configs; starts or stops the tap as needed.
+    /// Returns false if a transform is wanted but Accessibility is missing.
     @discardableResult
-    func apply(_ newConfig: ScrollConfig) -> Bool {
-        config = newConfig
-        if config.active {
+    func apply(default defaultConfig: ScrollConfig, perApp: [String: ScrollConfig]) -> Bool {
+        self.defaultConfig = defaultConfig
+        self.appConfigs = perApp
+        if defaultConfig.active || perApp.values.contains(where: \.active) {
             return start()
         } else {
             stop()
@@ -94,12 +130,41 @@ final class ScrollManager {
         // Only transform the mouse — leave the trackpad alone.
         guard !isTrackpad(event) else { return Unmanaged.passUnretained(event) }
 
-        transform(axis: (.scrollWheelEventDeltaAxis1, .scrollWheelEventPointDeltaAxis1, .scrollWheelEventFixedPtDeltaAxis1), of: event)
-        transform(axis: (.scrollWheelEventDeltaAxis2, .scrollWheelEventPointDeltaAxis2, .scrollWheelEventFixedPtDeltaAxis2), of: event)
+        // The app under the cursor decides which profile's scroll settings apply.
+        var config = configForCursor(at: event.location)
+        guard config.active else { return Unmanaged.passUnretained(event) }
+
+        // Turbo: boost while the chosen modifier is held — and strip the flag from the event so
+        // the app underneath sees plain fast scrolling, never "⌥+scroll" (no zoom surprises).
+        if config.turboOn, event.flags.contains(config.turboFlag) {
+            config.speed *= config.turboSpeed
+            event.flags.subtract(config.turboFlag)
+        }
+
+        transform(axis: (.scrollWheelEventDeltaAxis1, .scrollWheelEventPointDeltaAxis1, .scrollWheelEventFixedPtDeltaAxis1), of: event, config: config)
+        transform(axis: (.scrollWheelEventDeltaAxis2, .scrollWheelEventPointDeltaAxis2, .scrollWheelEventFixedPtDeltaAxis2), of: event, config: config)
 
         // Smooth: swallow the chunky step and glide the same distance over the next frames.
-        if config.smooth { return smoothed(event) }
+        if config.smooth { return smoothed(event, config: config) }
         return Unmanaged.passUnretained(event)
+    }
+
+    // MARK: - App under the cursor
+
+    private var cachedCursorPoint = CGPoint(x: -1_000_000, y: -1_000_000)
+    private var cachedBundleID: String?
+
+    /// Bundle id of the app owning the topmost normal window under the cursor. Cached until the
+    /// cursor moves meaningfully — scroll streams fire hundreds of events at one position.
+    private func configForCursor(at point: CGPoint) -> ScrollConfig {
+        guard !appConfigs.isEmpty else { return defaultConfig }   // no per-app profiles → skip the lookup
+
+        if hypot(point.x - cachedCursorPoint.x, point.y - cachedCursorPoint.y) > 8 {
+            cachedCursorPoint = point
+            cachedBundleID = WindowAtPoint.info(under: point)?.bundleID
+        }
+        guard let bundleID = cachedBundleID, let config = appConfigs[bundleID] else { return defaultConfig }
+        return config
     }
 
     // MARK: - Smooth scrolling (glide)
@@ -116,13 +181,13 @@ final class ScrollManager {
     /// Add the (already reversed/scaled) step to the glide target and swallow the original.
     /// Pixels get a minimum distance so a slow tick's ~10px glide is visible; the LINE total is
     /// carried exactly, so line-based apps (Terminal) still get precisely 1 line per tick.
-    private func smoothed(_ event: CGEvent) -> Unmanaged<CGEvent>? {
+    private func smoothed(_ event: CGEvent, config: ScrollConfig) -> Unmanaged<CGEvent>? {
         let pointY = Double(event.getIntegerValueField(.scrollWheelEventPointDeltaAxis1))
         let pointX = Double(event.getIntegerValueField(.scrollWheelEventPointDeltaAxis2))
         let lineY = Double(event.getIntegerValueField(.scrollWheelEventDeltaAxis1))
         let lineX = Double(event.getIntegerValueField(.scrollWheelEventDeltaAxis2))
-        pendingY += minimumStep(pointY != 0 ? pointY : lineY * 10)
-        pendingX += minimumStep(pointX != 0 ? pointX : lineX * 10)
+        pendingY += minimumStep(pointY != 0 ? pointY : lineY * 10, speed: config.speed)
+        pendingX += minimumStep(pointX != 0 ? pointX : lineX * 10, speed: config.speed)
         pendingLinesY += lineY
         pendingLinesX += lineX
 
@@ -134,10 +199,12 @@ final class ScrollManager {
         return nil
     }
 
-    /// A slow tick reports ~10px — floor it to 40px so the glide is actually visible.
-    private func minimumStep(_ delta: Double) -> Double {
+    /// A slow tick reports ~10px — floor it so the glide is actually visible. The floor scales
+    /// with the user's speed multiplier, otherwise it would flatten every speed below ~4×.
+    private func minimumStep(_ delta: Double, speed: Double) -> Double {
         guard delta != 0 else { return 0 }
-        return abs(delta) < 40 ? (delta > 0 ? 40 : -40) : delta
+        let floor = 40 * speed
+        return abs(delta) < floor ? (delta > 0 ? floor : -floor) : delta
     }
 
     /// Each frame emits ~14% of what's left (eased glide, ~300ms per notch), minimum 1px.
@@ -196,7 +263,7 @@ final class ScrollManager {
 
     /// Apply reverse / speed / linear to one axis. Read line+point first, then set all three
     /// (setting the line delta regenerates point, so we overwrite point/fixed after).
-    private func transform(axis: Axis, of event: CGEvent) {
+    private func transform(axis: Axis, of event: CGEvent, config: ScrollConfig) {
         let line = event.getIntegerValueField(axis.line)
         let point = event.getIntegerValueField(axis.point)
         guard line != 0 || point != 0 else { return }

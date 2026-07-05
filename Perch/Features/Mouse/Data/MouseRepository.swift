@@ -72,12 +72,39 @@ final class MouseRepository {
         if let data = defaults.data(forKey: Keys.Defaults.mouseProfiles),
            let profiles = try? JSONDecoder().decode([MouseProfile].self, from: data),
            profiles.contains(where: { $0.isDefault }) {
-            return profiles
+            return migrateScrollPointerIfNeeded(profiles)
         }
         let migrated = MouseProfile(appBundleID: nil, appName: "Default",
                                     mappings: load(), gestures: loadGestures())
         saveProfiles([migrated])
-        return [migrated]
+        return migrateScrollPointerIfNeeded([migrated])
+    }
+
+    /// One-time: scroll/pointer used to be global plist keys — fold them into the Default
+    /// profile, then remove the old keys. Idempotent (the keys are gone after the first run).
+    private func migrateScrollPointerIfNeeded(_ profiles: [MouseProfile]) -> [MouseProfile] {
+        typealias K = Keys.Defaults
+        let legacyKeys = [K.scrollReversed, K.scrollLinear, K.scrollSpeed, K.scrollSmooth,
+                          K.autoScrollOn, K.autoScrollButton, K.autoScrollSpeed,
+                          K.pointerOverride, K.pointerValue]
+        guard legacyKeys.contains(where: { defaults.object(forKey: $0) != nil }),
+              let i = profiles.firstIndex(where: { $0.isDefault }) else { return profiles }
+
+        var migrated = profiles
+        migrated[i].scroll = ScrollSettings(
+            reversed: defaults.bool(forKey: K.scrollReversed),
+            linear: defaults.bool(forKey: K.scrollLinear),
+            speed: defaults.object(forKey: K.scrollSpeed) as? Double ?? 1,
+            smooth: defaults.bool(forKey: K.scrollSmooth),
+            autoOn: defaults.bool(forKey: K.autoScrollOn),
+            autoButton: defaults.object(forKey: K.autoScrollButton) as? Int ?? 2,
+            autoSpeed: defaults.object(forKey: K.autoScrollSpeed) as? Double ?? 1)
+        migrated[i].pointer = PointerSettings(
+            override: defaults.bool(forKey: K.pointerOverride),
+            value: defaults.object(forKey: K.pointerValue) as? Double ?? 0)
+        legacyKeys.forEach { defaults.removeObject(forKey: $0) }
+        saveProfiles(migrated)
+        return migrated
     }
 
     func saveProfiles(_ profiles: [MouseProfile]) {
