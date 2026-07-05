@@ -98,7 +98,8 @@ struct GeneralView: View {
         scroll.reload()
         pointer.reload()
         snippet.reload()
-        clipboard.reloadHistory()
+        clipboard.reloadSettings()   // limits, toggles, exclusions — applied live
+        clipboard.reloadHistory()    // the saved item list (system clipboard untouched)
     }
 
     private func toggle(_ binding: Binding<Bool>) -> some View {
