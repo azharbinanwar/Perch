@@ -18,6 +18,9 @@ struct RemapTabView: View {
     @State private var picking = false               // action catalogue for the output
     @State private var targetPrompt: ActionKind?     // picked action still needs a target
 
+    private struct ModPick: Identifiable { let id: String }
+    @State private var doubleTapPicking: ModPick?
+
 
     var body: some View {
         ScrollView {
@@ -37,6 +40,7 @@ struct RemapTabView: View {
                 }
                 keyboardGroup
                 hyperGroup
+                doubleTapGroup
                 shortcutsGroup
             }
             .padding(20)
@@ -97,6 +101,8 @@ struct RemapTabView: View {
             }
             .padding(6)
         }
+        .opacity(vm.isEnabled ? 1 : 0.5)
+        .disabled(!vm.isEnabled)
     }
 
     private func tapPicker(_ value: HyperKeyManager.TapAction,
@@ -107,13 +113,54 @@ struct RemapTabView: View {
         .labelsHidden().frame(width: 130)
     }
 
+    // MARK: - Double-tap modifiers
+
+    private var doubleTapGroup: some View {
+        GroupBox("Double-Tap") {
+            VStack(alignment: .leading, spacing: 10) {
+                SettingRow(title: "Enable double-tap",
+                           subtitle: "Tap a modifier twice quickly to run an action — normal shortcuts are never affected.") {
+                    Toggle("", isOn: Binding(get: { vm.doubleTap.enabled }, set: { vm.setDoubleTapEnabled($0) }))
+                        .toggleStyle(.switch).labelsHidden()
+                }
+                if vm.doubleTap.enabled {
+                    ForEach(DoubleTapManager.modifiers, id: \.key) { mod in
+                        Divider()
+                        SettingRow(title: "Double-tap \(mod.symbol) \(mod.name)", subtitle: "") {
+                            Button {
+                                doubleTapPicking = ModPick(id: mod.key)
+                            } label: {
+                                Text(vm.doubleTap.actions[mod.key]?.displayLabel ?? "Do Nothing")
+                                    .frame(minWidth: 110)
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(6)
+        }
+        .opacity(vm.isEnabled ? 1 : 0.5)
+        .disabled(!vm.isEnabled)
+        .sheet(item: $doubleTapPicking) { pick in
+            // Target-needing actions (Open App…, scripts) skipped for now — keeps the flow one click.
+            ActionPicker(excluding: doubleTapExcluded) { kind in
+                vm.setDoubleTapAction(kind == .disabled ? nil : Action(kind: kind), for: pick.id)
+            }
+        }
+    }
+
+    /// Double-tap picks fire immediately — no target prompt flow — so exclude kinds needing one.
+    private var doubleTapExcluded: Set<ActionKind> {
+        Set(ActionKind.allCases.filter { $0.target != .none }).union([.passThrough])
+    }
+
     // MARK: - Enable + profile + modifier-swap note
 
     private var keyboardGroup: some View {
         GroupBox("Keyboard") {
             VStack(alignment: .leading, spacing: 12) {
-                SettingRow(title: "Enable remapping",
-                           subtitle: "Rewrites your keys and shortcuts. Applies to all keyboards.") {
+                SettingRow(title: "Enable Keys",
+                           subtitle: "Master switch — key remapping, Hyper Key, and double-tap. Applies to all keyboards.") {
                     Toggle("", isOn: Binding(get: { vm.isEnabled }, set: { _ in vm.toggleEnabled() }))
                         .toggleStyle(.switch).labelsHidden()
                 }

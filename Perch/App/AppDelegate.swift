@@ -153,6 +153,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ServiceLocator.shared.register(RemapRepository.self)     { RemapRepository() }
         ServiceLocator.shared.register(RemapManager.self)        { RemapManager() }
         ServiceLocator.shared.register(HyperKeyManager.self)     { HyperKeyManager() }
+        ServiceLocator.shared.register(DoubleTapManager.self)    { DoubleTapManager() }
         ServiceLocator.shared.register(SettingsRepository.self)  { SettingsRepository() }
         ServiceLocator.shared.register(SnippetRepository.self)   { SnippetRepository() }
     }

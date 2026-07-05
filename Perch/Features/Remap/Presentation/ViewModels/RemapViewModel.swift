@@ -35,25 +35,32 @@ final class RemapViewModel {
     private(set) var hyperDoubleTap: HyperKeyManager.TapAction
     private(set) var hyperShift: Bool
 
+    // Double-tap modifiers.
+    private(set) var doubleTap: DoubleTapConfig
+
     private let repository: RemapRepository
     private let manager: RemapManager
     private let hyper: HyperKeyManager
+    private let doubleTapManager: DoubleTapManager
     private let recorder = KeyChordRecorder()
     private let defaults = UserDefaults.standard
     private var activationObserver: NSObjectProtocol?
 
     init(repository: RemapRepository = ServiceLocator.shared.resolve(RemapRepository.self),
          manager: RemapManager = ServiceLocator.shared.resolve(RemapManager.self),
-         hyper: HyperKeyManager = ServiceLocator.shared.resolve(HyperKeyManager.self)) {
+         hyper: HyperKeyManager = ServiceLocator.shared.resolve(HyperKeyManager.self),
+         doubleTapManager: DoubleTapManager = ServiceLocator.shared.resolve(DoubleTapManager.self)) {
         self.repository = repository
         self.manager = manager
         self.hyper = hyper
+        self.doubleTapManager = doubleTapManager
         self.isEnabled = defaults.bool(forKey: Keys.Defaults.remapEnabled)
         self.profiles = repository.loadProfiles()
         self.hyperEnabled = defaults.bool(forKey: Keys.Defaults.hyperEnabled)
         self.hyperTap = HyperKeyManager.TapAction(rawValue: defaults.string(forKey: Keys.Defaults.hyperTap) ?? "") ?? .escape
         self.hyperDoubleTap = HyperKeyManager.TapAction(rawValue: defaults.string(forKey: Keys.Defaults.hyperDoubleTap) ?? "") ?? .capsLock
         self.hyperShift = defaults.object(forKey: Keys.Defaults.hyperShift) as? Bool ?? true
+        self.doubleTap = Self.loadDoubleTap(defaults)
 
         // Let the recorder treat a held hyper key like a modifier (nil = feature off → unchanged).
         recorder.hyperFlags = { [weak self] in
@@ -72,6 +79,7 @@ final class RemapViewModel {
         activeBundleID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
         applyActive()
         applyHyper()
+        applyDoubleTap()
         guard isEnabled else { return }
         needsPermission = !manager.start()
     }
@@ -84,9 +92,44 @@ final class RemapViewModel {
         hyperTap = HyperKeyManager.TapAction(rawValue: defaults.string(forKey: Keys.Defaults.hyperTap) ?? "") ?? .escape
         hyperDoubleTap = HyperKeyManager.TapAction(rawValue: defaults.string(forKey: Keys.Defaults.hyperDoubleTap) ?? "") ?? .capsLock
         hyperShift = defaults.object(forKey: Keys.Defaults.hyperShift) as? Bool ?? true
+        doubleTap = Self.loadDoubleTap(defaults)
         if isEnabled { needsPermission = !manager.start() }
         applyActive()
         applyHyper()
+        applyDoubleTap()
+    }
+
+    // MARK: - Double-tap modifiers
+
+    private static func loadDoubleTap(_ defaults: UserDefaults) -> DoubleTapConfig {
+        guard let data = defaults.data(forKey: Keys.Defaults.doubleTap),
+              let config = try? JSONDecoder().decode(DoubleTapConfig.self, from: data) else { return .default }
+        return config
+    }
+
+    func setDoubleTapEnabled(_ on: Bool) {
+        doubleTap.enabled = on
+        saveDoubleTap()
+    }
+
+    /// nil action clears the modifier back to "Do Nothing".
+    func setDoubleTapAction(_ action: Action?, for modifier: String) {
+        doubleTap.actions[modifier] = action
+        saveDoubleTap()
+    }
+
+    private func saveDoubleTap() {
+        if let data = try? JSONEncoder().encode(doubleTap) {
+            defaults.set(data, forKey: Keys.Defaults.doubleTap)
+        }
+        applyDoubleTap()
+    }
+
+    /// Push config into the engine. Master switch off beats everything.
+    private func applyDoubleTap() {
+        doubleTapManager.config = doubleTap
+        doubleTapManager.isActive = isEnabled && doubleTap.enabled
+        if doubleTapManager.isActive { doubleTapManager.start() }
     }
 
     // MARK: - Hyper Key
@@ -138,11 +181,12 @@ final class RemapViewModel {
     func hyperCleanupForQuit() { hyper.cleanupForQuit() }
 
     /// Push the hyper settings into the engine (and the hidutil remap on/off with them).
+    /// The Keys master switch off beats the feature's own toggle.
     private func applyHyper() {
         hyper.tapAction = hyperTap
         hyper.doubleTapAction = hyperDoubleTap
         hyper.includeShift = hyperShift
-        if hyperEnabled { hyper.enable() } else { hyper.disable() }
+        if hyperEnabled && isEnabled { hyper.enable() } else { hyper.disable() }
     }
 
     // MARK: - Profiles
@@ -224,6 +268,8 @@ final class RemapViewModel {
             needsPermission = false
         }
         applyActive()
+        applyHyper()       // master off also disables Hyper (removes the system Caps remap)
+        applyDoubleTap()   // …and double-tap
     }
 
     func toggleRule(_ rule: RemapRule) {

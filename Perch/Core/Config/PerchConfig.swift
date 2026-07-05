@@ -34,7 +34,8 @@ extension PerchConfig {
     struct KeysCfg: Codable {
         var enabled: Bool
         var profiles: [RemapProfile]
-        var hyper: HyperCfg? = nil   // optional so files from before this existed still decode
+        var hyper: HyperCfg? = nil           // optionals so files from before these existed still decode
+        var doubleTap: DoubleTapConfig? = nil
 
         struct HyperCfg: Codable { var enabled: Bool; var tap: String; var doubleTap: String; var shift: Bool }
     }

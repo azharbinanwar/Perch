@@ -45,6 +45,7 @@ enum Keys {
         static let hyperTap         = "keys.hyper.tap"       // single tap alone: Escape / Caps Lock / nothing
         static let hyperDoubleTap   = "keys.hyper.doubleTap"
         static let hyperShift       = "keys.hyper.shift"     // include ⇧ in the hyper combo
+        static let doubleTap        = "keys.doubleTap"       // JSON blob: enabled + per-modifier actions
         static let appSettings      = "settings"   // legacy blob — migrated to the keys below on first load
         static let settingsMenuItemCount     = "settings.menuItemCount"
         static let settingsOpenAtLogin       = "settings.openAtLogin"

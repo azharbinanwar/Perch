@@ -36,7 +36,9 @@ enum ConfigService {
                         hyper: .init(enabled: defaults.bool(forKey: K.hyperEnabled),
                                      tap: defaults.string(forKey: K.hyperTap) ?? "Escape",
                                      doubleTap: defaults.string(forKey: K.hyperDoubleTap) ?? "Caps Lock",
-                                     shift: defaults.object(forKey: K.hyperShift) as? Bool ?? true)),
+                                     shift: defaults.object(forKey: K.hyperShift) as? Bool ?? true),
+                        doubleTap: defaults.data(forKey: K.doubleTap)
+                            .flatMap { try? JSONDecoder().decode(DoubleTapConfig.self, from: $0) }),
             mouse: .init(
                 enabled: defaults.object(forKey: K.mouseEnabled) as? Bool ?? true,
                 debounce: .init(on: defaults.bool(forKey: K.mouseDebounceOn),
@@ -95,6 +97,11 @@ enum ConfigService {
             put(K.hyperTap, c.keys.hyper?.tap ?? "Escape")
             put(K.hyperDoubleTap, c.keys.hyper?.doubleTap ?? "Caps Lock")
             put(K.hyperShift, c.keys.hyper?.shift ?? true)
+            if let dt = c.keys.doubleTap, let data = try? JSONEncoder().encode(dt) {
+                defaults.set(data, forKey: K.doubleTap)
+            } else {
+                defaults.removeObject(forKey: K.doubleTap)
+            }
             remapRepo.saveProfiles(c.keys.profiles)
         }
 
