@@ -47,7 +47,8 @@ enum ConfigService {
                                           button: defaults.object(forKey: K.autoScrollButton) as? Int ?? 2,
                                           speed: defaults.object(forKey: K.autoScrollSpeed) as? Double ?? 1)),
                 pointer: .init(override: defaults.bool(forKey: K.pointerOverride),
-                               value: defaults.object(forKey: K.pointerValue) as? Double ?? 0)),
+                               value: defaults.object(forKey: K.pointerValue) as? Double ?? 0),
+                swap: defaults.bool(forKey: K.mouseSwap)),
             clipboard: .init(
                 enabled: defaults.object(forKey: K.clipboardEnabled) as? Bool ?? true,
                 recording: defaults.object(forKey: K.clipboardRecording) as? Bool ?? true,
@@ -104,6 +105,7 @@ enum ConfigService {
             put(K.autoScrollSpeed, c.mouse.scroll.auto.speed)
             put(K.pointerOverride, c.mouse.pointer.override)
             put(K.pointerValue, c.mouse.pointer.value)
+            put(K.mouseSwap, c.mouse.swap ?? false)
         }
 
         if sections.contains(.clipboard) {

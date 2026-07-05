@@ -29,6 +29,9 @@ final class MouseViewModel {
     private(set) var debounce: Bool
     private(set) var debounceMs: Double
 
+    // Swap primary/secondary buttons (left-handed).
+    private(set) var swapButtons: Bool
+
     // Profiles.
     private(set) var profiles: [MouseProfile]
     private(set) var editingBundleID: String?   // nil = Default; which profile the UI edits
@@ -70,6 +73,7 @@ final class MouseViewModel {
         self.detectedButtons = repository.loadDetected()
         self.debounce = defaults.bool(forKey: Keys.Defaults.mouseDebounceOn)
         self.debounceMs = defaults.object(forKey: Keys.Defaults.mouseDebounceMs) as? Double ?? 50
+        self.swapButtons = defaults.bool(forKey: Keys.Defaults.mouseSwap)
         self.profiles = repository.loadProfiles()
         monitor.onButton = { [weak self] in self?.handleAddButton($0) }
         deviceMonitor.onChange = { [weak self] in self?.devices = $0 }
@@ -94,6 +98,7 @@ final class MouseViewModel {
         detectedButtons = repository.loadDetected()
         debounce = defaults.bool(forKey: Keys.Defaults.mouseDebounceOn)
         debounceMs = defaults.object(forKey: Keys.Defaults.mouseDebounceMs) as? Double ?? 50
+        swapButtons = defaults.bool(forKey: Keys.Defaults.mouseSwap)
         profiles = repository.loadProfiles()
         applyActive()
         debouncer.apply(enabled: debounce, thresholdMs: debounceMs)
@@ -150,7 +155,14 @@ final class MouseViewModel {
         let active = profiles.first { $0.appBundleID == activeBundleID } ?? defaultProfile
         capture.apply(mappings: isEnabled ? active.mappings : [],
                       gestures: isEnabled ? active.gestures : [])
+        capture.swapEnabled = isEnabled && swapButtons
         if isEnabled { capture.start() }   // idempotent; keeps the tap alive & retries if permission was just granted
+    }
+
+    func setSwapButtons(_ on: Bool) {
+        swapButtons = on
+        defaults.set(on, forKey: Keys.Defaults.mouseSwap)
+        applyActive()
     }
 
     private func registerActivationObserver() {

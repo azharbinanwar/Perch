@@ -52,7 +52,7 @@ enum ConfigSection: String, CaseIterable, Identifiable {
         case .keys:
             return [K.remapEnabled]
         case .mouse:
-            return [K.mouseEnabled, K.mouseDebounceOn, K.mouseDebounceMs,
+            return [K.mouseEnabled, K.mouseSwap, K.mouseDebounceOn, K.mouseDebounceMs,
                     K.scrollReversed, K.scrollLinear, K.scrollSpeed,
                     K.autoScrollOn, K.autoScrollButton, K.autoScrollSpeed,
                     K.pointerOverride, K.pointerValue]

@@ -14,7 +14,7 @@ import Foundation
 // MARK: - Categories (picker sections, in display order)
 
 enum ActionGroup: String, CaseIterable, Identifiable {
-    case none, editing, navigation, window, media, perch, clicks, launch, custom, automation
+    case none, editing, navigation, view, layout, window, media, perch, clicks, launch, custom, automation
     var id: String { rawValue }
 
     var title: String {
@@ -22,6 +22,8 @@ enum ActionGroup: String, CaseIterable, Identifiable {
         case .none:       return "None"
         case .editing:    return "Editing"
         case .navigation: return "Navigation"
+        case .view:       return "View"
+        case .layout:     return "Window Layout"
         case .window:     return "Window & System"
         case .media:      return "Media"
         case .perch:      return "Perch"
@@ -46,8 +48,10 @@ enum ActionKind: String, Codable, CaseIterable, Identifiable {
     case copy, cut, paste, pastePlain, undo, redo, selectAll, deleteKey
     case find, save, emojiPicker
     case back, forward, missionControl, appExpose, spotlight, prevSpace, nextSpace
+    case zoomIn, zoomOut
     case screenshotArea, screenshotWindow, screenshotFull, screenshotTool
     case minimizeWindow, closeWindow, quitApp, hideApp, forceQuit, toggleFullScreen, lockScreen
+    case windowLeftHalf, windowRightHalf, windowMaximize, windowCenter
     case playPause, nextTrack, prevTrack, volumeUp, volumeDown, mute, brightnessUp, brightnessDown
     case openClipboard, pasteLast
     case doubleClick, tripleClick, middleClick
@@ -101,18 +105,24 @@ enum ActionKind: String, Codable, CaseIterable, Identifiable {
         case .spotlight:       return .init(name: "Spotlight", icon: "magnifyingglass", category: .navigation, description: "Opens Spotlight search.", tryable: true, target: .none, premium: false)
         case .prevSpace:       return .init(name: "Previous Space", icon: "arrow.left.to.line", category: .navigation, description: "Switches to the desktop on the left.", tryable: true, target: .none, premium: false)
         case .nextSpace:       return .init(name: "Next Space", icon: "arrow.right.to.line", category: .navigation, description: "Switches to the desktop on the right.", tryable: true, target: .none, premium: false)
+        case .zoomIn:          return .init(name: "Zoom In", icon: "plus.magnifyingglass", category: .view, description: "Zooms in (⌘+) — browsers, editors, Finder.", tryable: false, target: .none, premium: false)
+        case .zoomOut:         return .init(name: "Zoom Out", icon: "minus.magnifyingglass", category: .view, description: "Zooms out (⌘−).", tryable: false, target: .none, premium: false)
 
         case .screenshotArea:  return .init(name: "Screenshot – Area", icon: "camera.viewfinder", category: .window, description: "Screenshot of a selected area.", tryable: true, target: .none, premium: false)
         case .screenshotWindow: return .init(name: "Screenshot – Window", icon: "macwindow", category: .window, description: "Screenshot of a window.", tryable: true, target: .none, premium: false)
         case .screenshotFull:  return .init(name: "Screenshot – Full", icon: "camera", category: .window, description: "Screenshot of the whole screen.", tryable: true, target: .none, premium: false)
         case .screenshotTool:  return .init(name: "Screenshot – Tool", icon: "camera.on.rectangle", category: .window, description: "Opens the screenshot toolbar.", tryable: true, target: .none, premium: false)
-        case .minimizeWindow:  return .init(name: "Minimize Window", icon: "minus.rectangle", category: .window, description: "Minimizes the front window (⌘M).", tryable: false, target: .none, premium: false)
+        case .minimizeWindow:  return .init(name: "Minimize Window", icon: "minus.rectangle", category: .layout, description: "Minimizes the front window (⌘M).", tryable: false, target: .none, premium: false)
         case .closeWindow:     return .init(name: "Close Window", icon: "xmark.rectangle", category: .window, description: "Closes the front window (⌘W).", tryable: false, target: .none, premium: false)
         case .quitApp:         return .init(name: "Quit App", icon: "xmark.circle", category: .window, description: "Quits the front app.", tryable: false, target: .none, premium: false)
         case .hideApp:         return .init(name: "Hide App", icon: "eye.slash", category: .window, description: "Hides the front app.", tryable: false, target: .none, premium: false)
         case .forceQuit:       return .init(name: "Force Quit App", icon: "exclamationmark.octagon", category: .window, description: "Immediately force-quits the front app.", tryable: false, target: .none, premium: false)
-        case .toggleFullScreen: return .init(name: "Toggle Full Screen", icon: "arrow.up.left.and.arrow.down.right", category: .window, description: "Enters or exits full screen (⌃⌘F).", tryable: false, target: .none, premium: false)
+        case .toggleFullScreen: return .init(name: "Toggle Full Screen", icon: "arrow.up.left.and.arrow.down.right", category: .layout, description: "Enters or exits full screen (⌃⌘F).", tryable: false, target: .none, premium: false)
         case .lockScreen:      return .init(name: "Lock Screen", icon: "lock", category: .window, description: "Locks the screen (⌃⌘Q).", tryable: true, target: .none, premium: false)
+        case .windowLeftHalf:  return .init(name: "Window – Left Half", icon: "rectangle.lefthalf.filled", category: .layout, description: "Snaps the front window to the left half of the screen.", tryable: false, target: .none, premium: false)
+        case .windowRightHalf: return .init(name: "Window – Right Half", icon: "rectangle.righthalf.filled", category: .layout, description: "Snaps the front window to the right half of the screen.", tryable: false, target: .none, premium: false)
+        case .windowMaximize:  return .init(name: "Window – Maximize", icon: "rectangle.inset.filled", category: .layout, description: "Fills the screen with the front window (not full-screen mode).", tryable: false, target: .none, premium: false)
+        case .windowCenter:    return .init(name: "Window – Center", icon: "rectangle.center.inset.filled", category: .layout, description: "Centers the front window without resizing it.", tryable: false, target: .none, premium: false)
 
         case .playPause:       return .init(name: "Play/Pause", icon: "playpause", category: .media, description: "Play / pause media.", tryable: true, target: .none, premium: false)
         case .nextTrack:       return .init(name: "Next Track", icon: "forward.end", category: .media, description: "Next track.", tryable: true, target: .none, premium: false)
@@ -167,6 +177,8 @@ enum ActionKind: String, Codable, CaseIterable, Identifiable {
         case .spotlight:        return (49, .maskCommand)                    // ⌘Space
         case .prevSpace:        return (123, .maskControl)                   // ⌃←
         case .nextSpace:        return (124, .maskControl)                   // ⌃→
+        case .zoomIn:           return (24, .maskCommand)                    // ⌘= (the "+" key)
+        case .zoomOut:          return (27, .maskCommand)                    // ⌘−
         case .screenshotArea:   return (21, [.maskCommand, .maskShift])      // ⌘⇧4
         case .screenshotFull:   return (20, [.maskCommand, .maskShift])      // ⌘⇧3
         case .screenshotTool:   return (23, [.maskCommand, .maskShift])      // ⌘⇧5

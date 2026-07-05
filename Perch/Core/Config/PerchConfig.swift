@@ -44,6 +44,7 @@ extension PerchConfig {
         var profiles: [MouseProfile]
         var scroll: Scroll
         var pointer: Pointer
+        var swap: Bool? = nil   // optional so files from before this field still decode
 
         struct Debounce: Codable { var on: Bool; var ms: Double }
         struct Scroll: Codable { var reversed: Bool; var linear: Bool; var speed: Double; var auto: Auto }

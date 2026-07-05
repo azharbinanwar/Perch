@@ -205,6 +205,13 @@ struct MouseTabView: View {
                 }
                 .opacity(mouse.isEnabled ? 1 : 0.4)
                 .disabled(!mouse.isEnabled)
+                Divider()
+                SettingRow(title: "Swap primary & secondary buttons",
+                           subtitle: "Left-handed use — left click becomes right click and vice versa.") {
+                    toggle(mouse.swapButtons) { mouse.setSwapButtons($0) }
+                }
+                .opacity(mouse.isEnabled ? 1 : 0.5)
+                .disabled(!mouse.isEnabled)
             }
             .padding(6)
         }

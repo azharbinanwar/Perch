@@ -30,6 +30,12 @@ enum ActionRunner {
         case .hideApp:   frontApp()?.hide()
         case .forceQuit: frontApp()?.forceTerminate()
 
+        // Window snapping — moves the front app's focused window (never Perch's own).
+        case .windowLeftHalf:  WindowMover.apply(.leftHalf)
+        case .windowRightHalf: WindowMover.apply(.rightHalf)
+        case .windowMaximize:  WindowMover.apply(.maximize)
+        case .windowCenter:    WindowMover.apply(.center)
+
         case .openClipboard:
             NotificationCenter.default.post(name: .openClipboardPopup, object: nil)
         case .pasteLast:

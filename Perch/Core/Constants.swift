@@ -31,6 +31,7 @@ enum Keys {
         static let pointerValue     = "mouse.pointer.value"    // acceleration amount (0 = flat)
         static let mouseMappings    = "mouse.mappings"
         static let mouseEnabled     = "mouse.enabled"
+        static let mouseSwap        = "mouse.swap"        // swap primary/secondary buttons (left-handed)
         static let mouseWhitelist   = "mouse.whitelist"   // registered key-chord buttons
         static let mouseDetected    = "mouse.detected"    // scanned physical extra buttons
         static let mouseDebounceOn  = "mouse.debounce.on" // ignore accidental double-fires

@@ -20,6 +20,9 @@ final class MouseCaptureManager {
     private var keyClicks: [MouseTrigger: Action] = [:]
     private var gestures: [Int: MouseGesture] = [:]
 
+    /// Swap primary/secondary buttons (left-handed). Set by the ViewModel; read per event.
+    var swapEnabled = false
+
     private let moveThreshold: CGFloat = 30
     private let holdDelay: TimeInterval = 0.30
     private let doubleWindow: TimeInterval = 0.25
@@ -58,8 +61,11 @@ final class MouseCaptureManager {
     func start() -> Bool {
         guard eventTap == nil, Permissions.isAccessibilityTrusted else { return false }
         // Always include keyDown so adding a keystroke-button never needs a tap recreate.
+        // Left/right drags are tapped for the swap feature — without them a swapped drag
+        // would report the un-swapped button mid-drag.
         let types: [CGEventType] = [
-            .leftMouseDown, .leftMouseUp, .rightMouseDown, .rightMouseUp,
+            .leftMouseDown, .leftMouseUp, .leftMouseDragged,
+            .rightMouseDown, .rightMouseUp, .rightMouseDragged,
             .otherMouseDown, .otherMouseUp, .otherMouseDragged, .keyDown,
         ]
         let mask = types.reduce(CGEventMask(0)) { $0 | (1 << $1.rawValue) }
@@ -102,6 +108,21 @@ final class MouseCaptureManager {
             if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: true) }
             return Unmanaged.passUnretained(event)
         }
+
+        // Left-handed swap — rewrite the event in place and pass it on. Runs before the
+        // Perch-frontmost guard so the buttons feel the same inside Perch too.
+        if swapEnabled {
+            switch type {
+            case .leftMouseDown:     return swapped(event, to: .rightMouseDown, button: 1)
+            case .leftMouseUp:       return swapped(event, to: .rightMouseUp, button: 1)
+            case .leftMouseDragged:  return swapped(event, to: .rightMouseDragged, button: 1)
+            case .rightMouseDown:    return swapped(event, to: .leftMouseDown, button: 0)
+            case .rightMouseUp:      return swapped(event, to: .leftMouseUp, button: 0)
+            case .rightMouseDragged: return swapped(event, to: .leftMouseDragged, button: 0)
+            default: break
+            }
+        }
+
         if NSWorkspace.shared.frontmostApplication?.bundleIdentifier == Bundle.main.bundleIdentifier {
             return Unmanaged.passUnretained(event)
         }
@@ -189,6 +210,13 @@ final class MouseCaptureManager {
     }
 
     // MARK: - Helpers
+
+    /// Rewrite a left/right event as its opposite (type + button number) and pass it through.
+    private func swapped(_ event: CGEvent, to type: CGEventType, button: Int64) -> Unmanaged<CGEvent>? {
+        event.type = type
+        event.setIntegerValueField(.mouseEventButtonNumber, value: button)
+        return Unmanaged.passUnretained(event)
+    }
 
     private func buttonID(_ type: CGEventType, _ event: CGEvent) -> Int {
         switch type {
