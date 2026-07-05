@@ -102,6 +102,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         mouseVM.apply()           // re-enable saved button mappings
         pointerVM.apply()         // re-apply saved pointer-acceleration override
         remapVM.apply()           // re-enable saved key remaps
+        snippetVM.applyExpansion() // re-arm text expansion
         settingsVM.applyLoginItem()
 
         // Global hotkey → toggle the clipboard popup from any app (only when enabled).
@@ -156,6 +157,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ServiceLocator.shared.register(DoubleTapManager.self)    { DoubleTapManager() }
         ServiceLocator.shared.register(SettingsRepository.self)  { SettingsRepository() }
         ServiceLocator.shared.register(SnippetRepository.self)   { SnippetRepository() }
+        ServiceLocator.shared.register(SnippetExpander.self)     { SnippetExpander() }
     }
 }
 

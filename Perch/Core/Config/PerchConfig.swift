@@ -17,6 +17,9 @@ struct PerchConfig: Codable {
     var mouse: MouseCfg
     var clipboard: ClipboardCfg
     var snippets: [Snippet]
+    var snippetExpansion: ExpansionCfg? = nil   // optional so older files still decode
+
+    struct ExpansionCfg: Codable { var on: Bool; var prefix: String }
 
     /// The scalar-setting plist keys that actually existed at export time. This is the single
     /// source of truth for "what did the user set" — counting reads this instead of comparing

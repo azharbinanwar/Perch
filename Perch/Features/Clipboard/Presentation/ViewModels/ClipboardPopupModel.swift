@@ -348,6 +348,12 @@ final class ClipboardPopupModel {
     func paste(_ item: ClipboardItem) { selectedID = item.id; pasteSelected() }
     func pasteSnippet(_ snippet: Snippet) { selectedID = snippet.id; pasteSelected() }
 
+    /// ";addr" for the row badge — only while text expansion is on (else nil, badge hidden).
+    func abbreviationBadge(for snippet: Snippet) -> String? {
+        guard snippets.expansionEnabled, let abbreviation = snippet.abbreviation else { return nil }
+        return snippets.expansionPrefix.rawValue + abbreviation
+    }
+
     // MARK: - Notice
 
     private func showNotice(_ text: String) {

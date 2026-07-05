@@ -55,6 +55,8 @@ enum Keys {
         static let hotKeyModifiers  = "hotkey.modifiers"
         static let hotKeyLabel      = "hotkey.label"
         static let snippets         = "snippets"
+        static let snippetsExpansionOn     = "snippets.expansion.on"
+        static let snippetsExpansionPrefix = "snippets.expansion.prefix"   // ";" / ":" / "//"
         static let onboarded        = "onboarded"   // first-run onboarding completed
     }
 }

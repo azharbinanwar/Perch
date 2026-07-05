@@ -11,6 +11,7 @@ struct SnippetPopupRow: View {
     let snippet: Snippet
     var number: Int? = nil
     var isSelected = false
+    var abbreviationBadge: String? = nil   // ";addr" — passed only while text expansion is enabled
     let onPaste: () -> Void
     let onHover: () -> Void
 
@@ -40,7 +41,16 @@ struct SnippetPopupRow: View {
                 }
 
             VStack(alignment: .leading, spacing: 1) {
-                Text(snippet.name).font(.system(size: 13, weight: .medium))
+                HStack(spacing: 6) {
+                    Text(snippet.name).font(.system(size: 13, weight: .medium))
+                    if let badge = abbreviationBadge {
+                        Text(badge)
+                            .font(.system(size: 10, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 5).padding(.vertical, 1)
+                            .background(.quaternary.opacity(0.5), in: Capsule())
+                    }
+                }
                 Text(preview).lineLimit(1).font(.system(size: 11)).foregroundStyle(.secondary)
             }
             Spacer(minLength: 8)

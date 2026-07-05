@@ -69,6 +69,8 @@ enum ConfigService {
                 // Text only — images/files are blobs that would bloat the backup (see BackupSheet warning).
                 history: clipboardRepo.load().filter { $0.content == .text }),
             snippets: snippetRepo.load())
+        config.snippetExpansion = .init(on: defaults.bool(forKey: K.snippetsExpansionOn),
+                                        prefix: defaults.string(forKey: K.snippetsExpansionPrefix) ?? ";")
         // Snapshot which scalar-setting keys the user actually set — the file's source of truth.
         config.presentKeys = ConfigSection.allSettingKeys.filter { defaults.object(forKey: $0) != nil }
         return config
@@ -138,6 +140,8 @@ enum ConfigService {
         }
 
         if sections.contains(.snippets) {
+            put(K.snippetsExpansionOn, c.snippetExpansion?.on ?? false)
+            put(K.snippetsExpansionPrefix, c.snippetExpansion?.prefix ?? ";")
             snippetRepo.save(c.snippets)
         }
     }

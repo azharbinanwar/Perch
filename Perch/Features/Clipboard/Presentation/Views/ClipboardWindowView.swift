@@ -275,6 +275,7 @@ struct ClipboardWindowView: View {
             snippet: snippet,
             number: number,
             isSelected: snippet.id == model.selectedID,
+            abbreviationBadge: model.abbreviationBadge(for: snippet),
             onPaste: { model.pasteSnippet(snippet) },
             onHover: { model.hover(id: snippet.id) }
         )

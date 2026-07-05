@@ -17,13 +17,18 @@ struct SnippetsTabView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
+            expansionGroup
+                .padding(.horizontal, 20)
+                .padding(.bottom, 12)
             if vm.snippets.isEmpty { emptyState } else { list }
         }
         .sheet(item: $editing) { snippet in
-            SnippetEditor(snippet: snippet) { vm.upsert($0) }
+            SnippetEditor(snippet: snippet, prefix: vm.expansionPrefix.rawValue,
+                          taken: vm.takenAbbreviations(excluding: snippet.id)) { vm.upsert($0) }
         }
         .sheet(isPresented: $showingNew) {
-            SnippetEditor(snippet: nil) { vm.upsert($0) }
+            SnippetEditor(snippet: nil, prefix: vm.expansionPrefix.rawValue,
+                          taken: vm.takenAbbreviations(excluding: nil)) { vm.upsert($0) }
         }
         .alert("Clear all snippets?", isPresented: $showingClearAll) {
             Button("Cancel", role: .cancel) {}
@@ -46,6 +51,33 @@ struct SnippetsTabView: View {
         .padding(.horizontal, 20)
         .padding(.top, 20)
         .padding(.bottom, 12)
+    }
+
+    // MARK: - Text expansion
+
+    private var expansionGroup: some View {
+        GroupBox("Text Expansion") {
+            VStack(spacing: 10) {
+                SettingRow(title: "Expand abbreviations as you type",
+                           subtitle: "Type a snippet's abbreviation (like \(vm.expansionPrefix.rawValue)addr) in any app and it becomes the full text instantly.") {
+                    Toggle("", isOn: Binding(get: { vm.expansionEnabled }, set: { vm.setExpansionEnabled($0) }))
+                        .toggleStyle(.switch).labelsHidden()
+                }
+                if vm.expansionEnabled {
+                    Divider()
+                    SettingRow(title: "Trigger prefix",
+                               subtitle: "Starts every abbreviation, so normal typing never expands by accident.") {
+                        Picker("", selection: Binding(get: { vm.expansionPrefix }, set: { vm.setExpansionPrefix($0) })) {
+                            ForEach(ExpansionPrefix.allCases) { prefix in
+                                Text(prefix.rawValue).font(.system(.body, design: .monospaced)).tag(prefix)
+                            }
+                        }
+                        .labelsHidden().frame(width: 80)
+                    }
+                }
+            }
+            .padding(6)
+        }
     }
 
     private var emptyState: some View {
@@ -75,7 +107,16 @@ struct SnippetsTabView: View {
         HStack(spacing: 10) {
             Image(systemName: "note.text").foregroundStyle(.secondary).frame(width: 18)
             VStack(alignment: .leading, spacing: 2) {
-                Text(snippet.name).font(.system(size: 13, weight: .medium))
+                HStack(spacing: 6) {
+                    Text(snippet.name).font(.system(size: 13, weight: .medium))
+                    if vm.expansionEnabled, let abbreviation = snippet.abbreviation {
+                        Text("\(vm.expansionPrefix.rawValue)\(abbreviation)")
+                            .font(.system(size: 10, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 5).padding(.vertical, 1)
+                            .background(.quaternary.opacity(0.5), in: Capsule())
+                    }
+                }
                 Text(snippet.text).lineLimit(1).font(.system(size: 11)).foregroundStyle(.secondary)
             }
             Spacer()
