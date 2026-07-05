@@ -54,7 +54,7 @@ extension PerchConfig {
         var swap: Bool? = nil   // optional so files from before this field still decode
 
         struct Debounce: Codable { var on: Bool; var ms: Double }
-        struct Scroll: Codable { var reversed: Bool; var linear: Bool; var speed: Double; var auto: Auto }
+        struct Scroll: Codable { var reversed: Bool; var linear: Bool; var speed: Double; var auto: Auto; var smooth: Bool? = nil }
         struct Auto: Codable { var on: Bool; var button: Int; var speed: Double }
         struct Pointer: Codable { var override: Bool; var value: Double }
     }

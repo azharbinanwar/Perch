@@ -13,6 +13,7 @@ import Foundation
 final class ScrollViewModel {
     private(set) var isEnabled: Bool     // reverse direction (name kept for existing bindings)
     private(set) var linear: Bool        // flat, no acceleration
+    private(set) var smooth: Bool        // glide wheel ticks instead of jumping
     private(set) var speed: Double       // multiplier
     private(set) var needsPermission = false
 
@@ -31,6 +32,7 @@ final class ScrollViewModel {
         self.autoManager = autoManager
         self.isEnabled = defaults.bool(forKey: Keys.Defaults.scrollReversed)
         self.linear = defaults.bool(forKey: Keys.Defaults.scrollLinear)
+        self.smooth = defaults.bool(forKey: Keys.Defaults.scrollSmooth)
         self.speed = defaults.object(forKey: Keys.Defaults.scrollSpeed) as? Double ?? 1
         self.autoScroll = defaults.bool(forKey: Keys.Defaults.autoScrollOn)
         self.autoScrollButton = defaults.object(forKey: Keys.Defaults.autoScrollButton) as? Int ?? 2
@@ -44,6 +46,7 @@ final class ScrollViewModel {
     func reload() {
         isEnabled = defaults.bool(forKey: Keys.Defaults.scrollReversed)
         linear = defaults.bool(forKey: Keys.Defaults.scrollLinear)
+        smooth = defaults.bool(forKey: Keys.Defaults.scrollSmooth)
         speed = defaults.object(forKey: Keys.Defaults.scrollSpeed) as? Double ?? 1
         autoScroll = defaults.bool(forKey: Keys.Defaults.autoScrollOn)
         autoScrollButton = defaults.object(forKey: Keys.Defaults.autoScrollButton) as? Int ?? 2
@@ -54,6 +57,12 @@ final class ScrollViewModel {
     func toggle() {
         isEnabled.toggle()
         defaults.set(isEnabled, forKey: Keys.Defaults.scrollReversed)
+        push()
+    }
+
+    func setSmooth(_ on: Bool) {
+        smooth = on
+        defaults.set(on, forKey: Keys.Defaults.scrollSmooth)
         push()
     }
 
@@ -88,7 +97,7 @@ final class ScrollViewModel {
     }
 
     private var config: ScrollConfig {
-        ScrollConfig(reversed: isEnabled, linear: linear, speed: speed)
+        ScrollConfig(reversed: isEnabled, linear: linear, speed: speed, smooth: smooth)
     }
 
     private func push() {

@@ -53,7 +53,7 @@ enum ConfigSection: String, CaseIterable, Identifiable {
             return [K.remapEnabled, K.hyperEnabled, K.hyperTap, K.hyperDoubleTap, K.hyperShift]
         case .mouse:
             return [K.mouseEnabled, K.mouseSwap, K.mouseDebounceOn, K.mouseDebounceMs,
-                    K.scrollReversed, K.scrollLinear, K.scrollSpeed,
+                    K.scrollReversed, K.scrollLinear, K.scrollSmooth, K.scrollSpeed,
                     K.autoScrollOn, K.autoScrollButton, K.autoScrollSpeed,
                     K.pointerOverride, K.pointerValue]
         case .clipboard:

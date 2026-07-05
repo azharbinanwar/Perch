@@ -51,7 +51,8 @@ enum ConfigService {
                               speed: defaults.object(forKey: K.scrollSpeed) as? Double ?? 1,
                               auto: .init(on: defaults.bool(forKey: K.autoScrollOn),
                                           button: defaults.object(forKey: K.autoScrollButton) as? Int ?? 2,
-                                          speed: defaults.object(forKey: K.autoScrollSpeed) as? Double ?? 1)),
+                                          speed: defaults.object(forKey: K.autoScrollSpeed) as? Double ?? 1),
+                              smooth: defaults.bool(forKey: K.scrollSmooth)),
                 pointer: .init(override: defaults.bool(forKey: K.pointerOverride),
                                value: defaults.object(forKey: K.pointerValue) as? Double ?? 0),
                 swap: defaults.bool(forKey: K.mouseSwap)),
@@ -116,6 +117,7 @@ enum ConfigService {
             mouseRepo.saveProfiles(c.mouse.profiles)
             put(K.scrollReversed, c.mouse.scroll.reversed)
             put(K.scrollLinear, c.mouse.scroll.linear)
+            put(K.scrollSmooth, c.mouse.scroll.smooth ?? false)
             put(K.scrollSpeed, c.mouse.scroll.speed)
             put(K.autoScrollOn, c.mouse.scroll.auto.on)
             put(K.autoScrollButton, c.mouse.scroll.auto.button)

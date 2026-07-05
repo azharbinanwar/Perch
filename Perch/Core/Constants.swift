@@ -23,6 +23,7 @@ enum Keys {
         static let clipboardRestoreAfterPaste = "clipboard.restoreAfterPaste"
         static let scrollReversed   = "mouse.scroll.reversed"
         static let scrollLinear     = "mouse.scroll.linear"    // flat, no acceleration
+        static let scrollSmooth     = "mouse.scroll.smooth"    // glide wheel ticks instead of jumping
         static let scrollSpeed      = "mouse.scroll.speed"     // multiplier
         static let autoScrollOn     = "mouse.scroll.auto.on"          // hold button + move to scroll
         static let autoScrollButton = "mouse.scroll.auto.button"      // trigger button number

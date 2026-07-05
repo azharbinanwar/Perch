@@ -103,6 +103,11 @@ struct MouseTabView: View {
                     toggle(scroll.isEnabled) { _ in scroll.toggle() }
                 }
                 Divider()
+                SettingRow(title: "Smooth scrolling",
+                           subtitle: "Each wheel tick glides instead of jumping — trackpad feel on a notchy wheel.") {
+                    toggle(scroll.smooth) { scroll.setSmooth($0) }
+                }
+                Divider()
                 SettingRow(title: "No acceleration (flat)",
                            subtitle: "Every notch scrolls the same amount, regardless of how fast you spin.") {
                     toggle(scroll.linear) { scroll.setLinear($0) }
