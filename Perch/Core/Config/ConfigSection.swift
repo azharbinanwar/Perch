@@ -50,7 +50,7 @@ enum ConfigSection: String, CaseIterable, Identifiable {
                     K.settingsOpenWindowAtLaunch, K.settingsShowInDock,
                     K.hotKeyCode, K.hotKeyModifiers, K.hotKeyLabel]
         case .keys:
-            return [K.remapEnabled]
+            return [K.remapEnabled, K.hyperEnabled, K.hyperTap, K.hyperDoubleTap, K.hyperShift]
         case .mouse:
             return [K.mouseEnabled, K.mouseSwap, K.mouseDebounceOn, K.mouseDebounceMs,
                     K.scrollReversed, K.scrollLinear, K.scrollSpeed,

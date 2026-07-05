@@ -64,6 +64,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         clipboardVM.handleTerminate()
         pointerVM.restoreDefault()   // don't leave the system's pointer acceleration changed
+        remapVM.hyperCleanupForQuit()   // never leave Caps Lock remapped to a dead key
     }
 
     /// Paste a peek item: copy, close the menu, refocus the previous app, then ⌘V.
@@ -151,6 +152,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ServiceLocator.shared.register(PointerManager.self)      { PointerManager() }
         ServiceLocator.shared.register(RemapRepository.self)     { RemapRepository() }
         ServiceLocator.shared.register(RemapManager.self)        { RemapManager() }
+        ServiceLocator.shared.register(HyperKeyManager.self)     { HyperKeyManager() }
         ServiceLocator.shared.register(SettingsRepository.self)  { SettingsRepository() }
         ServiceLocator.shared.register(SnippetRepository.self)   { SnippetRepository() }
     }

@@ -24,22 +24,42 @@ final class RemapViewModel {
 
     // Draft while adding/editing a mapping.
     private(set) var draftInput: KeyCombo?
+    private var draftViaHyper = false            // input recorded with the Hyper key held
     private(set) var draftOutput: Action?
     private(set) var recording: RemapField?
     private(set) var editingRuleID: UUID?   // non-nil = editing an existing rule in place
 
+    // Hyper Key (Caps Lock).
+    private(set) var hyperEnabled: Bool
+    private(set) var hyperTap: HyperKeyManager.TapAction
+    private(set) var hyperDoubleTap: HyperKeyManager.TapAction
+    private(set) var hyperShift: Bool
+
     private let repository: RemapRepository
     private let manager: RemapManager
+    private let hyper: HyperKeyManager
     private let recorder = KeyChordRecorder()
     private let defaults = UserDefaults.standard
     private var activationObserver: NSObjectProtocol?
 
     init(repository: RemapRepository = ServiceLocator.shared.resolve(RemapRepository.self),
-         manager: RemapManager = ServiceLocator.shared.resolve(RemapManager.self)) {
+         manager: RemapManager = ServiceLocator.shared.resolve(RemapManager.self),
+         hyper: HyperKeyManager = ServiceLocator.shared.resolve(HyperKeyManager.self)) {
         self.repository = repository
         self.manager = manager
+        self.hyper = hyper
         self.isEnabled = defaults.bool(forKey: Keys.Defaults.remapEnabled)
         self.profiles = repository.loadProfiles()
+        self.hyperEnabled = defaults.bool(forKey: Keys.Defaults.hyperEnabled)
+        self.hyperTap = HyperKeyManager.TapAction(rawValue: defaults.string(forKey: Keys.Defaults.hyperTap) ?? "") ?? .escape
+        self.hyperDoubleTap = HyperKeyManager.TapAction(rawValue: defaults.string(forKey: Keys.Defaults.hyperDoubleTap) ?? "") ?? .capsLock
+        self.hyperShift = defaults.object(forKey: Keys.Defaults.hyperShift) as? Bool ?? true
+
+        // Let the recorder treat a held hyper key like a modifier (nil = feature off → unchanged).
+        recorder.hyperFlags = { [weak self] in
+            guard let self, self.hyperEnabled else { return nil }
+            return self.hyper.isHyperHeld ? self.hyper.activeFlags : CGEventFlags()
+        }
     }
 
     deinit {
@@ -51,6 +71,7 @@ final class RemapViewModel {
         registerActivationObserver()
         activeBundleID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
         applyActive()
+        applyHyper()
         guard isEnabled else { return }
         needsPermission = !manager.start()
     }
@@ -59,8 +80,69 @@ final class RemapViewModel {
     func reload() {
         isEnabled = defaults.bool(forKey: Keys.Defaults.remapEnabled)
         profiles = repository.loadProfiles()
+        hyperEnabled = defaults.bool(forKey: Keys.Defaults.hyperEnabled)
+        hyperTap = HyperKeyManager.TapAction(rawValue: defaults.string(forKey: Keys.Defaults.hyperTap) ?? "") ?? .escape
+        hyperDoubleTap = HyperKeyManager.TapAction(rawValue: defaults.string(forKey: Keys.Defaults.hyperDoubleTap) ?? "") ?? .capsLock
+        hyperShift = defaults.object(forKey: Keys.Defaults.hyperShift) as? Bool ?? true
         if isEnabled { needsPermission = !manager.start() }
         applyActive()
+        applyHyper()
+    }
+
+    // MARK: - Hyper Key
+
+    func setHyperEnabled(_ on: Bool) {
+        hyperEnabled = on
+        defaults.set(on, forKey: Keys.Defaults.hyperEnabled)
+        applyHyper()
+    }
+
+    func setHyperTap(_ action: HyperKeyManager.TapAction) {
+        hyperTap = action
+        defaults.set(action.rawValue, forKey: Keys.Defaults.hyperTap)
+        applyHyper()
+    }
+
+    func setHyperDoubleTap(_ action: HyperKeyManager.TapAction) {
+        hyperDoubleTap = action
+        defaults.set(action.rawValue, forKey: Keys.Defaults.hyperDoubleTap)
+        applyHyper()
+    }
+
+    func setHyperShift(_ on: Bool) {
+        let oldMask = hyperModifierMask(includeShift: hyperShift)
+        let newMask = hyperModifierMask(includeShift: on)
+        hyperShift = on
+        defaults.set(on, forKey: Keys.Defaults.hyperShift)
+
+        // Migrate every Hyper-recorded rule to the new combo so nothing stops matching.
+        for i in profiles.indices {
+            for j in profiles[i].rules.indices where profiles[i].rules[j].isHyperKey {
+                let mods = profiles[i].rules[j].input.modifiers
+                profiles[i].rules[j].input.modifiers = (mods & ~oldMask) | newMask
+            }
+        }
+        repository.saveProfiles(profiles)
+        applyActive()
+        applyHyper()
+    }
+
+    private func hyperModifierMask(includeShift: Bool) -> UInt64 {
+        let flags: CGEventFlags = includeShift
+            ? [.maskCommand, .maskAlternate, .maskControl, .maskShift]
+            : [.maskCommand, .maskAlternate, .maskControl]
+        return flags.rawValue
+    }
+
+    /// On app quit: remove the system remap so Caps Lock is never left dead.
+    func hyperCleanupForQuit() { hyper.cleanupForQuit() }
+
+    /// Push the hyper settings into the engine (and the hidutil remap on/off with them).
+    private func applyHyper() {
+        hyper.tapAction = hyperTap
+        hyper.doubleTapAction = hyperDoubleTap
+        hyper.includeShift = hyperShift
+        if hyperEnabled { hyper.enable() } else { hyper.disable() }
     }
 
     // MARK: - Profiles
@@ -164,6 +246,7 @@ final class RemapViewModel {
             guard let self else { return }
             if self.recording == .input {
                 self.draftInput = KeyCombo(keyCode: code, modifiers: mods)
+                self.draftViaHyper = self.recorder.lastCaptureViaHyper
             } else {
                 self.draftOutput = Action(kind: .customKeystroke, keyCode: code, modifiers: mods)
             }
@@ -179,6 +262,7 @@ final class RemapViewModel {
     /// Load an existing rule into the draft to edit it in place.
     func beginEdit(_ rule: RemapRule) {
         draftInput = rule.input
+        draftViaHyper = rule.isHyperKey
         draftOutput = rule.output
         editingRuleID = rule.id
         cancelRecording()
@@ -203,15 +287,17 @@ final class RemapViewModel {
                 guard let i = p.rules.firstIndex(where: { $0.id == id }) else { return }
                 p.rules[i].input = input
                 p.rules[i].output = output
+                p.rules[i].isHyperKey = self.draftViaHyper
             }
         } else {
-            mutateEditing { $0.rules.append(RemapRule(input: input, output: output)) }
+            mutateEditing { $0.rules.append(RemapRule(input: input, output: output, isHyperKey: draftViaHyper)) }
         }
         clearDraft()
     }
 
     func clearDraft() {
         draftInput = nil
+        draftViaHyper = false
         draftOutput = nil
         editingRuleID = nil
         cancelRecording()

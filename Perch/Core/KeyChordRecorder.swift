@@ -14,6 +14,15 @@ final class KeyChordRecorder {
     /// Reports (keyCode, CGEventFlags raw) on the main thread for the first key pressed.
     var onCapture: ((_ keyCode: Int, _ modifiers: UInt64) -> Void)?
 
+    /// Hyper-key support (optional — nil leaves behavior exactly as before). Returns nil when
+    /// the hyper feature is off; otherwise the flags to add when the hyper key is held right now.
+    var hyperFlags: (() -> CGEventFlags?)?
+
+    /// True when the last capture happened while the hyper key was held (set synchronously).
+    private(set) var lastCaptureViaHyper = false
+
+    private let hyperKeyCode = 79   // F18 — what Caps Lock becomes while Hyper is enabled
+
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
 
@@ -54,7 +63,18 @@ final class KeyChordRecorder {
             return Unmanaged.passUnretained(event)
         }
         let code = Int(event.getIntegerValueField(.keyboardEventKeycode))
-        let mods = event.flags.intersection([.maskCommand, .maskShift, .maskAlternate, .maskControl]).rawValue
+
+        // Hyper key: treat it like a modifier, not a key. Pass it through (the hyper engine
+        // tracks held-state and swallows it) and don't capture it. Only when the feature is on.
+        if code == hyperKeyCode, hyperFlags?() != nil {
+            return Unmanaged.passUnretained(event)
+        }
+
+        var flags = event.flags.intersection([.maskCommand, .maskShift, .maskAlternate, .maskControl])
+        let extra = hyperFlags?() ?? []
+        flags.formUnion(extra)                    // hyper held → record with ⌘⌥⌃(⇧)
+        lastCaptureViaHyper = !extra.isEmpty
+        let mods = flags.rawValue
         DispatchQueue.main.async { self.onCapture?(code, mods) }
         return nil   // swallow — the recorded combo must not actually fire
     }

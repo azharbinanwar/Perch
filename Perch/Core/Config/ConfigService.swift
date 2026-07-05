@@ -32,7 +32,11 @@ enum ConfigService {
                               ?? NSEvent.ModifierFlags([.command, .shift]).rawValue,
                           label: defaults.string(forKey: K.hotKeyLabel) ?? "V"),
             keys: .init(enabled: defaults.bool(forKey: K.remapEnabled),
-                        profiles: remapRepo.loadProfiles()),
+                        profiles: remapRepo.loadProfiles(),
+                        hyper: .init(enabled: defaults.bool(forKey: K.hyperEnabled),
+                                     tap: defaults.string(forKey: K.hyperTap) ?? "Escape",
+                                     doubleTap: defaults.string(forKey: K.hyperDoubleTap) ?? "Caps Lock",
+                                     shift: defaults.object(forKey: K.hyperShift) as? Bool ?? true)),
             mouse: .init(
                 enabled: defaults.object(forKey: K.mouseEnabled) as? Bool ?? true,
                 debounce: .init(on: defaults.bool(forKey: K.mouseDebounceOn),
@@ -87,6 +91,10 @@ enum ConfigService {
 
         if sections.contains(.keys) {
             put(K.remapEnabled, c.keys.enabled)
+            put(K.hyperEnabled, c.keys.hyper?.enabled ?? false)
+            put(K.hyperTap, c.keys.hyper?.tap ?? "Escape")
+            put(K.hyperDoubleTap, c.keys.hyper?.doubleTap ?? "Caps Lock")
+            put(K.hyperShift, c.keys.hyper?.shift ?? true)
             remapRepo.saveProfiles(c.keys.profiles)
         }
 

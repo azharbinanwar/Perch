@@ -41,6 +41,10 @@ enum Keys {
         static let remapRules       = "keys.rules"       // legacy flat rules (migration source)
         static let remapProfiles    = "keys.profiles"    // per-app rule sets
         static let remapEnabled     = "keys.enabled"
+        static let hyperEnabled     = "keys.hyper.enabled"   // Caps Lock as ⌘⌥⌃(⇧) while held
+        static let hyperTap         = "keys.hyper.tap"       // single tap alone: Escape / Caps Lock / nothing
+        static let hyperDoubleTap   = "keys.hyper.doubleTap"
+        static let hyperShift       = "keys.hyper.shift"     // include ⇧ in the hyper combo
         static let appSettings      = "settings"   // legacy blob — migrated to the keys below on first load
         static let settingsMenuItemCount     = "settings.menuItemCount"
         static let settingsOpenAtLogin       = "settings.openAtLogin"

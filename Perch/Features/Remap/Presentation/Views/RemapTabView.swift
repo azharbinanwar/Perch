@@ -18,6 +18,7 @@ struct RemapTabView: View {
     @State private var picking = false               // action catalogue for the output
     @State private var targetPrompt: ActionKind?     // picked action still needs a target
 
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
@@ -35,6 +36,7 @@ struct RemapTabView: View {
                     AccessibilityBanner(message: "Grant Accessibility so key remapping can work.")
                 }
                 keyboardGroup
+                hyperGroup
                 shortcutsGroup
             }
             .padding(20)
@@ -58,6 +60,51 @@ struct RemapTabView: View {
             • The remapping on/off setting
             """)
         }
+    }
+
+    // MARK: - Hyper Key (UI preview)
+
+    private var hyperGroup: some View {
+        let symbols = vm.hyperShift ? "⌘⌥⌃⇧" : "⌘⌥⌃"
+        return GroupBox("Hyper Key") {
+            VStack(alignment: .leading, spacing: 10) {
+                SettingRow(title: "Enable Hyper Key",
+                           subtitle: "Hold Caps Lock to act as \(symbols) together — a private shortcut layer no app conflicts with.") {
+                    Toggle("", isOn: Binding(get: { vm.hyperEnabled }, set: { vm.setHyperEnabled($0) }))
+                        .toggleStyle(.switch).labelsHidden()
+                }
+                if vm.hyperEnabled {
+                    Divider()
+                    SettingRow(title: "Single tap",
+                               subtitle: "A quick tap without another key.") {
+                        tapPicker(vm.hyperTap) { vm.setHyperTap($0) }
+                    }
+                    Divider()
+                    SettingRow(title: "Double tap",
+                               subtitle: "Two quick taps in a row.") {
+                        tapPicker(vm.hyperDoubleTap) { vm.setHyperDoubleTap($0) }
+                    }
+                    Divider()
+                    SettingRow(title: "Include ⇧ Shift",
+                               subtitle: "Off sends ⌘⌥⌃ only — for the rare app that mishandles all four. Existing Hyper shortcuts update automatically.") {
+                        Toggle("", isOn: Binding(get: { vm.hyperShift }, set: { vm.setHyperShift($0) }))
+                            .toggleStyle(.switch).labelsHidden()
+                    }
+                    Label("Try it: hold Caps Lock and press M — apps see \(symbols)M, free for your own shortcuts.",
+                          systemImage: "lightbulb")
+                        .font(.system(size: 11)).foregroundStyle(.secondary)
+                }
+            }
+            .padding(6)
+        }
+    }
+
+    private func tapPicker(_ value: HyperKeyManager.TapAction,
+                           onChange: @escaping (HyperKeyManager.TapAction) -> Void) -> some View {
+        Picker("", selection: Binding(get: { value }, set: onChange)) {
+            ForEach(HyperKeyManager.TapAction.allCases) { Text($0.rawValue).tag($0) }
+        }
+        .labelsHidden().frame(width: 130)
     }
 
     // MARK: - Enable + profile + modifier-swap note

@@ -30,7 +30,8 @@ final class RemapManager {
         let mask = CGEventMask((1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.keyUp.rawValue))
         guard let tap = CGEvent.tapCreate(
             tap: .cgSessionEventTap,
-            place: .headInsertEventTap,
+            place: .tailAppendEventTap,   // always AFTER the hyper/recorder taps — so a hyper'd
+                                          // key arrives here with its ⌘⌥⌃⇧ flags already added
             options: .defaultTap,
             eventsOfInterest: mask,
             callback: { _, type, event, refcon in
