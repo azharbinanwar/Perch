@@ -43,23 +43,19 @@ struct SnippetsTabView: View {
         HStack {
             PageHeader("Snippets", subtitle: "Saved clips you reuse — always available in the clipboard.")
             Spacer()
-            Button { showingIntro = true } label: {
-                Image(systemName: "info.circle")
-                    .font(.system(size: 15))
-                    .frame(height: 16)   // match the text buttons' control height
+            HeaderIconButton(icon: "info.circle", help: "See how snippets work") {
+                showingIntro = true
             }
-            .help("See how snippets work")
-            Button { showingSettings = true } label: {
-                Image(systemName: "gearshape")
-                    .font(.system(size: 13))
-                    .frame(height: 16)   // match the text buttons' control height
+            HeaderIconButton(icon: "gearshape", help: "Text expansion settings") {
+                showingSettings = true
             }
-            .help("Text expansion settings")
-            Button(role: .destructive) { showingClearAll = true } label: {
-                Label("Clear All", systemImage: "trash")
+            HeaderIconButton(icon: "trash", help: "Delete all snippets", destructive: true) {
+                showingClearAll = true
             }
             .disabled(vm.snippets.isEmpty)
-            Button { showingNew = true } label: { Label("New", systemImage: "plus") }
+            HeaderIconButton(icon: "plus", help: "New snippet") {
+                showingNew = true
+            }
         }
         .padding(.horizontal, 20)
         .padding(.top, 20)

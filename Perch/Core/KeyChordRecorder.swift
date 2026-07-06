@@ -28,7 +28,7 @@ final class KeyChordRecorder {
 
     @discardableResult
     func start() -> Bool {
-        guard eventTap == nil, Permissions.isAccessibilityTrusted else { return false }
+        guard eventTap == nil, AccessibilityService.shared.trusted else { return false }
         let mask = CGEventMask(1 << CGEventType.keyDown.rawValue)
         guard let tap = CGEvent.tapCreate(
             tap: .cgSessionEventTap, place: .headInsertEventTap, options: .defaultTap,

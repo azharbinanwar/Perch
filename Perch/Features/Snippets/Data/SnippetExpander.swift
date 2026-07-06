@@ -39,7 +39,7 @@ final class SnippetExpander {
 
     /// Create the tap once; `isActive` gates behavior (never torn down).
     func start() {
-        guard eventTap == nil, Permissions.isAccessibilityTrusted else { return }
+        guard eventTap == nil, AccessibilityService.shared.trusted else { return }
         let mask = CGEventMask(1) << CGEventType.keyDown.rawValue
         guard let tap = CGEvent.tapCreate(
             tap: .cgSessionEventTap, place: .headInsertEventTap, options: .listenOnly,

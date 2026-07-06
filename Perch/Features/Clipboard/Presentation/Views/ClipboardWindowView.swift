@@ -13,7 +13,9 @@ struct ClipboardWindowView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if model.needsPermission { permissionBanner }
+            if model.needsPermission {
+                AccessibilityBanner(message: "Grant Accessibility for keyboard control & paste")
+            }
             if !model.isRecording { pausedBanner }
             if let notice = model.notice { noticeBanner(notice) }
             searchBar
@@ -45,28 +47,6 @@ struct ClipboardWindowView: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(.white.opacity(0.08)))
-    }
-
-    // MARK: - Permission banner
-
-    private var permissionBanner: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-            Text("Grant Accessibility for keyboard control & paste")
-                .font(.system(size: 12))
-            Spacer()
-            Button("Open Settings") { openAccessibilitySettings() }
-                .font(.system(size: 11))
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(.orange.opacity(0.12))
-    }
-
-    private func openAccessibilitySettings() {
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
-            NSWorkspace.shared.open(url)
-        }
     }
 
     // MARK: - Paused banner

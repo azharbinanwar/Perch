@@ -208,7 +208,7 @@ final class MouseViewModel {
     var editingPointer: PointerSettings { editingProfile.pointer }
 
     func updateScroll(_ change: (inout ScrollSettings) -> Void) {
-        if !Permissions.isAccessibilityTrusted { Permissions.requestAccessibility() }
+        if !AccessibilityService.shared.trusted { AccessibilityService.shared.request() }
         mutateEditing { change(&$0.scroll) }
     }
 
@@ -344,7 +344,7 @@ final class MouseViewModel {
     func setEnabled(_ on: Bool) {
         isEnabled = on
         defaults.set(on, forKey: Keys.Defaults.mouseEnabled)
-        if on, !Permissions.isAccessibilityTrusted { Permissions.requestAccessibility() }
+        if on, !AccessibilityService.shared.trusted { AccessibilityService.shared.request() }
         applyActive()          // starts/keeps the tap alive when on; empties mappings (passthrough) when off
         if !on { stopScan() }
     }
@@ -354,7 +354,7 @@ final class MouseViewModel {
     /// Enter scan mode — mouse buttons (listen-only) and keystroke buttons (swallowed so they
     /// don't fire) both light up their slot. Stays on until Done or a few idle seconds pass.
     func startScan() {
-        if !Permissions.isAccessibilityTrusted { Permissions.requestAccessibility() }
+        if !AccessibilityService.shared.trusted { AccessibilityService.shared.request() }
         let mouseOK = monitor.start()
         keyRecorder.onCapture = { [weak self] code, mods in self?.handleAddKey(code, mods) }
         let keyOK = keyRecorder.start()

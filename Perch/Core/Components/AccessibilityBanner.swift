@@ -16,7 +16,7 @@ struct AccessibilityBanner: View {
             Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
             Text(message).font(.system(size: 12))
             Spacer()
-            Button("Open Settings") { Permissions.openAccessibilitySettings() }
+            Button("Open Settings") { AccessibilityService.shared.openSettings() }
                 .font(.system(size: 11))
         }
         .padding(.horizontal, 12)

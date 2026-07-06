@@ -80,33 +80,22 @@ struct ClipboardTabView: View {
         HStack(alignment: .firstTextBaseline) {
             PageHeader("Clipboard", subtitle: storageSubtitle)
             Spacer()
-            Button { showingIntro = true } label: {
-                Image(systemName: "info.circle")
-                    .font(.system(size: 15))
-                    .frame(height: 16)   // match the text buttons' control height
+            HeaderIconButton(icon: "info.circle", help: "See how the clipboard popup works") {
+                showingIntro = true
             }
-            .help("See how the clipboard popup works")
-            Button {
+            HeaderIconButton(icon: "doc.on.clipboard", help: "Open the clipboard popup") {
                 NotificationCenter.default.post(name: .openClipboardPopup, object: nil)
-            } label: {
-                Label("Open", systemImage: "doc.on.clipboard")
             }
             .disabled(!clipboard.isEnabled)
-
-            Button { showingShortcuts.toggle() } label: {
-                Label("Shortcuts", systemImage: "keyboard")
+            HeaderIconButton(icon: "keyboard", help: "Keyboard shortcuts") {
+                showingShortcuts.toggle()
             }
-            .help("Keyboard shortcuts")
-
-            Button { showingReset = true } label: {
-                Label("Reset to Default", systemImage: "arrow.counterclockwise")
+            HeaderIconButton(icon: "arrow.counterclockwise",
+                             help: "Reset clipboard settings to default — your items aren't affected") {
+                showingReset = true
             }
-            .help("Reset clipboard settings to default — your items aren't affected")
-
-            Button(role: .destructive) {
+            HeaderIconButton(icon: "trash", help: "Clear all clipboard items", destructive: true) {
                 showingClearAll = true
-            } label: {
-                Label("Clear All", systemImage: "trash")
             }
             .disabled(itemCount == 0)
         }

@@ -13,7 +13,7 @@ struct OnboardingView: View {
 
     @Environment(SettingsViewModel.self) private var settings
     @State private var step = 0
-    @State private var trusted = Permissions.isAccessibilityTrusted
+    @State private var trusted = AccessibilityService.shared.trusted
 
     private let lastStep = 2
 
@@ -40,13 +40,13 @@ struct OnboardingView: View {
             footer.padding(.horizontal, 40).padding(.bottom, 28)
         }
         .frame(minWidth: 640, minHeight: 580)   // tall enough for the animated welcome on a FRESH launch
-        .onAppear { trusted = Permissions.isAccessibilityTrusted }
+        .onAppear { trusted = AccessibilityService.shared.trusted }
         .task(id: step) {
             // While the permission step is up, watch for the grant — the status flips to
             // green the moment the user allows it in System Settings, no clicks needed.
             guard step == 1 else { return }
             while !Task.isCancelled {
-                trusted = Permissions.isAccessibilityTrusted
+                trusted = AccessibilityService.shared.trusted
                 try? await Task.sleep(for: .seconds(1))
             }
         }
@@ -119,8 +119,7 @@ struct OnboardingView: View {
                 Button {
                     // The macOS prompt only ever shows once — the deep link ALWAYS lands
                     // the user in the right pane, so repeat clicks never feel dead.
-                    Permissions.requestAccessibility()
-                    Permissions.openAccessibilitySettings()
+                    AccessibilityService.shared.request()   // prompts and opens the pane
                 } label: {
                     Label("Open Accessibility Settings…", systemImage: "lock.open")
                 }

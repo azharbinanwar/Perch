@@ -23,7 +23,7 @@ final class MouseButtonMonitor {
     @discardableResult
     func start() -> Bool {
         guard eventTap == nil else { return true }
-        guard Permissions.isAccessibilityTrusted else { return false }
+        guard AccessibilityService.shared.trusted else { return false }
 
         let mask = CGEventMask(
             (1 << CGEventType.leftMouseDown.rawValue) |

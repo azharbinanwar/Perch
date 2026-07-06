@@ -11,7 +11,7 @@ import SwiftUI
 
 struct RemapTabView: View {
     @Environment(RemapViewModel.self) private var vm
-    @State private var trusted = Permissions.isAccessibilityTrusted
+    @State private var trusted = AccessibilityService.shared.trusted
     @State private var showingReset = false
     @State private var addingRule = false
     @State private var addingProfile = false
@@ -31,12 +31,14 @@ struct RemapTabView: View {
                 HStack {
                     PageHeader("Keys", subtitle: "Remap keys and shortcuts, app by app.")
                     Spacer()
-                    Button { showingReset = true } label: {
-                        Label("Reset to Default", systemImage: "arrow.counterclockwise")
+                    HeaderIconButton(icon: "arrow.counterclockwise",
+                                     help: "Reset Keys settings to default — your mappings and profiles aren't affected") {
+                        showingReset = true
                     }
-                    .help("Reset Keys settings to default — your mappings and profiles aren't affected")
-                    Button { vm.clearDraft(); addingRule = true } label: { Label("Add mapping", systemImage: "plus") }
-                        .disabled(!vm.isEnabled)
+                    HeaderIconButton(icon: "plus", help: "Add a key mapping") {
+                        vm.clearDraft(); addingRule = true
+                    }
+                    .disabled(!vm.isEnabled)
                 }
                 if !trusted {
                     AccessibilityBanner(message: "Grant Accessibility so key remapping can work.")
@@ -51,7 +53,7 @@ struct RemapTabView: View {
             }
             .padding(20)
         }
-        .onAppear { trusted = Permissions.isAccessibilityTrusted }
+        .onAppear { trusted = AccessibilityService.shared.trusted }
         .sheet(isPresented: $hyperIntroShowing) { HyperKeyIntroSheet() }
         .sheet(isPresented: $profileIntroShowing) { profileIntroSheet }
         .sheet(isPresented: $doubleTapIntroShowing) { DoubleTapIntroSheet() }
@@ -204,10 +206,6 @@ struct RemapTabView: View {
                            subtitle: "Master switch — key remapping, Hyper Key, and double-tap. Applies to all keyboards.") {
                     Toggle("", isOn: Binding(get: { vm.isEnabled }, set: { _ in vm.toggleEnabled() }))
                         .toggleStyle(.switch).labelsHidden()
-                }
-                if vm.needsPermission {
-                    Label("Needs Accessibility — grant it in General.", systemImage: "exclamationmark.triangle.fill")
-                        .font(.system(size: 12)).foregroundStyle(.orange)
                 }
             }
             .padding(6)

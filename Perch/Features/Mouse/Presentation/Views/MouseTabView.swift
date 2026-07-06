@@ -12,7 +12,7 @@ import SwiftUI
 struct MouseTabView: View {
     @Environment(MouseViewModel.self) private var mouse
 
-    @State private var trusted = Permissions.isAccessibilityTrusted
+    @State private var trusted = AccessibilityService.shared.trusted
     @State private var showingReset = false
 
     // Button layer — selection state only; the config lives on the editing profile.
@@ -42,10 +42,10 @@ struct MouseTabView: View {
                 HStack {
                     PageHeader("Mouse", subtitle: mouse.deviceSubtitle)
                     Spacer()
-                    Button { showingReset = true } label: {
-                        Label("Reset to Default", systemImage: "arrow.counterclockwise")
+                    HeaderIconButton(icon: "arrow.counterclockwise",
+                                     help: "Reset Mouse settings to default — your mappings, gestures and profiles aren't affected") {
+                        showingReset = true
                     }
-                    .help("Reset Mouse settings to default — your mappings, gestures and profiles aren't affected")
                 }
                 if !trusted {
                     AccessibilityBanner(message: "Grant Accessibility so scroll, pointer, and buttons can work.")
@@ -66,7 +66,7 @@ struct MouseTabView: View {
             }
             .padding(20)
         }
-        .onAppear { trusted = Permissions.isAccessibilityTrusted }
+        .onAppear { trusted = AccessibilityService.shared.trusted }
         .onDisappear { mouse.stopScan() }
         .sheet(isPresented: $addingProfile) {
             AppPickerSheet { ids in ids.forEach { mouse.addProfile(bundleID: $0) } }

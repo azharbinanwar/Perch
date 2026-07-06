@@ -115,7 +115,7 @@ final class MouseCaptureManager {
 
     @discardableResult
     func start() -> Bool {
-        guard eventTap == nil, Permissions.isAccessibilityTrusted else { return false }
+        guard eventTap == nil, AccessibilityService.shared.trusted else { return false }
         // Always include keyDown so adding a keystroke-button never needs a tap recreate.
         // Left/right drags are tapped for the swap feature — without them a swapped drag
         // would report the un-swapped button mid-drag.
@@ -160,6 +160,13 @@ final class MouseCaptureManager {
     // MARK: - Handling
 
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
+        // Accessibility revoked → an enabled active tap with no permission freezes all input.
+        // Disable it now and tear it down off the callback (idempotent). Recreated on re-grant.
+        if !AccessibilityService.shared.trusted {
+            if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: false) }
+            DispatchQueue.main.async { [weak self] in self?.stop() }
+            return Unmanaged.passUnretained(event)
+        }
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: true) }
             return Unmanaged.passUnretained(event)

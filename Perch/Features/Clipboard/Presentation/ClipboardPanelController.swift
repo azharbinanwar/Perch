@@ -40,16 +40,15 @@ final class ClipboardPanelController {
     }
 
     func show() {
-        // paste + key capture both need Accessibility; prompt if missing.
-        if !Permissions.isAccessibilityTrusted { Permissions.requestAccessibility() }
-
         model.open()
         let panel = self.panel ?? makePanel()
         self.panel = panel
         centre(panel)
         panel.orderFrontRegardless()   // show WITHOUT activating Perch or taking key focus
         startKeyTap()
-        model.needsPermission = (keyTap == nil)   // tap failed → keyboard control is off
+        // The banner is about PERMISSION only — same signal as every other module.
+        // A tap failing for any other reason must never masquerade as a permission ask.
+        model.needsPermission = !AccessibilityService.shared.trusted
         startMouseMonitor()
         startAppSwitchObserver()
     }
@@ -152,7 +151,7 @@ final class ClipboardPanelController {
     // MARK: - Key tap (only while the popup is open)
 
     private func startKeyTap() {
-        guard keyTap == nil, Permissions.isAccessibilityTrusted else { return }
+        guard keyTap == nil else { return }   // attempt unconditionally; tapCreate fails if untrusted
         let mask = CGEventMask(1 << CGEventType.keyDown.rawValue)
         guard let tap = CGEvent.tapCreate(
             tap: .cgSessionEventTap,
@@ -176,6 +175,7 @@ final class ClipboardPanelController {
     private func stopKeyTap() {
         if let tap = keyTap { CGEvent.tapEnable(tap: tap, enable: false) }
         if let source = keyTapSource { CFRunLoopRemoveSource(CFRunLoopGetCurrent(), source, .commonModes) }
+        if let tap = keyTap { CFMachPortInvalidate(tap) }   // actually destroy the tap — else each open/close leaks one and eventually hits the per-process cap, making tapCreate return nil
         keyTap = nil
         keyTapSource = nil
     }

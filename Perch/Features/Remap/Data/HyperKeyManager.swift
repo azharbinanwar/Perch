@@ -96,7 +96,7 @@ final class HyperKeyManager {
     // MARK: - Tap
 
     private func startTap() {
-        guard eventTap == nil, Permissions.isAccessibilityTrusted else { return }
+        guard eventTap == nil, AccessibilityService.shared.trusted else { return }
         let mask = (CGEventMask(1) << CGEventType.keyDown.rawValue)
                  | (CGEventMask(1) << CGEventType.keyUp.rawValue)
         guard let tap = CGEvent.tapCreate(
@@ -116,6 +116,23 @@ final class HyperKeyManager {
     }
 
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
+        // Accessibility revoked → an enabled active tap with no permission freezes all input.
+        // Disable it now, then off the callback undo the Caps remap and tear the tap down so a
+        // later enable() rebuilds it.
+        if !AccessibilityService.shared.trusted {
+            if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: false) }
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.disable()
+                if let tap = self.eventTap {
+                    CFMachPortInvalidate(tap)
+                    if let source = self.runLoopSource { CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes) }
+                    self.eventTap = nil
+                    self.runLoopSource = nil
+                }
+            }
+            return Unmanaged.passUnretained(event)
+        }
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: true) }
             return Unmanaged.passUnretained(event)

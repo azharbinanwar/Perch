@@ -53,15 +53,15 @@ struct GeneralView: View {
 
             GroupBox("Permissions") {
                 HStack {
-                    Image(systemName: Permissions.isAccessibilityTrusted ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                        .foregroundStyle(Permissions.isAccessibilityTrusted ? .green : .orange)
-                    Text(Permissions.isAccessibilityTrusted
+                    Image(systemName: AccessibilityService.shared.trusted ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .foregroundStyle(AccessibilityService.shared.trusted ? .green : .orange)
+                    Text(AccessibilityService.shared.trusted
                          ? "Accessibility granted — Mouse, Keys, Scroll & quick clipboard paste can run."
                          : "Accessibility needed for Mouse, Keys, Scroll & quick clipboard paste.")
                         .font(.system(size: 13))
                     Spacer()
-                    if !Permissions.isAccessibilityTrusted {
-                        Button("Grant…") { Permissions.requestAccessibility() }
+                    if !AccessibilityService.shared.trusted {
+                        Button("Grant…") { AccessibilityService.shared.request() }
                     }
                 }
                 .padding(6)
@@ -77,6 +77,8 @@ struct GeneralView: View {
                 }
                 .padding(6)
             }
+
+            SafetyTimerBox()
 
             // Debug log — kept for future engine debugging; uncomment to show it again.
             // GroupBox("Debug log") {

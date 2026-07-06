@@ -73,7 +73,7 @@ final class AutoScrollManager {
     @discardableResult
     private func start() -> Bool {
         guard eventTap == nil else { return true }
-        guard Permissions.isAccessibilityTrusted else { return false }
+        guard AccessibilityService.shared.trusted else { return false }
 
         let types: [CGEventType] = [.otherMouseDown, .otherMouseUp, .mouseMoved, .otherMouseDragged, .leftMouseDown, .rightMouseDown]
         let mask = types.reduce(CGEventMask(0)) { $0 | (1 << $1.rawValue) }
@@ -110,6 +110,13 @@ final class AutoScrollManager {
     }
 
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
+        // Accessibility revoked → an enabled active tap with no permission freezes all input.
+        // Disable it now and tear it down off the callback (idempotent). Recreated on re-grant.
+        if !AccessibilityService.shared.trusted {
+            if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: false) }
+            DispatchQueue.main.async { [weak self] in self?.stop() }
+            return Unmanaged.passUnretained(event)
+        }
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: true) }
             return Unmanaged.passUnretained(event)

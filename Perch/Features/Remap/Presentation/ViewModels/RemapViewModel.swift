@@ -222,7 +222,7 @@ final class RemapViewModel {
         // Keep the event tap alive once started; disabling just empties the rules (passthrough) so
         // re-enabling never has to recreate a tap — which macOS doesn't always re-establish cleanly.
         if isEnabled {
-            if !Permissions.isAccessibilityTrusted { Permissions.requestAccessibility() }
+            if !AccessibilityService.shared.trusted { AccessibilityService.shared.request() }
             needsPermission = !manager.start()   // idempotent — no-op if already running
         } else {
             needsPermission = false
@@ -244,7 +244,7 @@ final class RemapViewModel {
     // MARK: - Recording a new mapping
 
     func record(_ field: RemapField) {
-        if !Permissions.isAccessibilityTrusted { Permissions.requestAccessibility() }
+        if !AccessibilityService.shared.trusted { AccessibilityService.shared.request() }
         recording = field
         recorder.onCapture = { [weak self] code, mods in
             guard let self else { return }

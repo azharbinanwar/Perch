@@ -78,7 +78,7 @@ final class ScrollManager {
     @discardableResult
     func start() -> Bool {
         guard eventTap == nil else { return true }
-        guard Permissions.isAccessibilityTrusted else { return false }
+        guard AccessibilityService.shared.trusted else { return false }
 
         let mask = CGEventMask(1 << CGEventType.scrollWheel.rawValue)
         guard let tap = CGEvent.tapCreate(
@@ -115,6 +115,13 @@ final class ScrollManager {
     }
 
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
+        // Accessibility revoked → an enabled active tap with no permission freezes all input.
+        // Disable it now and tear it down off the callback (idempotent). Recreated on re-grant.
+        if !AccessibilityService.shared.trusted {
+            if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: false) }
+            DispatchQueue.main.async { [weak self] in self?.stop() }
+            return Unmanaged.passUnretained(event)
+        }
         // macOS disables the tap on timeout/user-input; re-enable and pass through.
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: true) }
