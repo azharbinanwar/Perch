@@ -4,13 +4,12 @@
 //
 //  A live "watch it happen" intro: a fake text field types an abbreviation by itself,
 //  then it visibly becomes the expanded snippet — the trick explained without words.
-//  Loops through three examples until dismissed.
+//  Loops through the starter snippets until dismissed. Uses the shared IntroSheet frame.
 //
 
 import SwiftUI
 
 struct SnippetIntroSheet: View {
-    @Environment(\.dismiss) private var dismiss
 
     private struct Demo {
         let caption: String
@@ -44,54 +43,28 @@ struct SnippetIntroSheet: View {
     @State private var caretVisible = true
 
     var body: some View {
-        VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("How snippets work").font(.headline)
-                Text("Watch — this is what happens as you type.")
-                    .font(.system(size: 12)).foregroundStyle(.secondary)
+        IntroSheet(title: "How snippets work",
+                   subtitle: "Watch — this is what happens as you type.",
+                   caption: caption,
+                   tip: "Try it yourself: the starter snippets are already in your list.") {
+            // The fake text field where the demo types.
+            HStack(alignment: .top, spacing: 0) {
+                Text(displayed)
+                    .font(.system(size: 15, design: expanded ? .default : .monospaced))
+                    .foregroundStyle(expanded ? AnyShapeStyle(.primary) : AnyShapeStyle(Color.accentColor))
+                Rectangle()
+                    .fill(Color.accentColor)
+                    .frame(width: 2, height: 18)
+                    .opacity(caretVisible ? 1 : 0)
+                    .padding(.top, expanded && displayed.contains("\n") ? 20 : 1)
+                Spacer(minLength: 0)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 20).padding(.top, 18).padding(.bottom, 14)
-
-            Divider()
-
-            VStack(spacing: 14) {
-                // The fake text field where the demo types.
-                HStack(alignment: .top, spacing: 0) {
-                    Text(displayed)
-                        .font(.system(size: 15, design: expanded ? .default : .monospaced))
-                        .foregroundStyle(expanded ? AnyShapeStyle(.primary) : AnyShapeStyle(Color.accentColor))
-                    Rectangle()
-                        .fill(Color.accentColor)
-                        .frame(width: 2, height: 18)
-                        .opacity(caretVisible ? 1 : 0)
-                        .padding(.top, expanded && displayed.contains("\n") ? 20 : 1)
-                    Spacer(minLength: 0)
-                }
-                .padding(14)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .background(RoundedRectangle(cornerRadius: 10).fill(Color.gray.opacity(0.10)))
-                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.gray.opacity(0.35)))
-                .animation(.easeOut(duration: 0.18), value: expanded)
-
-                Text(caption)
-                    .font(.system(size: 12)).foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding(24)
-            .frame(maxHeight: .infinity, alignment: .top)   // demo area soaks up the extra height
-
-            Divider()
-
-            HStack {
-                Text("Try it yourself: the starter snippets are already in your list.")
-                    .font(.system(size: 11)).foregroundStyle(.tertiary)
-                Spacer()
-                Button("Done") { dismiss() }.keyboardShortcut(.defaultAction)
-            }
-            .padding(16)
+            .padding(14)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(RoundedRectangle(cornerRadius: 10).fill(Color.gray.opacity(0.10)))
+            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.gray.opacity(0.35)))
+            .animation(.easeOut(duration: 0.18), value: expanded)
         }
-        .frame(width: 540, height: 480)   // same size as the settings sheet
         .task { await runLoop() }
         .task { await blinkCaret() }
     }

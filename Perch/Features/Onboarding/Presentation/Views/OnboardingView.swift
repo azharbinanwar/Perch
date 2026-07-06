@@ -48,14 +48,22 @@ struct OnboardingView: View {
     // MARK: - Steps
 
     private var welcome: some View {
-        VStack(spacing: 20) {
-            hero("bird.fill", "Welcome to Perch", "The little Mac utilities macOS forgot — all in your menu bar.")
-            VStack(spacing: 12) {
-                featureRow("doc.on.clipboard", "Clipboard", "Full copy history — search it, pin it, paste it with one shortcut.")
-                featureRow("text.quote", "Snippets", "Type ;sig; anywhere and it becomes your saved text — with live dates and your clipboard inside.")
-                featureRow("computermouse", "Mouse", "Give every button a job — clicks, holds, gestures, smooth scrolling. Different per app.")
-                featureRow("keyboard", "Keys", "Remap keys, turn Caps Lock into a super-shortcut key, double-tap modifiers. Different per app.")
-            }
+        VStack(spacing: 0) {
+            // The vector logo — crisp at any size, no icon-tile background, tinted accent.
+            Image("perch")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 84, height: 84)
+                .foregroundStyle(Color.accentColor)
+            Text("Welcome to Perch")
+                .font(.title.bold())
+                .padding(.top, 14)
+            Text("The little Mac utilities macOS forgot — all in your menu bar.")
+                .font(.system(size: 13)).foregroundStyle(.secondary)
+                .padding(.top, 6)
+            // A living tour instead of a feature list — one press → payoff per feature.
+            WelcomeShowcase()
+                .padding(.top, 44)
         }
     }
 

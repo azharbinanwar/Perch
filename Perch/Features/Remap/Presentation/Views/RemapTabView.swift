@@ -20,6 +20,9 @@ struct RemapTabView: View {
 
     private struct ModPick: Identifiable { let id: String }
     @State private var doubleTapPicking: ModPick?
+    @State private var hyperIntroShowing = false   // the auto-playing how-it-works demo
+    @State private var profileIntroShowing = false // per-app profiles, in keys language
+    @State private var doubleTapIntroShowing = false
 
 
     var body: some View {
@@ -49,6 +52,9 @@ struct RemapTabView: View {
             .padding(20)
         }
         .onAppear { trusted = Permissions.isAccessibilityTrusted }
+        .sheet(isPresented: $hyperIntroShowing) { HyperKeyIntroSheet() }
+        .sheet(isPresented: $profileIntroShowing) { profileIntroSheet }
+        .sheet(isPresented: $doubleTapIntroShowing) { DoubleTapIntroSheet() }
         .sheet(isPresented: $addingRule, onDismiss: { vm.clearDraft() }) { captureSheet }
         .sheet(isPresented: $addingProfile) {
             AppPickerSheet { ids in ids.forEach { vm.addProfile(bundleID: $0) } }
@@ -77,8 +83,17 @@ struct RemapTabView: View {
             VStack(alignment: .leading, spacing: 10) {
                 SettingRow(title: "Enable Hyper Key",
                            subtitle: "Hold Caps Lock to act as \(symbols) together — a private shortcut layer no app conflicts with.") {
-                    Toggle("", isOn: Binding(get: { vm.hyperEnabled }, set: { vm.setHyperEnabled($0) }))
-                        .toggleStyle(.switch).labelsHidden()
+                    HStack(spacing: 10) {
+                        Button { hyperIntroShowing = true } label: {
+                            Image(systemName: "info.circle")
+                                .font(.system(size: 16))
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.borderless)
+                        .help("See how the Hyper Key works")
+                        Toggle("", isOn: Binding(get: { vm.hyperEnabled }, set: { vm.setHyperEnabled($0) }))
+                            .toggleStyle(.switch).labelsHidden()
+                    }
                 }
                 if vm.hyperEnabled {
                     Divider()
@@ -123,8 +138,17 @@ struct RemapTabView: View {
             VStack(alignment: .leading, spacing: 10) {
                 SettingRow(title: "Enable double-tap",
                            subtitle: "Tap a modifier twice quickly to run an action — normal shortcuts are never affected.") {
-                    Toggle("", isOn: Binding(get: { vm.doubleTap.enabled }, set: { vm.setDoubleTapEnabled($0) }))
-                        .toggleStyle(.switch).labelsHidden()
+                    HStack(spacing: 10) {
+                        Button { doubleTapIntroShowing = true } label: {
+                            Image(systemName: "info.circle")
+                                .font(.system(size: 16))
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.borderless)
+                        .help("See how Double-Tap works")
+                        Toggle("", isOn: Binding(get: { vm.doubleTap.enabled }, set: { vm.setDoubleTapEnabled($0) }))
+                            .toggleStyle(.switch).labelsHidden()
+                    }
                 }
                 if vm.doubleTap.enabled {
                     ForEach(DoubleTapManager.modifiers, id: \.key) { mod in
@@ -201,8 +225,34 @@ struct RemapTabView: View {
                 : "Active only while \(vm.editingProfileName) is frontmost.",
             onSelect: { vm.selectProfile($0) },
             onAdd: { addingProfile = true },
-            onRemove: { bundleID in vm.selectProfile(bundleID); vm.removeEditingProfile() }
+            onRemove: { bundleID in vm.selectProfile(bundleID); vm.removeEditingProfile() },
+            onInfo: { profileIntroShowing = true }
         )
+    }
+
+    /// The profile concept told in KEYS language — the Mouse tab tells its own version.
+    private var profileIntroSheet: some View {
+        ProfileIntroSheet(
+            title: "How per-app profiles work",
+            subtitle: "Your keyboard follows whichever app is in front — automatically.",
+            tip: "Add an app with the + tile, then change shortcuts, Hyper Key or Double-Tap for just that app.",
+            scenes: [
+                ProfileDemoScene(appName: "Figma", appIcon: "paintbrush.pointed.fill",
+                                 pressLabel: "Press Caps Lock + Z", pressIcon: "keyboard",
+                                 action: "Zoom to Fit", actionIcon: "arrow.up.left.and.arrow.down.right",
+                                 highlighted: true,
+                                 caption: "Figma is in front — its profile answers the keys."),
+                ProfileDemoScene(appName: "Terminal", appIcon: "terminal.fill",
+                                 pressLabel: "Press Caps Lock", pressIcon: "keyboard",
+                                 action: "Just Caps Lock", actionIcon: "capslock",
+                                 highlighted: false,
+                                 caption: "In Terminal you turned Hyper off — Caps Lock is simply Caps Lock again."),
+                ProfileDemoScene(appName: "Figma", appIcon: "paintbrush.pointed.fill",
+                                 pressLabel: "Double-tap ⇧", pressIcon: "keyboard",
+                                 action: "Spotlight", actionIcon: "magnifyingglass",
+                                 highlighted: true,
+                                 caption: "Double-tap actions switch per app too. All of it follows the front app by itself."),
+            ])
     }
 
     // MARK: - Key mappings / Shortcuts

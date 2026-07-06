@@ -21,6 +21,8 @@ struct MouseTabView: View {
     @State private var layerSlotPicking: LayerSlotPick?
     @State private var layerHoldWarning: LayerHoldWarning?    // confirm-before-first-shift-action
     @State private var layerDeleteConfirm = false             // confirm deleting a hold key's combos
+    @State private var layerIntroShowing = false              // the auto-playing how-it-works demo
+    @State private var profileIntroShowing = false            // per-app profiles, in mouse language
 
     private struct LayerHoldWarning: Identifiable {
         let id = UUID()
@@ -76,6 +78,7 @@ struct MouseTabView: View {
             ActionPicker { kind in mouse.setGestureAction(Action(kind: kind), for: pick.button, direction: pick.direction) }
         }
         .sheet(item: $targetPrompt) { targetSheet($0) }
+        .sheet(isPresented: $profileIntroShowing) { profileIntroSheet }
         .alert("Reset Mouse to default?", isPresented: $showingReset) {
             Button("Cancel", role: .cancel) {}
             Button("Reset to Default", role: .destructive) {
@@ -110,8 +113,44 @@ struct MouseTabView: View {
                 : "Active only while \(mouse.editingProfileName) is frontmost.",
             onSelect: { mouse.selectProfile($0) },
             onAdd: { addingProfile = true },
-            onRemove: { bundleID in mouse.selectProfile(bundleID); mouse.removeEditingProfile() }
+            onRemove: { bundleID in mouse.selectProfile(bundleID); mouse.removeEditingProfile() },
+            onInfo: { profileIntroShowing = true }
         )
+    }
+
+    /// The profile concept told in MOUSE language — the Keys tab tells its own version.
+    private var profileIntroSheet: some View {
+        ProfileIntroSheet(
+            title: "How per-app profiles work",
+            subtitle: "Your mouse follows whichever app is in front — automatically.",
+            tip: "Add an app with the + tile, then change anything below for just that app.",
+            scenes: [
+                ProfileDemoScene(appName: "WhatsApp", appIcon: "message.fill",
+                                 pressLabel: "Click Back", pressIcon: "computermouse",
+                                 action: "Spotlight", actionIcon: "magnifyingglass",
+                                 highlighted: true,
+                                 caption: "WhatsApp is in front — its profile answers the click."),
+                ProfileDemoScene(appName: "Browser", appIcon: "globe",
+                                 pressLabel: "Click Back", pressIcon: "computermouse",
+                                 action: "Normal click", actionIcon: "cursorarrow.click",
+                                 highlighted: false,
+                                 caption: "Same button in the browser — no profile here, so it just clicks. The switch is automatic."),
+                ProfileDemoScene(appName: "WhatsApp", appIcon: "message.fill",
+                                 pressLabel: "Scroll wheel", pressIcon: "scroll",
+                                 action: "Slow & smooth", actionIcon: "dial.low",
+                                 highlighted: true,
+                                 caption: "Scrolling too — gentle in a chat, so you never fly past messages."),
+                ProfileDemoScene(appName: "Browser", appIcon: "globe",
+                                 pressLabel: "Scroll wheel", pressIcon: "scroll",
+                                 action: "Fast 3×", actionIcon: "dial.high",
+                                 highlighted: true,
+                                 caption: "The same wheel races through long pages in the browser."),
+                ProfileDemoScene(appName: "Figma", appIcon: "paintbrush.pointed.fill",
+                                 pressLabel: "Hold Forward", pressIcon: "computermouse",
+                                 action: "Zoom In", actionIcon: "plus.magnifyingglass",
+                                 highlighted: true,
+                                 caption: "Any app can get its own tricks — a zoom button just for design work."),
+            ])
     }
 
     // MARK: - Scroll / Pointer / Reliability
@@ -325,9 +364,16 @@ struct MouseTabView: View {
                            subtitle: layerOn
                                ? "Hold a shift key, then press another button — it runs that combo's action. \(count) combo\(count == 1 ? "" : "s") set."
                                : "Hold one button to give every other button a second set of actions — like ⇧ for your mouse.") {
-                    Toggle("", isOn: Binding(get: { mouse.editingLayer.enabled },
-                                             set: { on in mouse.updateLayer { $0.enabled = on } }))
-                        .toggleStyle(.switch).labelsHidden()
+                    HStack(spacing: 10) {
+                        Button { layerIntroShowing = true } label: {
+                            Image(systemName: "info.circle").font(.system(size: 16)).foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.borderless)
+                        .help("See how Mouse Shift works")
+                        Toggle("", isOn: Binding(get: { mouse.editingLayer.enabled },
+                                                 set: { on in mouse.updateLayer { $0.enabled = on } }))
+                            .toggleStyle(.switch).labelsHidden()
+                    }
                 }
                 if layerOn {
                     Divider()
@@ -351,11 +397,11 @@ struct MouseTabView: View {
                                 Text(editing ? "HOLD · \(name)" : (combos > 0 ? "\(name) · \(combos)" : name))
                                     .font(.system(size: 11, weight: editing ? .bold : .medium))
                                     .padding(.horizontal, 10).padding(.vertical, 4)
-                                    .background(editing ? AnyShapeStyle(Color.orange)
-                                                : combos > 0 ? AnyShapeStyle(Color.orange.opacity(0.15))
+                                    .background(editing ? AnyShapeStyle(Color.secondaryAccent)
+                                                : combos > 0 ? AnyShapeStyle(Color.secondaryAccent.opacity(0.15))
                                                              : AnyShapeStyle(Color.primary.opacity(0.06)),
                                                 in: Capsule())
-                                    .foregroundStyle(editing ? Color.white : (combos > 0 ? Color.orange : Color.secondary))
+                                    .foregroundStyle(editing ? Color.white : (combos > 0 ? Color.secondaryAccent : Color.secondary))
                             }
                             .buttonStyle(.plain)
                         }
@@ -363,7 +409,7 @@ struct MouseTabView: View {
                     // No extra buttons yet → guide the user to the one detection system.
                     if layerHoldChoices.count == 1 {
                         HStack(spacing: 8) {
-                            Image(systemName: "info.circle").foregroundStyle(.secondary)
+                            Image(systemName: "info.circle").font(.system(size: 16)).foregroundStyle(.secondary)
                             Text("Only Middle can power the layer right now — scan your mouse's extra buttons to unlock more.")
                                 .font(.system(size: 11)).foregroundStyle(.secondary)
                             Spacer()
@@ -402,7 +448,7 @@ struct MouseTabView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             HStack(spacing: 4) {
                                 Text("Hold").font(.system(size: 12)).foregroundStyle(.secondary)
-                                Text(layerHoldName).font(.system(size: 12, weight: .semibold)).foregroundStyle(Color.orange)
+                                Text(layerHoldName).font(.system(size: 12, weight: .semibold)).foregroundStyle(Color.secondaryAccent)
                                 Text(", then").font(.system(size: 12)).foregroundStyle(.secondary)
                                 Text(layerName(layerSel).lowercased()).font(.system(size: 12, weight: .semibold))
                                 Spacer()
@@ -444,6 +490,7 @@ struct MouseTabView: View {
         .opacity(mouse.isEnabled ? 1 : 0.5)
         .disabled(!mouse.isEnabled)
         .alert(item: $layerHoldWarning) { layerHoldAlert($0) }
+        .sheet(isPresented: $layerIntroShowing) { MouseShiftIntroSheet() }
         .sheet(item: $layerSlotPicking) { pick in
             ActionPicker(excluding: [.passThrough]) { kind in
                 guard let trigger = triggerFor(pick.target) else { return }
@@ -474,17 +521,17 @@ struct MouseTabView: View {
             HStack(spacing: 10) {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.system(size: 12))
-                    .foregroundStyle(Color.orange)
+                    .foregroundStyle(Color.secondaryAccent)
                     .frame(width: 26, height: 26)
-                    .background(Color.orange.opacity(0.15), in: RoundedRectangle(cornerRadius: 7))
+                    .background(Color.secondaryAccent.opacity(0.15), in: RoundedRectangle(cornerRadius: 7))
                 VStack(alignment: .leading, spacing: 1) {
                     HStack(spacing: 6) {
                         Text(layerHoldName).font(.system(size: 13, weight: .semibold))
                         Text("HOLD IN USE")
                             .font(.system(size: 9, weight: .bold)).kerning(0.5)
-                            .foregroundStyle(Color.orange)
+                            .foregroundStyle(Color.secondaryAccent)
                             .padding(.horizontal, 7).padding(.vertical, 2)
-                            .background(Color.orange.opacity(0.15), in: RoundedRectangle(cornerRadius: 4))
+                            .background(Color.secondaryAccent.opacity(0.15), in: RoundedRectangle(cornerRadius: 4))
                     }
                     Text("Its Hold action — \(conflict) — will be removed when you set its first shift combo. Click and double-click keep working.")
                         .font(.system(size: 11)).foregroundStyle(.secondary)
@@ -492,7 +539,7 @@ struct MouseTabView: View {
                 Spacer()
             }
             .padding(10)
-            .background(Color.orange.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
+            .background(Color.secondaryAccent.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
         }
     }
 
@@ -575,9 +622,9 @@ struct MouseTabView: View {
                                     .frame(width: 100, alignment: .leading)
                                 Spacer(minLength: 8)
                                 Text("Powers Mouse Shift")
-                                    .font(.system(size: 12)).foregroundStyle(Color.orange)
+                                    .font(.system(size: 12)).foregroundStyle(Color.secondaryAccent)
                                 Image(systemName: "lock.fill")
-                                    .font(.system(size: 9)).foregroundStyle(Color.orange)
+                                    .font(.system(size: 9)).foregroundStyle(Color.secondaryAccent)
                             }
                             .frame(minHeight: 36)
                         } else {

@@ -22,12 +22,24 @@ struct AppProfileStrip: View {
     var onSelect: (String?) -> Void
     var onAdd: () -> Void
     var onRemove: (String) -> Void
+    var onInfo: (() -> Void)? = nil    // each tab shows ITS OWN profile demo here
 
     @State private var hovered: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Per-app profile").font(.system(size: 12.5, weight: .medium))
+            HStack(spacing: 6) {
+                Text("Per-app profile").font(.system(size: 12.5, weight: .medium))
+                if let onInfo {
+                    Button(action: onInfo) {
+                        Image(systemName: "info.circle")
+                            .font(.system(size: 16))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.borderless)
+                    .help("See how per-app profiles work")
+                }
+            }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(items) { tile($0) }

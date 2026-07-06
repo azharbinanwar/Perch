@@ -45,7 +45,7 @@ struct SnippetsTabView: View {
             Spacer()
             Button { showingIntro = true } label: {
                 Image(systemName: "info.circle")
-                    .font(.system(size: 13))
+                    .font(.system(size: 15))
                     .frame(height: 16)   // match the text buttons' control height
             }
             .help("See how snippets work")

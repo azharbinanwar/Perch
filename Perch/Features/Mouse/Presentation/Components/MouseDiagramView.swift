@@ -49,10 +49,10 @@ struct MouseDiagramView: View {
         let hold = holdIDs.contains(id)
         let sel = selected == id && !hold
         let mapped = isMapped(id)
-        let fill: Color = hold ? Color.orange.opacity(0.3)
+        let fill: Color = hold ? Color.secondaryAccent.opacity(0.3)
                                : sel ? Color.accentColor.opacity(0.25)
                                      : (mapped ? Color.accentColor.opacity(0.15) : Color.primary.opacity(0.06))
-        let stroke: Color = hold ? Color.orange : (sel ? Color.accentColor : Color.primary.opacity(0.15))
+        let stroke: Color = hold ? Color.secondaryAccent : (sel ? Color.accentColor : Color.primary.opacity(0.15))
         // Base buttons always show; extras only once detected (hidden otherwise).
         return Group {
             if isActive(id) {
@@ -72,7 +72,7 @@ struct MouseDiagramView: View {
                                 .kerning(0.6)
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 7).padding(.vertical, 2)
-                                .background(Color.orange, in: RoundedRectangle(cornerRadius: 4))
+                                .background(Color.secondaryAccent, in: RoundedRectangle(cornerRadius: 4))
                                 .shadow(color: .black.opacity(0.25), radius: 2, y: 1)
                                 .fixedSize()
                                 .offset(y: -22)   // clear gap between the tag and the button, like the design

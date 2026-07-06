@@ -12,6 +12,7 @@ struct ClipboardTabView: View {
     @Environment(ClipboardViewModel.self) private var clipboard
     @Environment(SettingsViewModel.self) private var settings
     @State private var showingShortcuts = false
+    @State private var showingIntro = false
     @State private var showingReset = false
     @State private var showingClearAll = false
     @State private var imageBytes = 0
@@ -69,6 +70,7 @@ struct ClipboardTabView: View {
             }
             .padding(20)
         }
+        .sheet(isPresented: $showingIntro) { ClipboardIntroSheet() }
         .onAppear { imageBytes = ImageStore.diskUsage() }
     }
 
@@ -78,6 +80,12 @@ struct ClipboardTabView: View {
         HStack(alignment: .firstTextBaseline) {
             PageHeader("Clipboard", subtitle: storageSubtitle)
             Spacer()
+            Button { showingIntro = true } label: {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 15))
+                    .frame(height: 16)   // match the text buttons' control height
+            }
+            .help("See how the clipboard popup works")
             Button {
                 NotificationCenter.default.post(name: .openClipboardPopup, object: nil)
             } label: {
