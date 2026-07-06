@@ -211,17 +211,17 @@ final class ClipboardPopupModel {
     // MARK: - Paste actions
 
     func pasteSelected() {
-        if let snippet = selectedSnippet { clipboard.pasteText(snippet.text); onPaste() }
+        if let snippet = selectedSnippet { clipboard.pasteText(snippets.resolvedText(snippet.text)); onPaste() }
         else if let item = selectedItem { clipboard.pasteToPasteboard(item); onPaste() }
     }
 
     func pastePlainSelected() {
-        if let snippet = selectedSnippet { clipboard.pasteText(snippet.text); onPaste() }
+        if let snippet = selectedSnippet { clipboard.pasteText(snippets.resolvedText(snippet.text)); onPaste() }
         else if let item = selectedItem { clipboard.pasteToPasteboard(item, plain: true); onPaste() }
     }
 
     func pasteSelectedKeepingOpen() {
-        if let snippet = selectedSnippet { clipboard.pasteText(snippet.text); onPasteKeepOpen() }
+        if let snippet = selectedSnippet { clipboard.pasteText(snippets.resolvedText(snippet.text)); onPasteKeepOpen() }
         else if let item = selectedItem { clipboard.copyToPasteboard(item); onPasteKeepOpen() }
     }
 
@@ -351,7 +351,7 @@ final class ClipboardPopupModel {
     /// ";addr" for the row badge — only while text expansion is on (else nil, badge hidden).
     func abbreviationBadge(for snippet: Snippet) -> String? {
         guard snippets.expansionEnabled, let abbreviation = snippet.abbreviation else { return nil }
-        return snippets.expansionPrefix.rawValue + abbreviation
+        return snippets.expansionPrefix.rawValue + abbreviation + snippets.expansionPrefix.rawValue
     }
 
     // MARK: - Notice

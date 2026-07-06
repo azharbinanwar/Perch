@@ -19,7 +19,12 @@ struct PerchConfig: Codable {
     var snippets: [Snippet]
     var snippetExpansion: ExpansionCfg? = nil   // optional so older files still decode
 
-    struct ExpansionCfg: Codable { var on: Bool; var prefix: String }
+    struct ExpansionCfg: Codable {
+        var on: Bool
+        var prefix: String
+        var dateFormat: String? = nil     // optionals so older files still decode
+        var excludeApps: [String]? = nil
+    }
 
     /// The scalar-setting plist keys that actually existed at export time. This is the single
     /// source of truth for "what did the user set" — counting reads this instead of comparing

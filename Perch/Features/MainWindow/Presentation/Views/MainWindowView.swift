@@ -26,7 +26,7 @@ struct MainWindowView: View {
                 }
                 .tag(item)
             }
-            .navigationSplitViewColumnWidth(190)
+            .navigationSplitViewColumnWidth(215)   // System-Settings-standard sidebar width
         } detail: {
             switch selection {
             case .clipboard: ClipboardTabView()

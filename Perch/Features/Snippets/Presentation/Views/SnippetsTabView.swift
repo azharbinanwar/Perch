@@ -13,13 +13,12 @@ struct SnippetsTabView: View {
     @State private var editing: Snippet?
     @State private var showingNew = false
     @State private var showingClearAll = false
+    @State private var showingIntro = false
+    @State private var showingSettings = false
 
     var body: some View {
         VStack(spacing: 0) {
             header
-            expansionGroup
-                .padding(.horizontal, 20)
-                .padding(.bottom, 12)
             if vm.snippets.isEmpty { emptyState } else { list }
         }
         .sheet(item: $editing) { snippet in
@@ -30,6 +29,8 @@ struct SnippetsTabView: View {
             SnippetEditor(snippet: nil, prefix: vm.expansionPrefix.rawValue,
                           taken: vm.takenAbbreviations(excluding: nil)) { vm.upsert($0) }
         }
+        .sheet(isPresented: $showingIntro) { SnippetIntroSheet() }
+        .sheet(isPresented: $showingSettings) { SnippetSettingsSheet() }
         .alert("Clear all snippets?", isPresented: $showingClearAll) {
             Button("Cancel", role: .cancel) {}
             Button("Clear All", role: .destructive) { vm.clearAll() }
@@ -42,6 +43,18 @@ struct SnippetsTabView: View {
         HStack {
             PageHeader("Snippets", subtitle: "Saved clips you reuse — always available in the clipboard.")
             Spacer()
+            Button { showingIntro = true } label: {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 13))
+                    .frame(height: 16)   // match the text buttons' control height
+            }
+            .help("See how snippets work")
+            Button { showingSettings = true } label: {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 13))
+                    .frame(height: 16)   // match the text buttons' control height
+            }
+            .help("Text expansion settings")
             Button(role: .destructive) { showingClearAll = true } label: {
                 Label("Clear All", systemImage: "trash")
             }
@@ -53,32 +66,7 @@ struct SnippetsTabView: View {
         .padding(.bottom, 12)
     }
 
-    // MARK: - Text expansion
 
-    private var expansionGroup: some View {
-        GroupBox("Text Expansion") {
-            VStack(spacing: 10) {
-                SettingRow(title: "Expand abbreviations as you type",
-                           subtitle: "Type a snippet's abbreviation (like \(vm.expansionPrefix.rawValue)addr) in any app and it becomes the full text instantly.") {
-                    Toggle("", isOn: Binding(get: { vm.expansionEnabled }, set: { vm.setExpansionEnabled($0) }))
-                        .toggleStyle(.switch).labelsHidden()
-                }
-                if vm.expansionEnabled {
-                    Divider()
-                    SettingRow(title: "Trigger prefix",
-                               subtitle: "Starts every abbreviation, so normal typing never expands by accident.") {
-                        Picker("", selection: Binding(get: { vm.expansionPrefix }, set: { vm.setExpansionPrefix($0) })) {
-                            ForEach(ExpansionPrefix.allCases) { prefix in
-                                Text(prefix.rawValue).font(.system(.body, design: .monospaced)).tag(prefix)
-                            }
-                        }
-                        .labelsHidden().frame(width: 80)
-                    }
-                }
-            }
-            .padding(6)
-        }
-    }
 
     private var emptyState: some View {
         ContentUnavailableView {
@@ -110,14 +98,14 @@ struct SnippetsTabView: View {
                 HStack(spacing: 6) {
                     Text(snippet.name).font(.system(size: 13, weight: .medium))
                     if vm.expansionEnabled, let abbreviation = snippet.abbreviation {
-                        Text("\(vm.expansionPrefix.rawValue)\(abbreviation)")
+                        Text("\(vm.expansionPrefix.rawValue)\(abbreviation)\(vm.expansionPrefix.rawValue)")
                             .font(.system(size: 10, design: .monospaced))
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 5).padding(.vertical, 1)
                             .background(.quaternary.opacity(0.5), in: Capsule())
                     }
                 }
-                Text(snippet.text).lineLimit(1).font(.system(size: 11)).foregroundStyle(.secondary)
+                Text(snippet.text).lineLimit(2).font(.system(size: 11)).foregroundStyle(.secondary)
             }
             Spacer()
             Button { editing = snippet } label: { Image(systemName: "pencil") }
@@ -128,6 +116,6 @@ struct SnippetsTabView: View {
         .padding(.vertical, 6)
         .padding(.horizontal, 10)
         .contentShape(Rectangle())
-        .onTapGesture(count: 2) { editing = snippet }
+        .onTapGesture { editing = snippet }   // whole row opens the snippet
     }
 }

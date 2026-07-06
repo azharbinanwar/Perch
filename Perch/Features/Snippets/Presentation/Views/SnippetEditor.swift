@@ -44,6 +44,8 @@ struct SnippetEditor: View {
                 .font(.system(size: 13))
                 .frame(maxHeight: .infinity)
                 .overlay(RoundedRectangle(cornerRadius: 6).stroke(.quaternary))
+            Text("Placeholders: {date} · {time} · {clipboard} — filled in when the snippet is inserted. {cursor} puts the caret there after expansion.")
+                .font(.system(size: 10.5)).foregroundStyle(.tertiary)
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
@@ -58,14 +60,17 @@ struct SnippetEditor: View {
                         .textFieldStyle(.roundedBorder)
                         .font(.system(size: 13, design: .monospaced))
                         .frame(width: 140)
+                    Text(prefix)   // the closing prefix is the trigger
+                        .font(.system(size: 13, design: .monospaced))
+                        .foregroundStyle(.secondary)
                 }
                 if isConflict {
-                    Text("\(prefix)\(cleanAbbreviation) is already used by another snippet.")
+                    Text("\(prefix)\(cleanAbbreviation)\(prefix) is already used by another snippet.")
                         .font(.system(size: 11)).foregroundStyle(.red)
                 } else {
                     Text(cleanAbbreviation.isEmpty
-                         ? "Add one to type this snippet anywhere — e.g. type \(prefix)addr and it expands instantly."
-                         : "Type \(prefix)\(cleanAbbreviation) in any app and it becomes this snippet.")
+                         ? "Add one to type this snippet anywhere — e.g. type \(prefix)addr\(prefix) and it expands instantly."
+                         : "Type \(prefix)\(cleanAbbreviation)\(prefix) in any app and it becomes this snippet. The closing \(prefix) triggers it.")
                         .font(.system(size: 11)).foregroundStyle(.secondary)
                 }
             }

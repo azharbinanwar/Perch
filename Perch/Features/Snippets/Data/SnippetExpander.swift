@@ -3,8 +3,10 @@
 //  Perch
 //
 //  Text expansion: watches typing (listen-only — can never break input), keeps a small rolling
-//  buffer of what was typed, and when it ends with prefix+abbreviation (e.g. ";addr") deletes
-//  those characters and types the snippet text in their place. No clipboard involved.
+//  buffer of what was typed, and when it ends with prefix+abbreviation+prefix (e.g. ";addr;")
+//  deletes those characters and types the snippet text in their place. No clipboard involved.
+//  The CLOSING prefix is the trigger — the user says when the abbreviation is done, so ";asd;"
+//  and ";asdf;" can coexist and nothing ever fires early.
 //
 
 import AppKit
@@ -25,6 +27,8 @@ final class SnippetExpander {
     var isActive = false
     var prefix = ExpansionPrefix.default.rawValue
     var abbreviations: [String: String] = [:]   // abbreviation (no prefix) → full text
+    var dateFormat = SnippetPlaceholders.defaultDateFormat
+    var excludedApps: Set<String> = []          // bundle IDs where expansion never fires
 
     private var buffer = ""
     private let maxBuffer = 40
@@ -94,12 +98,16 @@ final class SnippetExpander {
         if buffer.count > maxBuffer { buffer.removeFirst(buffer.count - maxBuffer) }
 
         for (abbreviation, text) in abbreviations {
-            let token = prefix + abbreviation
+            let token = prefix + abbreviation + prefix   // closing prefix = the explicit trigger
             if buffer.hasSuffix(token) {
                 buffer = ""
+                // Excluded app in front (terminal, password manager…) → let the text stand.
+                if let front = NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
+                   excludedApps.contains(front) { break }
+                let (resolved, tail) = SnippetPlaceholders.resolveWithCursor(text, dateFormat: dateFormat)
                 // Tiny delay so the app finishes receiving the last typed character first.
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.03) { [weak self] in
-                    self?.replace(count: token.count, with: text)
+                    self?.replace(count: token.count, with: resolved, cursorTail: tail)
                 }
                 break
             }
@@ -107,12 +115,26 @@ final class SnippetExpander {
     }
 
     /// Delete the typed token, then type the snippet text (chunked unicode events — no clipboard).
-    private func replace(count: Int, with text: String) {
+    /// `cursorTail` = characters AFTER the {cursor} marker — the caret steps back over them.
+    private func replace(count: Int, with text: String, cursorTail: Int? = nil) {
         let source = CGEventSource(stateID: .combinedSessionState)
         for _ in 0..<count {
             CGEvent(keyboardEventSource: source, virtualKey: backspace, keyDown: true)?.post(tap: .cgSessionEventTap)
             CGEvent(keyboardEventSource: source, virtualKey: backspace, keyDown: false)?.post(tap: .cgSessionEventTap)
         }
+        Self.type(text)
+        if let tail = cursorTail, tail > 0 {
+            let leftArrow: CGKeyCode = 123
+            for _ in 0..<tail {
+                CGEvent(keyboardEventSource: source, virtualKey: leftArrow, keyDown: true)?.post(tap: .cgSessionEventTap)
+                CGEvent(keyboardEventSource: source, virtualKey: leftArrow, keyDown: false)?.post(tap: .cgSessionEventTap)
+            }
+        }
+    }
+
+    /// Type text into the focused app as unicode key events (no clipboard involved).
+    static func type(_ text: String) {
+        let source = CGEventSource(stateID: .combinedSessionState)
         var remaining = Substring(text)
         while !remaining.isEmpty {
             let chunk = remaining.prefix(20)

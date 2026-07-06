@@ -57,7 +57,9 @@ enum ConfigService {
                 history: clipboardRepo.load().filter { $0.content == .text }),
             snippets: snippetRepo.load())
         config.snippetExpansion = .init(on: defaults.bool(forKey: K.snippetsExpansionOn),
-                                        prefix: defaults.string(forKey: K.snippetsExpansionPrefix) ?? ";")
+                                        prefix: defaults.string(forKey: K.snippetsExpansionPrefix) ?? ";",
+                                        dateFormat: defaults.string(forKey: K.snippetsDateFormat),
+                                        excludeApps: defaults.stringArray(forKey: K.snippetsExcludeApps))
         // Snapshot which scalar-setting keys the user actually set — the file's source of truth.
         config.presentKeys = ConfigSection.allSettingKeys.filter { defaults.object(forKey: $0) != nil }
         return config
@@ -140,6 +142,8 @@ enum ConfigService {
         if sections.contains(.snippets) {
             put(K.snippetsExpansionOn, c.snippetExpansion?.on ?? false)
             put(K.snippetsExpansionPrefix, c.snippetExpansion?.prefix ?? ";")
+            put(K.snippetsDateFormat, c.snippetExpansion?.dateFormat ?? SnippetPlaceholders.defaultDateFormat)
+            put(K.snippetsExcludeApps, c.snippetExpansion?.excludeApps ?? [])
             snippetRepo.save(c.snippets)
         }
     }

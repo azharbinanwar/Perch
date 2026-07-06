@@ -58,6 +58,8 @@ enum Keys {
         static let snippets         = "snippets"
         static let snippetsExpansionOn     = "snippets.expansion.on"
         static let snippetsExpansionPrefix = "snippets.expansion.prefix"   // ";" / ":" / "//"
+        static let snippetsDateFormat      = "snippets.dateFormat"         // {date} placeholder pattern
+        static let snippetsExcludeApps     = "snippets.excludeApps"        // bundle IDs — never expand there
         static let onboarded        = "onboarded"   // first-run onboarding completed
     }
 }
