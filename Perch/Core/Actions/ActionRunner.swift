@@ -38,7 +38,10 @@ enum ActionRunner {
 
         case .openClipboard:
             NotificationCenter.default.post(name: .openClipboardPopup, object: nil)
-        case .pasteLast:
+        case .openSnippets:
+            NotificationCenter.default.post(name: .openSnippetPopup, object: nil)
+        case .openPerch:
+            NotificationCenter.default.post(name: .openPerchWindow, object: nil)        case .pasteLast:
             press(9, flags: .maskCommand)   // ⌘V — the last item is already on the pasteboard
 
         case .missionControl: openApp("com.apple.exposelauncher")

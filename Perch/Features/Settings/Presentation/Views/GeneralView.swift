@@ -40,6 +40,16 @@ struct GeneralView: View {
                 .padding(6)
             }
 
+            GroupBox("Appearance") {
+                SettingRow(title: "Theme",
+                           subtitle: "System follows macOS; Light or Dark forces it everywhere in Perch.") {
+                    HStack(spacing: 12) {
+                        ForEach(AppTheme.allCases) { themeSwatch($0) }
+                    }
+                }
+                .padding(6)
+            }
+
             GroupBox("Permissions") {
                 HStack {
                     Image(systemName: Permissions.isAccessibilityTrusted ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
@@ -130,5 +140,48 @@ struct GeneralView: View {
 
     private func toggle(_ binding: Binding<Bool>) -> some View {
         Toggle("", isOn: binding).toggleStyle(.switch).labelsHidden()
+    }
+
+    /// A mini window preview per theme — System split diagonally, Light white, Dark black —
+    /// with an accent ring on the selected one (same visual as CleanKit's picker).
+    private func themeSwatch(_ theme: AppTheme) -> some View {
+        let selected = settings.settings.theme == theme
+        return Button { settings.settings.theme = theme } label: {
+            VStack(spacing: 6) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(swatchBackground(theme))
+                        .frame(width: 58, height: 42)
+                        .overlay(RoundedRectangle(cornerRadius: 8)
+                            .stroke(selected ? Color.accentColor : Color.secondary.opacity(0.25),
+                                    lineWidth: selected ? 2 : 1))
+                    HStack(spacing: 3) {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(theme == .dark ? Color.white.opacity(0.15)
+                                  : theme == .light ? Color.black.opacity(0.08) : Color.gray.opacity(0.45))
+                            .frame(width: 13, height: 26)
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(theme == .dark ? Color.white.opacity(0.08)
+                                  : theme == .light ? Color.black.opacity(0.04) : Color.gray.opacity(0.25))
+                            .frame(width: 30, height: 26)
+                    }
+                }
+                Text(theme.title)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(selected ? Color.accentColor : Color.secondary)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func swatchBackground(_ theme: AppTheme) -> AnyShapeStyle {
+        switch theme {
+        case .light: return AnyShapeStyle(Color.white)
+        case .dark:  return AnyShapeStyle(Color.black)
+        case .system:
+            return AnyShapeStyle(LinearGradient(
+                stops: [.init(color: .black, location: 0.499), .init(color: .white, location: 0.501)],
+                startPoint: .topLeading, endPoint: .bottomTrailing))
+        }
     }
 }

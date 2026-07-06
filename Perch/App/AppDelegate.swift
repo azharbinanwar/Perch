@@ -37,6 +37,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let hotKey = HotKeyManager()
     private var menuPreviousApp: NSRunningApplication?   // app focused when the menu opened
     private var openClipboardObserver: Any?
+    private var actionObservers: [Any] = []   // Perch-action notifications (snippets/window/recording)
     private var hotKeyObserver: Any?
 
     /// Captured from SwiftUI so we can open the main window from AppKit contexts.
@@ -95,6 +96,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         settingsVM.applyDockPolicy()   // menu-bar only, or a Dock icon if the user chose it
+        settingsVM.applyTheme()        // forced light/dark, or follow macOS
         clipboardVM.start()
         mouseVM.apply()           // re-enable saved button mappings
         remapVM.apply()           // re-enable saved key remaps
@@ -124,6 +126,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ) { [weak self] _ in
             self?.clipboardPanel.show()
         }
+
+        // Perch actions (mouse buttons / keys can trigger these from anywhere).
+        actionObservers.append(NotificationCenter.default.addObserver(
+            forName: .openSnippetPopup, object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.clipboardPanel.showSnippets()
+        })
+        actionObservers.append(NotificationCenter.default.addObserver(
+            forName: .openPerchWindow, object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.openMainWindow()
+        })
 
         // First run → show onboarding; otherwise honor "Open window at launch".
         let onboarded = UserDefaults.standard.bool(forKey: Keys.Defaults.onboarded)
@@ -159,5 +173,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 extension Notification.Name {
     static let openClipboardPopup = Notification.Name("perch.openClipboardPopup")
+    static let openSnippetPopup = Notification.Name("perch.openSnippetPopup")
+    static let openPerchWindow = Notification.Name("perch.openPerchWindow")
     static let hotKeyChanged = Notification.Name("perch.hotKeyChanged")
 }

@@ -33,6 +33,12 @@ final class ClipboardPanelController {
         if panel?.isVisible == true { hide() } else { show() }
     }
 
+    /// Open straight onto the Snippets category (the "Open Snippets" action).
+    func showSnippets() {
+        show()
+        model.setCategory(.snippets)
+    }
+
     func show() {
         // paste + key capture both need Accessibility; prompt if missing.
         if !Permissions.isAccessibilityTrusted { Permissions.requestAccessibility() }

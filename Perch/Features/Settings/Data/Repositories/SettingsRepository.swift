@@ -27,7 +27,8 @@ final class SettingsRepository {
             menuItemCount:      defaults.object(forKey: K.settingsMenuItemCount) as? Int ?? d.menuItemCount,
             openAtLogin:        defaults.object(forKey: K.settingsOpenAtLogin) as? Bool ?? d.openAtLogin,
             openWindowAtLaunch: defaults.object(forKey: K.settingsOpenWindowAtLaunch) as? Bool ?? d.openWindowAtLaunch,
-            showInDock:         defaults.object(forKey: K.settingsShowInDock) as? Bool ?? d.showInDock)
+            showInDock:         defaults.object(forKey: K.settingsShowInDock) as? Bool ?? d.showInDock,
+            theme:              AppTheme(rawValue: defaults.string(forKey: K.settingsTheme) ?? "") ?? d.theme)
     }
 
     func save(_ settings: AppSettings) {
@@ -36,6 +37,7 @@ final class SettingsRepository {
         setOrClear(K.settingsOpenAtLogin, settings.openAtLogin, default: d.openAtLogin)
         setOrClear(K.settingsOpenWindowAtLaunch, settings.openWindowAtLaunch, default: d.openWindowAtLaunch)
         setOrClear(K.settingsShowInDock, settings.showInDock, default: d.showInDock)
+        setOrClear(K.settingsTheme, settings.theme.rawValue, default: d.theme.rawValue)
     }
 
     /// Write the value only if it differs from the default; otherwise remove the key (stays sparse).

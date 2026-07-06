@@ -52,6 +52,7 @@ enum Keys {
         static let settingsOpenAtLogin       = "settings.openAtLogin"
         static let settingsOpenWindowAtLaunch = "settings.openWindowAtLaunch"
         static let settingsShowInDock        = "settings.showInDock"
+        static let settingsTheme             = "settings.theme"      // system / light / dark
         static let hotKeyCode       = "hotkey.code"
         static let hotKeyModifiers  = "hotkey.modifiers"
         static let hotKeyLabel      = "hotkey.label"

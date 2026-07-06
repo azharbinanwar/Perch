@@ -47,7 +47,7 @@ enum ConfigSection: String, CaseIterable, Identifiable {
         switch self {
         case .general:
             return [K.settingsMenuItemCount, K.settingsOpenAtLogin,
-                    K.settingsOpenWindowAtLaunch, K.settingsShowInDock,
+                    K.settingsOpenWindowAtLaunch, K.settingsShowInDock, K.settingsTheme,
                     K.hotKeyCode, K.hotKeyModifiers, K.hotKeyLabel]
         case .keys:
             // Hyper/double-tap moved into the per-app profiles (content) — only the master left.

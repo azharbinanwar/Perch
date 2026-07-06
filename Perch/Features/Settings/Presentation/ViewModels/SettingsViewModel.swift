@@ -15,6 +15,7 @@ final class SettingsViewModel {
             repository.save(settings)
             if settings.openAtLogin != oldValue.openAtLogin { applyLoginItem() }
             if settings.showInDock != oldValue.showInDock { applyDockPolicy() }
+            if settings.theme != oldValue.theme { applyTheme() }
         }
     }
 
@@ -63,6 +64,15 @@ final class SettingsViewModel {
         NSApp.setActivationPolicy(settings.showInDock ? .regular : .accessory)
     }
 
+    /// Force light/dark on EVERY surface (window, menu dropdown, popup panel) or follow macOS.
+    func applyTheme() {
+        switch settings.theme {
+        case .system: NSApp.appearance = nil
+        case .light:  NSApp.appearance = NSAppearance(named: .aqua)
+        case .dark:   NSApp.appearance = NSAppearance(named: .darkAqua)
+        }
+    }
+
     /// Re-read from storage and re-apply login item, dock policy, and hotkey (used after Import).
     func reload() {
         settings = repository.load()
@@ -73,6 +83,7 @@ final class SettingsViewModel {
         hotKeyLabel = defaults.string(forKey: Keys.Defaults.hotKeyLabel) ?? "V"
         applyLoginItem()
         applyDockPolicy()
+        applyTheme()
         NotificationCenter.default.post(name: .hotKeyChanged, object: nil)
     }
 

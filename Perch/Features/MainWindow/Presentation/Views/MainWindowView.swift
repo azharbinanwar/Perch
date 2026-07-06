@@ -13,16 +13,14 @@ struct MainWindowView: View {
     var body: some View {
         NavigationSplitView {
             List(SidebarItem.allCases, selection: $selection) { item in
-                // System-Settings look: same-size white glyph on a colored rounded tile —
-                // uniform tiles read cleaner than raw glyphs of wildly different shapes.
+                // Standard macOS sidebar: plain template glyphs (no color tiles), slightly
+                // larger than the default, in a fixed frame so all labels align.
                 Label {
-                    Text(item.title)
+                    Text(item.title).font(.system(size: 13))
                 } icon: {
                     Image(systemName: item.icon)
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 21, height: 21)
-                        .background(item.tint.gradient, in: RoundedRectangle(cornerRadius: 5.5))
+                        .font(.system(size: 15, weight: .medium))
+                        .frame(width: 24, height: 24)
                 }
                 .tag(item)
             }

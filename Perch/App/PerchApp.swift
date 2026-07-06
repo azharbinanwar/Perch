@@ -10,9 +10,14 @@ struct PerchApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        MenuBarExtra("Perch", image: "perch") {
+        MenuBarExtra {
             MenuContentView(app: appDelegate)
                 .injecting(appDelegate)
+        } label: {
+            // The label renders the moment the app starts (the dropdown content doesn't),
+            // so THIS is where the window-opening handle must be captured — otherwise
+            // "Open window at launch" has no way to open the window on a fresh run.
+            MenuBarIcon(appDelegate: appDelegate)
         }
         .menuBarExtraStyle(.window)
 
@@ -20,6 +25,16 @@ struct PerchApp: App {
             RootWindowView().injecting(appDelegate)
         }
         .windowResizability(.contentSize)
+    }
+}
+
+private struct MenuBarIcon: View {
+    let appDelegate: AppDelegate
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Image("perch")
+            .onAppear { appDelegate.openWindowAction = { openWindow(id: $0) } }
     }
 }
 

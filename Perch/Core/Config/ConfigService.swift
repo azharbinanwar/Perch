@@ -192,7 +192,10 @@ enum ConfigService {
         guard panel.runModal() == .OK, let url = panel.url else { return }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        try? encoder.encode(config).write(to: url)
+        // Files are written in the v2 shape (meta block, hotkey under clipboard, one
+        // snippets section, UI-named profile keys). Import reads v1 AND v2.
+        let v2 = PerchConfigV2(config, exportedAt: stamp.string(from: Date()))
+        try? encoder.encode(v2).write(to: url)
     }
 
     /// Show the open panel, decode, and return the config — or nil after explaining what's wrong.
@@ -206,6 +209,11 @@ enum ConfigService {
 
         do {
             let data = try Data(contentsOf: url)
+            // A "meta" block marks a v2 file; older exports decode with the legacy shape.
+            struct Probe: Codable { var meta: PerchConfigV2.Meta? }
+            if (try? JSONDecoder().decode(Probe.self, from: data))?.meta != nil {
+                return try JSONDecoder().decode(PerchConfigV2.self, from: data).toLegacy()
+            }
             return try JSONDecoder().decode(PerchConfig.self, from: data)
         } catch {
             showInvalidFileAlert(url: url, error: error)
