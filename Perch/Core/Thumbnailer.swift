@@ -14,8 +14,8 @@ import QuickLookThumbnailing
 import UniformTypeIdentifiers
 
 enum Thumbnailer {
-    private static let smallCache = LRUCache<String, NSImage>(capacity: 60)   // rows/tiles
-    private static let fullCache  = LRUCache<String, NSImage>(capacity: 6)    // preview/carousel
+    private static var smallCache = LRUCache<String, NSImage>(capacity: 60)   // rows/tiles
+    private static var fullCache  = LRUCache<String, NSImage>(capacity: 6)    // preview/carousel
 
     private static let imageExtensions: Set<String> =
         ["png", "jpg", "jpeg", "gif", "heic", "heif", "webp", "tiff", "tif", "bmp", "icns"]

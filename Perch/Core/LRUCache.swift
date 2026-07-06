@@ -6,20 +6,22 @@
 //  oldest-touched when full. O(n) touch, but n is small (tens), so it's cheap.
 //
 
-final class LRUCache<Key: Hashable, Value> {
+// A struct (not a class) on purpose: the Swift optimizer crashes specializing a generic
+// class's implicit deinit when archiving Release builds — structs have no deinit at all.
+struct LRUCache<Key: Hashable, Value> {
     private let capacity: Int
     private var store: [Key: Value] = [:]
     private var order: [Key] = []          // least-recently-used first
 
     init(capacity: Int) { self.capacity = max(1, capacity) }
 
-    func value(for key: Key) -> Value? {
+    mutating func value(for key: Key) -> Value? {
         guard let value = store[key] else { return nil }
         touch(key)
         return value
     }
 
-    func set(_ value: Value, for key: Key) {
+    mutating func set(_ value: Value, for key: Key) {
         store[key] = value
         touch(key)
         while order.count > capacity {
@@ -27,7 +29,7 @@ final class LRUCache<Key: Hashable, Value> {
         }
     }
 
-    private func touch(_ key: Key) {
+    private mutating func touch(_ key: Key) {
         order.removeAll { $0 == key }
         order.append(key)
     }
