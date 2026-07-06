@@ -49,7 +49,7 @@ struct AppProfileStrip: View {
                 Text(item.name).font(.system(size: 10, weight: selected ? .semibold : .regular))
                     .foregroundStyle(selected ? Color.accentColor : .secondary).lineLimit(1)
             }
-            .frame(width: 62)
+            .frame(width: 76)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -67,29 +67,35 @@ struct AppProfileStrip: View {
 
     @ViewBuilder
     private func icon(_ item: Item) -> some View {
+        // Real app icons ship with a built-in transparent margin inside their canvas, so the
+        // selection border shows a gap around the artwork. Drawn tiles get the same gap: a
+        // smaller square centered in the same outer frame — every tile breathes identically.
         if item.bundleID == nil {
-            RoundedRectangle(cornerRadius: 9)
+            RoundedRectangle(cornerRadius: 10)
                 .fill(LinearGradient(colors: [.blue, .indigo], startPoint: .topLeading, endPoint: .bottomTrailing))
-                .frame(width: 38, height: 38)
-                .overlay(Image(systemName: "square.grid.2x2.fill").font(.system(size: 15)).foregroundStyle(.white))
+                .frame(width: 46, height: 46)
+                .overlay(Image(systemName: "square.grid.2x2.fill").font(.system(size: 17)).foregroundStyle(.white))
+                .frame(width: 55, height: 55)
         } else if let nsIcon = AppIcon.forBundleID(item.bundleID) {
-            Image(nsImage: nsIcon).resizable().frame(width: 38, height: 38)
+            Image(nsImage: nsIcon).resizable().frame(width: 55, height: 55)
         } else {
-            RoundedRectangle(cornerRadius: 9).fill(.quaternary).frame(width: 38, height: 38)
+            RoundedRectangle(cornerRadius: 10).fill(.quaternary).frame(width: 46, height: 46)
                 .overlay(Image(systemName: "app.dashed").foregroundStyle(.secondary))
+                .frame(width: 55, height: 55)
         }
     }
 
     private var addTile: some View {
         Button(action: onAdd) {
             VStack(spacing: 5) {
-                RoundedRectangle(cornerRadius: 9)
+                RoundedRectangle(cornerRadius: 10)
                     .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [4]))
-                    .foregroundStyle(.secondary).frame(width: 38, height: 38)
-                    .overlay(Image(systemName: "plus").font(.system(size: 15)).foregroundStyle(.secondary))
+                    .foregroundStyle(.secondary).frame(width: 46, height: 46)
+                    .overlay(Image(systemName: "plus").font(.system(size: 17)).foregroundStyle(.secondary))
+                    .frame(width: 55, height: 55)
                 Text("Add app").font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1)
             }
-            .frame(width: 62)
+            .frame(width: 76)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

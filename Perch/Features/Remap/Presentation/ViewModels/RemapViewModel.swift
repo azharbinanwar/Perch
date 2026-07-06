@@ -29,14 +29,12 @@ final class RemapViewModel {
     private(set) var recording: RemapField?
     private(set) var editingRuleID: UUID?   // non-nil = editing an existing rule in place
 
-    // Hyper Key (Caps Lock).
-    private(set) var hyperEnabled: Bool
-    private(set) var hyperTap: HyperKeyManager.TapAction
-    private(set) var hyperDoubleTap: HyperKeyManager.TapAction
-    private(set) var hyperShift: Bool
-
-    // Double-tap modifiers.
-    private(set) var doubleTap: DoubleTapConfig
+    // Hyper Key + Double-tap — PER-PROFILE now; the UI reads the editing profile's values.
+    var hyperEnabled: Bool { editingProfile.hyper.enabled }
+    var hyperTap: HyperKeyManager.TapAction { .init(rawValue: editingProfile.hyper.tap) ?? .escape }
+    var hyperDoubleTap: HyperKeyManager.TapAction { .init(rawValue: editingProfile.hyper.doubleTap) ?? .capsLock }
+    var hyperShift: Bool { editingProfile.hyper.shift }
+    var doubleTap: DoubleTapConfig { editingProfile.doubleTap }
 
     private let repository: RemapRepository
     private let manager: RemapManager
@@ -55,12 +53,7 @@ final class RemapViewModel {
         self.hyper = hyper
         self.doubleTapManager = doubleTapManager
         self.isEnabled = defaults.bool(forKey: Keys.Defaults.remapEnabled)
-        self.profiles = repository.loadProfiles()
-        self.hyperEnabled = defaults.bool(forKey: Keys.Defaults.hyperEnabled)
-        self.hyperTap = HyperKeyManager.TapAction(rawValue: defaults.string(forKey: Keys.Defaults.hyperTap) ?? "") ?? .escape
-        self.hyperDoubleTap = HyperKeyManager.TapAction(rawValue: defaults.string(forKey: Keys.Defaults.hyperDoubleTap) ?? "") ?? .capsLock
-        self.hyperShift = defaults.object(forKey: Keys.Defaults.hyperShift) as? Bool ?? true
-        self.doubleTap = Self.loadDoubleTap(defaults)
+        self.profiles = repository.loadProfiles()   // migrates old global hyper/double-tap in
 
         // Let the recorder treat a held hyper key like a modifier (nil = feature off → unchanged).
         recorder.hyperFlags = { [weak self] in
@@ -78,8 +71,6 @@ final class RemapViewModel {
         registerActivationObserver()
         activeBundleID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
         applyActive()
-        applyHyper()
-        applyDoubleTap()
         guard isEnabled else { return }
         needsPermission = !manager.start()
     }
@@ -88,86 +79,46 @@ final class RemapViewModel {
     func reload() {
         isEnabled = defaults.bool(forKey: Keys.Defaults.remapEnabled)
         profiles = repository.loadProfiles()
-        hyperEnabled = defaults.bool(forKey: Keys.Defaults.hyperEnabled)
-        hyperTap = HyperKeyManager.TapAction(rawValue: defaults.string(forKey: Keys.Defaults.hyperTap) ?? "") ?? .escape
-        hyperDoubleTap = HyperKeyManager.TapAction(rawValue: defaults.string(forKey: Keys.Defaults.hyperDoubleTap) ?? "") ?? .capsLock
-        hyperShift = defaults.object(forKey: Keys.Defaults.hyperShift) as? Bool ?? true
-        doubleTap = Self.loadDoubleTap(defaults)
         if isEnabled { needsPermission = !manager.start() }
         applyActive()
-        applyHyper()
-        applyDoubleTap()
     }
 
-    // MARK: - Double-tap modifiers
-
-    private static func loadDoubleTap(_ defaults: UserDefaults) -> DoubleTapConfig {
-        guard let data = defaults.data(forKey: Keys.Defaults.doubleTap),
-              let config = try? JSONDecoder().decode(DoubleTapConfig.self, from: data) else { return .default }
-        return config
-    }
+    // MARK: - Double-tap modifiers (per-profile)
 
     func setDoubleTapEnabled(_ on: Bool) {
-        doubleTap.enabled = on
-        saveDoubleTap()
+        mutateEditing { $0.doubleTap.enabled = on }
     }
 
     /// nil action clears the modifier back to "Do Nothing".
     func setDoubleTapAction(_ action: Action?, for modifier: String) {
-        doubleTap.actions[modifier] = action
-        saveDoubleTap()
+        mutateEditing { $0.doubleTap.actions[modifier] = action }
     }
 
-    private func saveDoubleTap() {
-        if let data = try? JSONEncoder().encode(doubleTap) {
-            defaults.set(data, forKey: Keys.Defaults.doubleTap)
-        }
-        applyDoubleTap()
-    }
-
-    /// Push config into the engine. Master switch off beats everything.
-    private func applyDoubleTap() {
-        doubleTapManager.config = doubleTap
-        doubleTapManager.isActive = isEnabled && doubleTap.enabled
-        if doubleTapManager.isActive { doubleTapManager.start() }
-    }
-
-    // MARK: - Hyper Key
+    // MARK: - Hyper Key (per-profile)
 
     func setHyperEnabled(_ on: Bool) {
-        hyperEnabled = on
-        defaults.set(on, forKey: Keys.Defaults.hyperEnabled)
-        applyHyper()
+        mutateEditing { $0.hyper.enabled = on }
     }
 
     func setHyperTap(_ action: HyperKeyManager.TapAction) {
-        hyperTap = action
-        defaults.set(action.rawValue, forKey: Keys.Defaults.hyperTap)
-        applyHyper()
+        mutateEditing { $0.hyper.tap = action.rawValue }
     }
 
     func setHyperDoubleTap(_ action: HyperKeyManager.TapAction) {
-        hyperDoubleTap = action
-        defaults.set(action.rawValue, forKey: Keys.Defaults.hyperDoubleTap)
-        applyHyper()
+        mutateEditing { $0.hyper.doubleTap = action.rawValue }
     }
 
     func setHyperShift(_ on: Bool) {
         let oldMask = hyperModifierMask(includeShift: hyperShift)
         let newMask = hyperModifierMask(includeShift: on)
-        hyperShift = on
-        defaults.set(on, forKey: Keys.Defaults.hyperShift)
-
-        // Migrate every Hyper-recorded rule to the new combo so nothing stops matching.
-        for i in profiles.indices {
-            for j in profiles[i].rules.indices where profiles[i].rules[j].isHyperKey {
-                let mods = profiles[i].rules[j].input.modifiers
-                profiles[i].rules[j].input.modifiers = (mods & ~oldMask) | newMask
+        // Migrate THIS profile's Hyper-recorded rules to the new combo so nothing stops matching.
+        mutateEditing { p in
+            p.hyper.shift = on
+            for j in p.rules.indices where p.rules[j].isHyperKey {
+                let mods = p.rules[j].input.modifiers
+                p.rules[j].input.modifiers = (mods & ~oldMask) | newMask
             }
         }
-        repository.saveProfiles(profiles)
-        applyActive()
-        applyHyper()
     }
 
     private func hyperModifierMask(includeShift: Bool) -> UInt64 {
@@ -180,15 +131,6 @@ final class RemapViewModel {
     /// On app quit: remove the system remap so Caps Lock is never left dead.
     func hyperCleanupForQuit() { hyper.cleanupForQuit() }
 
-    /// Push the hyper settings into the engine (and the hidutil remap on/off with them).
-    /// The Keys master switch off beats the feature's own toggle.
-    private func applyHyper() {
-        hyper.tapAction = hyperTap
-        hyper.doubleTapAction = hyperDoubleTap
-        hyper.includeShift = hyperShift
-        if hyperEnabled && isEnabled { hyper.enable() } else { hyper.disable() }
-    }
-
     // MARK: - Profiles
 
     /// The rules currently shown & edited in the UI.
@@ -200,10 +142,13 @@ final class RemapViewModel {
 
     func selectProfile(_ bundleID: String?) { editingBundleID = bundleID }
 
-    /// Add (or switch to) a profile for an app — starts as a copy of Default's rules.
+    /// Add (or switch to) a profile for an app — starts as a full copy of Default
+    /// (rules, Hyper Key AND Double-Tap), then each is editable per app.
     func addProfile(bundleID: String) {
         if profiles.contains(where: { $0.appBundleID == bundleID }) { editingBundleID = bundleID; return }
-        profiles.append(RemapProfile(appBundleID: bundleID, appName: Self.appName(for: bundleID), rules: defaultProfile.rules))
+        let base = defaultProfile
+        profiles.append(RemapProfile(appBundleID: bundleID, appName: Self.appName(for: bundleID),
+                                     rules: base.rules, hyper: base.hyper, doubleTap: base.doubleTap))
         repository.saveProfiles(profiles)
         editingBundleID = bundleID
     }
@@ -231,10 +176,25 @@ final class RemapViewModel {
         applyActive()
     }
 
-    /// Push the frontmost app's rules to the engine (Default if the app has none).
+    /// Push the frontmost app's profile to ALL engines (Default if the app has none):
+    /// rules + Hyper Key + Double-Tap. Master switch off beats everything.
     private func applyActive() {
         let active = profiles.first { $0.appBundleID == activeBundleID } ?? defaultProfile
         manager.rules = isEnabled ? active.rules : []
+
+        // Hyper: the hidutil remap is installed while ANY profile wants Hyper (installing it
+        // is a process spawn — too heavy for every app switch). The frontmost profile then
+        // gates behavior: inactive → the key acts as real Caps Lock again.
+        hyper.tapAction = .init(rawValue: active.hyper.tap) ?? .escape
+        hyper.doubleTapAction = .init(rawValue: active.hyper.doubleTap) ?? .capsLock
+        hyper.includeShift = active.hyper.shift
+        hyper.perAppActive = isEnabled && active.hyper.enabled
+        let anyHyper = isEnabled && profiles.contains { $0.hyper.enabled }
+        if anyHyper { hyper.enable() } else { hyper.disable() }
+
+        doubleTapManager.config = active.doubleTap
+        doubleTapManager.isActive = isEnabled && active.doubleTap.enabled
+        if doubleTapManager.isActive { doubleTapManager.start() }
     }
 
     private func registerActivationObserver() {
@@ -267,9 +227,7 @@ final class RemapViewModel {
         } else {
             needsPermission = false
         }
-        applyActive()
-        applyHyper()       // master off also disables Hyper (removes the system Caps remap)
-        applyDoubleTap()   // …and double-tap
+        applyActive()   // master off also disables Hyper (removes the system Caps remap) + double-tap
     }
 
     func toggleRule(_ rule: RemapRule) {

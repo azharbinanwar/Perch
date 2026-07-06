@@ -32,6 +32,11 @@ final class HyperKeyManager {
     var doubleTapAction: TapAction = .capsLock
     var includeShift = true
 
+    /// Per-app gate: the hidutil remap stays installed (cheap, global) while the FRONTMOST
+    /// app's profile decides behavior. Off → the key acts as a real Caps Lock again, so a
+    /// terminal profile can keep Caps Lock while every other app gets Hyper.
+    var perAppActive = true
+
     private(set) var isEnabled = false
 
     /// For the key recorder: is the hyper key physically held right now, and with which flags.
@@ -126,6 +131,15 @@ final class HyperKeyManager {
         let code = event.getIntegerValueField(.keyboardEventKeycode)
 
         if code == f18 {
+            // Profile says Hyper is off for the frontmost app → emulate the real key: the HID
+            // remap is still in place, so we toggle actual Caps Lock (and its LED) ourselves.
+            if !perAppActive {
+                if type == .keyDown, event.getIntegerValueField(.keyboardEventAutorepeat) == 0 {
+                    toggleRealCapsLock()
+                }
+                hyperDown = false
+                return nil
+            }
             switch type {
             case .keyDown:
                 if !hyperDown { hyperDown = true; usedCombo = false }

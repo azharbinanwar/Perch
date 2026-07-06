@@ -14,6 +14,19 @@ struct MouseTabView: View {
 
     @State private var trusted = Permissions.isAccessibilityTrusted
     @State private var showingReset = false
+
+    // Button layer — selection state only; the config lives on the editing profile.
+    @State private var layerSel = "left"                      // selected target hotspot
+    @State private var layerHoldPick: MouseTrigger?           // which shift key is being EDITED
+    @State private var layerSlotPicking: LayerSlotPick?
+    @State private var layerHoldWarning: LayerHoldWarning?    // confirm-before-first-shift-action
+    @State private var layerDeleteConfirm = false             // confirm deleting a hold key's combos
+
+    private struct LayerHoldWarning: Identifiable {
+        let id = UUID()
+        let holdLabel: String          // the Hold action that will be removed
+        let pendingPick: LayerSlotPick // the slot the user was about to set
+    }
     @State private var clickPick: ClickPick?
     @State private var gesturePick: GesturePick?
     @State private var targetPrompt: MappingTarget?
@@ -40,6 +53,8 @@ struct MouseTabView: View {
                     // are all per-app; the engines follow the frontmost app's profile.
                     GroupBox { profileStrip.padding(6) }
                     buttonsGroup
+                    layerGroup
+                    swapGroup
                     pointerGroup
                     scrollGroup
                     reliabilityGroup
@@ -219,7 +234,7 @@ struct MouseTabView: View {
     // MARK: - Buttons
 
     private var buttonsGroup: some View {
-        GroupBox("Buttons") {
+        GroupBox("Buttons — \(profileLabel)") {
             VStack(alignment: .leading, spacing: 12) {
                 SettingRow(title: "Enable button mapping",
                            subtitle: "Assign buttons to shortcuts, actions, and gestures.") {
@@ -244,16 +259,294 @@ struct MouseTabView: View {
                 }
                 .opacity(mouse.isEnabled ? 1 : 0.4)
                 .disabled(!mouse.isEnabled)
-                Divider()
-                SettingRow(title: "Swap primary & secondary buttons",
-                           subtitle: "Left-handed use — left click becomes right click and vice versa.") {
-                    toggle(mouse.swapButtons) { mouse.setSwapButtons($0) }
-                }
-                .opacity(mouse.isEnabled ? 1 : 0.5)
-                .disabled(!mouse.isEnabled)
             }
             .padding(6)
         }
+    }
+
+    /// Handedness — its own box after the layer (was an odd last row inside Buttons).
+    private var swapGroup: some View {
+        GroupBox {
+            SettingRow(title: "Swap primary & secondary buttons",
+                       subtitle: "Left-handed use — left click becomes right click and vice versa.") {
+                toggle(mouse.swapButtons) { mouse.setSwapButtons($0) }
+            }
+            .padding(6)
+        }
+        .opacity(mouse.isEnabled ? 1 : 0.5)
+        .disabled(!mouse.isEnabled)
+    }
+
+    // MARK: - Button layer (UI preview — own group, expands when enabled)
+
+    private struct LayerSlotPick: Identifiable {
+        let id: String
+        let target: String        // diagram hotspot id
+        let phase: ClickPhase
+    }
+
+    /// Diagram hotspot id → friendly name (matches the Buttons section naming).
+    private static let layerNames: [String: String] = [
+        "left": "Left click", "right": "Right click", "middle": "Middle", "top": "Top",
+        "back": "Back (4)", "fwd": "Forward (5)", "rup": "Button 6", "rdn": "Button 7",
+    ]
+    /// Buttons that can power the layer: Middle + the DETECTED list — the exact same triggers
+    /// (and names) the Buttons section uses. No hardcoded back/forward guessing: the chip's
+    /// identity IS the trigger the mouse actually sent during detection.
+    private var layerHoldChoices: [MouseTrigger] {
+        [.button(2)] + mouse.detectedButtons.filter { trigger in
+            if case .button(let n) = trigger { return n >= 3 } else { return false }
+        }
+    }
+
+    /// The shift key currently being EDITED. Switching only changes which combo set is
+    /// shown — every other shift key's combos stay saved untouched.
+    private var layerHoldSelected: MouseTrigger {
+        layerHoldPick ?? mouse.editingLayer.layers.first?.hold ?? .button(2)
+    }
+
+    /// Display name — identical to how the Buttons section names it.
+    private var layerHoldName: String {
+        layerHoldSelected == .button(2) ? "Middle" : layerHoldSelected.displayName
+    }
+
+    /// The edited shift key's hotspot for the diagram's amber highlight. Other shift keys
+    /// stay selectable — they're legal TARGETS under this key's layer.
+    private var layerHoldIDs: Set<String> {
+        Set([layerHoldSelected].compactMap(hotspotFor))
+    }
+
+    private var layerGroup: some View {
+        let layerOn = mouse.editingLayer.enabled
+        let count = mouse.layerActionCount
+        return GroupBox("Mouse Shift — \(profileLabel)") {
+            VStack(alignment: .leading, spacing: 10) {
+                SettingRow(title: "Enable Mouse Shift",
+                           subtitle: layerOn
+                               ? "Hold a shift key, then press another button — it runs that combo's action. \(count) combo\(count == 1 ? "" : "s") set."
+                               : "Hold one button to give every other button a second set of actions — like ⇧ for your mouse.") {
+                    Toggle("", isOn: Binding(get: { mouse.editingLayer.enabled },
+                                             set: { on in mouse.updateLayer { $0.enabled = on } }))
+                        .toggleStyle(.switch).labelsHidden()
+                }
+                if layerOn {
+                    Divider()
+                    // Hold-button chips — the amber button on the map is the one you hold.
+                    HStack(spacing: 6) {
+                        Text("Hold button")
+                            .font(.system(size: 12, weight: .medium))
+                        Spacer()
+                        ForEach(layerHoldChoices, id: \.self) { trigger in
+                            let editing = layerHoldSelected == trigger
+                            let combos = mouse.layerActionCount(hold: trigger)
+                            let name = trigger == .button(2) ? "Middle" : trigger.displayName
+                            Button {
+                                // Switch which shift key's combos are shown — nothing is
+                                // deleted or replaced; every key's combos stay saved.
+                                layerHoldPick = trigger
+                                if hotspotFor(trigger) == layerSel { layerSel = "left" }
+                            } label: {
+                                // Editing key = solid amber HOLD; keys with saved combos
+                                // show their count so nothing feels lost when switching.
+                                Text(editing ? "HOLD · \(name)" : (combos > 0 ? "\(name) · \(combos)" : name))
+                                    .font(.system(size: 11, weight: editing ? .bold : .medium))
+                                    .padding(.horizontal, 10).padding(.vertical, 4)
+                                    .background(editing ? AnyShapeStyle(Color.orange)
+                                                : combos > 0 ? AnyShapeStyle(Color.orange.opacity(0.15))
+                                                             : AnyShapeStyle(Color.primary.opacity(0.06)),
+                                                in: Capsule())
+                                    .foregroundStyle(editing ? Color.white : (combos > 0 ? Color.orange : Color.secondary))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    // No extra buttons yet → guide the user to the one detection system.
+                    if layerHoldChoices.count == 1 {
+                        HStack(spacing: 8) {
+                            Image(systemName: "info.circle").foregroundStyle(.secondary)
+                            Text("Only Middle can power the layer right now — scan your mouse's extra buttons to unlock more.")
+                                .font(.system(size: 11)).foregroundStyle(.secondary)
+                            Spacer()
+                            if mouse.scanning {
+                                HStack(spacing: 6) {
+                                    Circle().fill(.green).frame(width: 6, height: 6)
+                                    Text("Press your buttons…").font(.system(size: 11, weight: .medium))
+                                }
+                            } else {
+                                Button("Scan buttons") { mouse.startScan() }
+                                    .font(.system(size: 11))
+                            }
+                        }
+                        .padding(.horizontal, 10).padding(.vertical, 6)
+                        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 8))
+                    }
+                    holdConflictTile
+                    Divider()
+                    // Master-detail: our diagram (amber hold) + the slot editor.
+                    HStack(alignment: .top, spacing: 24) {
+                        VStack(spacing: 8) {
+                            MouseDiagramView(selected: $layerSel,
+                                             isMapped: { id in
+                                                 guard let t = triggerFor(id) else { return false }
+                                                 return ClickPhase.allCases.contains { mouse.layerAction(hold: layerHoldSelected, for: t, phase: $0).kind != .disabled }
+                                             },
+                                             isActive: isActiveHotspot,   // same detection as the Buttons diagram
+                                             holdIDs: layerHoldIDs,
+                                             onSelect: { layerSel = $0 })
+                                .padding(.leading, 4)
+                            Text("Hold the amber button, then click any other\nbutton here to set its second action.")
+                                .font(.system(size: 10)).foregroundStyle(.tertiary)
+                                .multilineTextAlignment(.center)
+                        }
+                        Divider()
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 4) {
+                                Text("Hold").font(.system(size: 12)).foregroundStyle(.secondary)
+                                Text(layerHoldName).font(.system(size: 12, weight: .semibold)).foregroundStyle(Color.orange)
+                                Text(", then").font(.system(size: 12)).foregroundStyle(.secondary)
+                                Text(layerName(layerSel).lowercased()).font(.system(size: 12, weight: .semibold))
+                                Spacer()
+                                // Same revert affordance as the Buttons panel — wipes THIS
+                                // shift key's whole combo record after a confirm.
+                                if mouse.layerActionCount(hold: layerHoldSelected) > 0 {
+                                    Button { layerDeleteConfirm = true } label: {
+                                        Image(systemName: "arrow.uturn.backward")
+                                            .font(.system(size: 11)).foregroundStyle(.secondary)
+                                    }
+                                    .buttonStyle(.borderless)
+                                    .help("Delete all of \(layerHoldName)'s combos")
+                                    .alert("Delete \(layerHoldName)'s combos?", isPresented: $layerDeleteConfirm) {
+                                        Button("Cancel", role: .cancel) {}
+                                        Button("Delete", role: .destructive) {
+                                            mouse.removeLayer(hold: layerHoldSelected)
+                                        }
+                                    } message: {
+                                        Text("All \(mouse.layerActionCount(hold: layerHoldSelected)) combo\(mouse.layerActionCount(hold: layerHoldSelected) == 1 ? "" : "s") under \(layerHoldName) are removed. Other shift keys keep theirs.")
+                                    }
+                                }
+                            }
+                            .padding(.bottom, 6)
+                            Divider()
+                            ForEach(ClickPhase.allCases) { phase in
+                                layerSlotRow(target: layerSel, phase: phase)
+                            }
+                            Spacer(minLength: 8)
+                            Text("Left and right click are safe to set here — the layer only applies while \(layerHoldName) is held down.")
+                                .font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .topLeading)
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(6)
+        }
+        .opacity(mouse.isEnabled ? 1 : 0.5)
+        .disabled(!mouse.isEnabled)
+        .alert(item: $layerHoldWarning) { layerHoldAlert($0) }
+        .sheet(item: $layerSlotPicking) { pick in
+            ActionPicker(excluding: [.passThrough]) { kind in
+                guard let trigger = triggerFor(pick.target) else { return }
+                if kind.target == .none {
+                    mouse.setLayerAction(Action(kind: kind), hold: layerHoldSelected, for: trigger, phase: pick.phase)
+                } else {
+                    // Needs a target (app / keystroke / script…) — same prompt flow as Buttons.
+                    targetPrompt = MappingTarget(trigger: trigger, phase: pick.phase, kind: kind, layerHold: layerHoldSelected)
+                }
+            }
+        }
+    }
+
+    private func layerName(_ id: String) -> String { Self.layerNames[id] ?? id }
+
+    /// The Hold action's label if this button has one — that's the only real conflict with
+    /// Mouse Shift (holding IS the shift gesture; click and double-click keep working).
+    private func holdConflict(for trigger: MouseTrigger) -> String? {
+        let action = mouse.action(for: trigger, phase: .hold)
+        return action.kind == .disabled ? nil : action.displayLabel
+    }
+
+    /// Passive warning tile — the chosen hold button still has a Hold action. Nothing is
+    /// removed yet; the confirm happens the moment the user sets their first shift action.
+    @ViewBuilder
+    private var holdConflictTile: some View {
+        if let conflict = holdConflict(for: layerHoldSelected) {
+            HStack(spacing: 10) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.orange)
+                    .frame(width: 26, height: 26)
+                    .background(Color.orange.opacity(0.15), in: RoundedRectangle(cornerRadius: 7))
+                VStack(alignment: .leading, spacing: 1) {
+                    HStack(spacing: 6) {
+                        Text(layerHoldName).font(.system(size: 13, weight: .semibold))
+                        Text("HOLD IN USE")
+                            .font(.system(size: 9, weight: .bold)).kerning(0.5)
+                            .foregroundStyle(Color.orange)
+                            .padding(.horizontal, 7).padding(.vertical, 2)
+                            .background(Color.orange.opacity(0.15), in: RoundedRectangle(cornerRadius: 4))
+                    }
+                    Text("Its Hold action — \(conflict) — will be removed when you set its first shift combo. Click and double-click keep working.")
+                        .font(.system(size: 11)).foregroundStyle(.secondary)
+                }
+                Spacer()
+            }
+            .padding(10)
+            .background(Color.orange.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
+        }
+    }
+
+    /// Confirm at the moment of commitment: remove the old Hold action, then open the picker.
+    private func layerHoldAlert(_ warning: LayerHoldWarning) -> Alert {
+        Alert(
+            title: Text("Remove \(layerHoldName)'s Hold action?"),
+            message: Text("\(layerHoldName) uses Hold for “\(warning.holdLabel)”. Holding becomes the shift gesture, so that action is removed first — then pick your shift action. Click and double-click keep working."),
+            primaryButton: .destructive(Text("Remove & Continue")) {
+                mouse.setAction(.disabled, for: layerHoldSelected, phase: .hold)
+                let pick = warning.pendingPick
+                DispatchQueue.main.async { layerSlotPicking = pick }   // after the alert dismisses
+            },
+            secondaryButton: .cancel()
+        )
+    }
+
+
+    private func layerPhaseLabel(_ phase: ClickPhase) -> String {
+        switch phase {
+        case .single: return "Click"
+        case .double: return "Double click"
+        case .hold:   return "Hold"
+        }
+    }
+
+    private func layerSlotRow(target: String, phase: ClickPhase) -> some View {
+        let action = triggerFor(target).map { mouse.layerAction(hold: layerHoldSelected, for: $0, phase: phase) } ?? .disabled
+        let off = action.kind == .disabled
+        return Button {
+            let pick = LayerSlotPick(id: "\(target)|\(phase.rawValue)", target: target, phase: phase)
+            // Commitment point: this shift key's old Hold action must go before its combos exist.
+            if let conflict = holdConflict(for: layerHoldSelected) {
+                layerHoldWarning = LayerHoldWarning(holdLabel: conflict, pendingPick: pick)
+            } else {
+                layerSlotPicking = pick
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Text(layerPhaseLabel(phase))
+                    .font(.system(size: 12, weight: .medium))
+                    .frame(width: 100, alignment: .leading)
+                Spacer(minLength: 8)
+                Text(off ? "—" : action.displayLabel)
+                    .font(.system(size: 12))
+                    .foregroundStyle(off ? .tertiary : .secondary)
+                    .lineLimit(1).truncationMode(.tail)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 9, weight: .semibold)).foregroundStyle(.tertiary)
+            }
+            .frame(minHeight: 34)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     // The right-hand panel: everything the selected button does — its Click / Double / Hold
@@ -268,13 +561,30 @@ struct MouseTabView: View {
                 Text("\(meta.name) is your normal click and can't be remapped. Pick another button on the mouse.")
                     .font(.system(size: 12)).foregroundStyle(.secondary)
             } else if let trigger = triggerFor(id) {
+                // Only the HOLD phase conflicts with Mouse Shift (holding IS the shift gesture);
+                // click and double-click keep working on the shift key. The lock appears only
+                // once the user has COMMITTED — at least one shift action set — never before.
+                let isShiftKey = mouse.isShiftHold(trigger)
                 block("CLICK") {
                     let phases = phases(forTrigger: trigger)
                     ForEach(Array(phases.enumerated()), id: \.element) { index, phase in
                         if index > 0 { Divider() }
-                        panelRow(phase.title, action: mouse.action(for: trigger, phase: phase),
-                                 fallback: predefinedLabel(trigger, phase)) {
-                            clickPick = ClickPick(trigger: trigger, phase: phase)
+                        if isShiftKey && phase == .hold {
+                            HStack(spacing: 8) {
+                                Text(phase.title).font(.system(size: 12, weight: .medium))
+                                    .frame(width: 100, alignment: .leading)
+                                Spacer(minLength: 8)
+                                Text("Powers Mouse Shift")
+                                    .font(.system(size: 12)).foregroundStyle(Color.orange)
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: 9)).foregroundStyle(Color.orange)
+                            }
+                            .frame(minHeight: 36)
+                        } else {
+                            panelRow(phase.title, action: mouse.action(for: trigger, phase: phase),
+                                     fallback: predefinedLabel(trigger, phase)) {
+                                clickPick = ClickPick(trigger: trigger, phase: phase)
+                            }
                         }
                     }
                 }
@@ -513,27 +823,36 @@ struct MouseTabView: View {
         }
     }
 
+    /// Route a resolved action to the normal mapping or the right shift key's combo set.
+    private func setPromptAction(_ action: Action, _ prompt: MappingTarget) {
+        if let hold = prompt.layerHold {
+            mouse.setLayerAction(action, hold: hold, for: prompt.trigger, phase: prompt.phase)
+        } else {
+            mouse.setAction(action, for: prompt.trigger, phase: prompt.phase)
+        }
+    }
+
     @ViewBuilder
     private func targetSheet(_ prompt: MappingTarget) -> some View {
         switch prompt.kind.target {
         case .app:
             AppPickerSheet(allowsMultipleSelection: false) { ids in
                 if let bundle = ids.first {
-                    mouse.setAction(Action(kind: .openApp, target: bundle), for: prompt.trigger, phase: prompt.phase)
+                    setPromptAction(Action(kind: .openApp, target: bundle), prompt)
                 }
             }
         case .keystroke:
             KeystrokeCaptureSheet { code, mods in
-                mouse.setAction(Action(kind: .customKeystroke, keyCode: Int(code), modifiers: mods), for: prompt.trigger, phase: prompt.phase)
+                setPromptAction(Action(kind: .customKeystroke, keyCode: Int(code), modifiers: mods), prompt)
             }
         case .url:
-            TextTargetSheet(title: "Open URL", placeholder: "https://…") { mouse.setAction(Action(kind: .openURL, target: $0), for: prompt.trigger, phase: prompt.phase) }
+            TextTargetSheet(title: "Open URL", placeholder: "https://…") { setPromptAction(Action(kind: .openURL, target: $0), prompt) }
         case .file:
-            TextTargetSheet(title: "Open File or Folder", placeholder: "/Users/…/file", allowFilePicker: true) { mouse.setAction(Action(kind: .openFile, target: $0), for: prompt.trigger, phase: prompt.phase) }
+            TextTargetSheet(title: "Open File or Folder", placeholder: "/Users/…/file", allowFilePicker: true) { setPromptAction(Action(kind: .openFile, target: $0), prompt) }
         case .shellScript:
-            PresetPickerSheet(title: "Run Shell Script", customPlaceholder: "echo hello", load: { ActionPresets.shell }) { mouse.setAction(Action(kind: .runShell, target: $0), for: prompt.trigger, phase: prompt.phase) }
+            PresetPickerSheet(title: "Run Shell Script", customPlaceholder: "echo hello", load: { ActionPresets.shell }) { setPromptAction(Action(kind: .runShell, target: $0), prompt) }
         case .appleScript:
-            PresetPickerSheet(title: "Run AppleScript", customPlaceholder: "display dialog \"Hi\"", load: { ActionPresets.appleScript }) { mouse.setAction(Action(kind: .runAppleScript, target: $0), for: prompt.trigger, phase: prompt.phase) }
+            PresetPickerSheet(title: "Run AppleScript", customPlaceholder: "display dialog \"Hi\"", load: { ActionPresets.appleScript }) { setPromptAction(Action(kind: .runAppleScript, target: $0), prompt) }
         default:
             EmptyView()
         }
@@ -549,4 +868,10 @@ private extension View {
 
 private struct ClickPick: Identifiable { let id = UUID(); let trigger: MouseTrigger; let phase: ClickPhase }
 private struct GesturePick: Identifiable { let id = UUID(); let button: Int; let direction: GestureDirection }
-private struct MappingTarget: Identifiable { let id = UUID(); let trigger: MouseTrigger; let phase: ClickPhase; let kind: ActionKind }
+private struct MappingTarget: Identifiable {
+    let id = UUID()
+    let trigger: MouseTrigger
+    let phase: ClickPhase
+    let kind: ActionKind
+    var layerHold: MouseTrigger? = nil   // set → the picked action lands in THIS shift key's combos
+}

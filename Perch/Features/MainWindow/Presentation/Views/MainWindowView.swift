@@ -13,7 +13,18 @@ struct MainWindowView: View {
     var body: some View {
         NavigationSplitView {
             List(SidebarItem.allCases, selection: $selection) { item in
-                Label(item.title, systemImage: item.icon).tag(item)
+                // System-Settings look: same-size white glyph on a colored rounded tile —
+                // uniform tiles read cleaner than raw glyphs of wildly different shapes.
+                Label {
+                    Text(item.title)
+                } icon: {
+                    Image(systemName: item.icon)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 21, height: 21)
+                        .background(item.tint.gradient, in: RoundedRectangle(cornerRadius: 5.5))
+                }
+                .tag(item)
             }
             .navigationSplitViewColumnWidth(190)
         } detail: {

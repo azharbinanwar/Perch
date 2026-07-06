@@ -72,6 +72,65 @@ struct PointerSettings: Codable, Equatable {
     static let `default` = PointerSettings()
 }
 
+/// One shift key with its OWN combo set. Every combo (hold key + button + action) lives in
+/// its hold key's list — b4+left can do something different from b5+left, unlimited combos.
+struct HoldLayer: Codable, Equatable {
+    var hold: MouseTrigger
+    var mappings: [MouseMapping] = []   // may include .button(0)/(1) — left/right are legal here
+
+    init(hold: MouseTrigger, mappings: [MouseMapping] = []) {
+        self.hold = hold
+        self.mappings = mappings
+    }
+}
+
+/// Mouse Shift: hold a shift key → other buttons run THAT key's combo set.
+struct LayerConfig: Codable, Equatable {
+    var enabled = false
+    var layers: [HoldLayer] = []   // one entry per shift key, each saved independently
+
+    static let `default` = LayerConfig()
+
+    init() {}
+    init(enabled: Bool, layers: [HoldLayer]) {
+        self.enabled = enabled
+        self.layers = layers
+    }
+
+    /// The combo set for one shift key ([] when none saved yet).
+    func mappings(for hold: MouseTrigger) -> [MouseMapping] {
+        layers.first { $0.hold == hold }?.mappings ?? []
+    }
+
+    enum CodingKeys: String, CodingKey { case enabled, layers, holdTriggers, mappings, holdTrigger }
+
+    // Lenient decode — migrates both older schemas (shared mappings list, single hold key).
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? false
+        if let list = try c.decodeIfPresent([HoldLayer].self, forKey: .layers) {
+            layers = list
+        } else {
+            let shared = try c.decodeIfPresent([MouseMapping].self, forKey: .mappings) ?? []
+            let holds: [MouseTrigger]
+            if let many = try c.decodeIfPresent([MouseTrigger].self, forKey: .holdTriggers) {
+                holds = many
+            } else if let one = try c.decodeIfPresent(MouseTrigger.self, forKey: .holdTrigger) {
+                holds = [one]
+            } else {
+                holds = []
+            }
+            layers = holds.map { HoldLayer(hold: $0, mappings: shared) }
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(enabled, forKey: .enabled)
+        try c.encode(layers, forKey: .layers)
+    }
+}
+
 struct MouseProfile: Identifiable, Codable, Equatable {
     var id = UUID()
     var appBundleID: String?          // nil = Default (all other apps)
@@ -80,13 +139,15 @@ struct MouseProfile: Identifiable, Codable, Equatable {
     var gestures: [MouseGesture] = []
     var scroll: ScrollSettings = .default
     var pointer: PointerSettings = .default
+    var layer: LayerConfig = .default
 
     var isDefault: Bool { appBundleID == nil }
     var displayName: String { appName ?? (isDefault ? "Default" : (appBundleID ?? "App")) }
 
     init(id: UUID = UUID(), appBundleID: String? = nil, appName: String? = nil,
          mappings: [MouseMapping] = [], gestures: [MouseGesture] = [],
-         scroll: ScrollSettings = .default, pointer: PointerSettings = .default) {
+         scroll: ScrollSettings = .default, pointer: PointerSettings = .default,
+         layer: LayerConfig = .default) {
         self.id = id
         self.appBundleID = appBundleID
         self.appName = appName
@@ -94,6 +155,7 @@ struct MouseProfile: Identifiable, Codable, Equatable {
         self.gestures = gestures
         self.scroll = scroll
         self.pointer = pointer
+        self.layer = layer
     }
 
     // Lenient decode so older/partial payloads still load.
@@ -106,5 +168,6 @@ struct MouseProfile: Identifiable, Codable, Equatable {
         gestures = (try? c.decode([MouseGesture].self, forKey: .gestures)) ?? []
         scroll = (try? c.decode(ScrollSettings.self, forKey: .scroll)) ?? .default
         pointer = (try? c.decode(PointerSettings.self, forKey: .pointer)) ?? .default
+        layer = (try? c.decode(LayerConfig.self, forKey: .layer)) ?? .default
     }
 }

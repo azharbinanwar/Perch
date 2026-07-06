@@ -50,7 +50,8 @@ enum ConfigSection: String, CaseIterable, Identifiable {
                     K.settingsOpenWindowAtLaunch, K.settingsShowInDock,
                     K.hotKeyCode, K.hotKeyModifiers, K.hotKeyLabel]
         case .keys:
-            return [K.remapEnabled, K.hyperEnabled, K.hyperTap, K.hyperDoubleTap, K.hyperShift]
+            // Hyper/double-tap moved into the per-app profiles (content) — only the master left.
+            return [K.remapEnabled]
         case .mouse:
             // Scroll/pointer moved into the per-app profiles (content) — no scalar keys left.
             return [K.mouseEnabled, K.mouseSwap, K.mouseDebounceOn, K.mouseDebounceMs]

@@ -31,14 +31,9 @@ enum ConfigService {
                           modifiers: defaults.object(forKey: K.hotKeyModifiers) as? UInt
                               ?? NSEvent.ModifierFlags([.command, .shift]).rawValue,
                           label: defaults.string(forKey: K.hotKeyLabel) ?? "V"),
+            // Hyper + Double-Tap live INSIDE each profile now — the profiles blob carries all.
             keys: .init(enabled: defaults.bool(forKey: K.remapEnabled),
-                        profiles: remapRepo.loadProfiles(),
-                        hyper: .init(enabled: defaults.bool(forKey: K.hyperEnabled),
-                                     tap: defaults.string(forKey: K.hyperTap) ?? "Escape",
-                                     doubleTap: defaults.string(forKey: K.hyperDoubleTap) ?? "Caps Lock",
-                                     shift: defaults.object(forKey: K.hyperShift) as? Bool ?? true),
-                        doubleTap: defaults.data(forKey: K.doubleTap)
-                            .flatMap { try? JSONDecoder().decode(DoubleTapConfig.self, from: $0) }),
+                        profiles: remapRepo.loadProfiles()),
             mouse: .init(
                 enabled: defaults.object(forKey: K.mouseEnabled) as? Bool ?? true,
                 debounce: .init(on: defaults.bool(forKey: K.mouseDebounceOn),
@@ -87,16 +82,21 @@ enum ConfigService {
 
         if sections.contains(.keys) {
             put(K.remapEnabled, c.keys.enabled)
-            put(K.hyperEnabled, c.keys.hyper?.enabled ?? false)
-            put(K.hyperTap, c.keys.hyper?.tap ?? "Escape")
-            put(K.hyperDoubleTap, c.keys.hyper?.doubleTap ?? "Caps Lock")
-            put(K.hyperShift, c.keys.hyper?.shift ?? true)
-            if let dt = c.keys.doubleTap, let data = try? JSONEncoder().encode(dt) {
-                defaults.set(data, forKey: K.doubleTap)
-            } else {
-                defaults.removeObject(forKey: K.doubleTap)
+
+            // Old backup files carried global hyper/double-tap — fold them into EVERY imported
+            // profile (they applied everywhere, so behavior stays identical). New files carry
+            // them inside each profile already.
+            var profiles = c.keys.profiles
+            if let h = c.keys.hyper {
+                for i in profiles.indices {
+                    profiles[i].hyper = HyperSettings(enabled: h.enabled, tap: h.tap,
+                                                      doubleTap: h.doubleTap, shift: h.shift)
+                }
             }
-            remapRepo.saveProfiles(c.keys.profiles)
+            if let dt = c.keys.doubleTap {
+                for i in profiles.indices { profiles[i].doubleTap = dt }
+            }
+            remapRepo.saveProfiles(profiles)
         }
 
         if sections.contains(.mouse) {

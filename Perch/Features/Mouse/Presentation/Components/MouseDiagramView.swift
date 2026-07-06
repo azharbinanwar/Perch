@@ -14,6 +14,7 @@ struct MouseDiagramView: View {
     @Binding var selected: String
     var isMapped: (String) -> Bool
     var isActive: (String) -> Bool     // detected/base buttons are solid; others are faint ghosts
+    var holdIDs: Set<String> = []      // layer keys — drawn amber with a HOLD tag, not selectable
     var onSelect: (String) -> Void
 
     var body: some View {
@@ -45,24 +46,41 @@ struct MouseDiagramView: View {
     private func hotspot(_ id: String, _ w: CGFloat, _ h: CGFloat, _ x: CGFloat, _ y: CGFloat,
                          _ radii: (CGFloat, CGFloat, CGFloat, CGFloat), _ label: String? = nil,
                          @ViewBuilder content: () -> some View = { EmptyView() }) -> some View {
-        let sel = selected == id
+        let hold = holdIDs.contains(id)
+        let sel = selected == id && !hold
         let mapped = isMapped(id)
-        let fill: Color = sel ? Color.accentColor.opacity(0.25)
-                              : (mapped ? Color.accentColor.opacity(0.15) : Color.primary.opacity(0.06))
-        let stroke: Color = sel ? Color.accentColor : Color.primary.opacity(0.15)
+        let fill: Color = hold ? Color.orange.opacity(0.3)
+                               : sel ? Color.accentColor.opacity(0.25)
+                                     : (mapped ? Color.accentColor.opacity(0.15) : Color.primary.opacity(0.06))
+        let stroke: Color = hold ? Color.orange : (sel ? Color.accentColor : Color.primary.opacity(0.15))
         // Base buttons always show; extras only once detected (hidden otherwise).
         return Group {
             if isActive(id) {
                 shape(radii.0, radii.3, radii.2, radii.1)
                     .fill(fill)
-                    .overlay(shape(radii.0, radii.3, radii.2, radii.1).stroke(stroke, lineWidth: sel ? 1.5 : 1))
+                    .overlay(shape(radii.0, radii.3, radii.2, radii.1).stroke(stroke, lineWidth: (sel || hold) ? 1.5 : 1))
                     .overlay {
                         if let label { Text(label).font(.system(size: 9, weight: .bold)).foregroundStyle(.secondary) }
                         content()
                     }
+                    .overlay(alignment: .top) {
+                        if hold {
+                            // A proper floating callout: fixed natural size, centered above the
+                            // button, never squeezed by narrow hotspots.
+                            Text("HOLD")
+                                .font(.system(size: 8.5, weight: .bold))
+                                .kerning(0.6)
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 7).padding(.vertical, 2)
+                                .background(Color.orange, in: RoundedRectangle(cornerRadius: 4))
+                                .shadow(color: .black.opacity(0.25), radius: 2, y: 1)
+                                .fixedSize()
+                                .offset(y: -22)   // clear gap between the tag and the button, like the design
+                        }
+                    }
                     .frame(width: w, height: h)
                     .contentShape(Rectangle())
-                    .onTapGesture { onSelect(id) }
+                    .onTapGesture { if !hold { onSelect(id) } }
                     .position(x: x + w / 2, y: y + h / 2)   // position (not offset) so hit-testing follows
             }
         }

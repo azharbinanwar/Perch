@@ -134,7 +134,8 @@ final class MouseViewModel {
         let base = defaultProfile
         profiles.append(MouseProfile(appBundleID: bundleID, appName: Self.appName(for: bundleID),
                                      mappings: base.mappings, gestures: base.gestures,
-                                     scroll: base.scroll, pointer: base.pointer))
+                                     scroll: base.scroll, pointer: base.pointer,
+                                     layer: base.layer))
         repository.saveProfiles(profiles)
         editingBundleID = bundleID
     }
@@ -163,11 +164,24 @@ final class MouseViewModel {
     }
 
     /// Push the frontmost app's profile to ALL engines (Default if the app has none):
-    /// buttons + gestures, and its scroll/pointer settings.
+    /// buttons + gestures + the button layer, and its scroll/pointer settings.
     private func applyActive() {
         let active = profiles.first { $0.appBundleID == activeBundleID } ?? defaultProfile
+        // Each shift key ships its OWN combo dict. A hold key with zero live combos is
+        // skipped entirely so it never swallows the button for nothing.
+        var layers: [Int: [MouseMapping]] = [:]
+        if isEnabled, active.layer.enabled {
+            for holdLayer in active.layer.layers {
+                guard case .button(let n) = holdLayer.hold else { continue }
+                let live = holdLayer.mappings.filter { m in
+                    ClickPhase.allCases.contains { m.action(for: $0).kind != .disabled }
+                }
+                if !live.isEmpty { layers[n] = live }
+            }
+        }
         capture.apply(mappings: isEnabled ? active.mappings : [],
-                      gestures: isEnabled ? active.gestures : [])
+                      gestures: isEnabled ? active.gestures : [],
+                      layers: layers)
         capture.swapEnabled = isEnabled && swapButtons
         if isEnabled { capture.start() }   // idempotent; keeps the tap alive & retries if permission was just granted
 
@@ -200,6 +214,63 @@ final class MouseViewModel {
 
     func updatePointer(_ change: (inout PointerSettings) -> Void) {
         mutateEditing { change(&$0.pointer) }
+    }
+
+    // MARK: - Button layer (per-profile)
+
+    var editingLayer: LayerConfig { editingProfile.layer }
+
+    func updateLayer(_ change: (inout LayerConfig) -> Void) {
+        mutateEditing { change(&$0.layer) }
+    }
+
+    /// One shift key's action for a target button + phase (disabled when unset).
+    func layerAction(hold: MouseTrigger, for target: MouseTrigger, phase: ClickPhase) -> Action {
+        editingLayer.mappings(for: hold).first { $0.trigger == target }?.action(for: phase) ?? .disabled
+    }
+
+    /// Save a combo into ITS hold key's list — other hold keys' combos are never touched.
+    func setLayerAction(_ action: Action, hold: MouseTrigger, for target: MouseTrigger, phase: ClickPhase) {
+        updateLayer { layer in
+            var li = layer.layers.firstIndex { $0.hold == hold }
+            if li == nil {
+                layer.layers.append(HoldLayer(hold: hold))
+                li = layer.layers.count - 1
+            }
+            if let i = layer.layers[li!].mappings.firstIndex(where: { $0.trigger == target }) {
+                layer.layers[li!].mappings[i].setAction(action, for: phase)
+            } else {
+                var mapping = MouseMapping(trigger: target, action: .disabled)
+                mapping.setAction(action, for: phase)
+                layer.layers[li!].mappings.append(mapping)
+            }
+        }
+    }
+
+    /// Delete a shift key's ENTIRE combo record — other shift keys keep theirs.
+    func removeLayer(hold: MouseTrigger) {
+        updateLayer { layer in layer.layers.removeAll { $0.hold == hold } }
+    }
+
+    /// Combos configured across ALL shift keys (for the group's subtitle).
+    var layerActionCount: Int {
+        editingLayer.layers.reduce(0) { $0 + actionCount(in: $1.mappings) }
+    }
+
+    /// Combos configured for ONE shift key (chip badges, lock gate).
+    func layerActionCount(hold: MouseTrigger) -> Int {
+        actionCount(in: editingLayer.mappings(for: hold))
+    }
+
+    /// True when this button powers Mouse Shift (has ≥1 combo) — its Hold phase is locked.
+    func isShiftHold(_ trigger: MouseTrigger) -> Bool {
+        editingLayer.enabled && layerActionCount(hold: trigger) > 0
+    }
+
+    private func actionCount(in mappings: [MouseMapping]) -> Int {
+        mappings.reduce(0) { count, m in
+            count + ClickPhase.allCases.filter { m.action(for: $0).kind != .disabled }.count
+        }
     }
 
     /// The Default ("All apps") scroll settings — the menu-bar quick toggle edits these.

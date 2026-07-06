@@ -39,9 +39,12 @@ struct RemapTabView: View {
                     AccessibilityBanner(message: "Grant Accessibility so key remapping can work.")
                 }
                 keyboardGroup
+                // Profile strip on top, like Mouse — it governs the per-app section below.
+                GroupBox { profileStrip.padding(6) }
+                    .opacity(vm.isEnabled ? 1 : 0.5)
+                shortcutsGroup
                 hyperGroup
                 doubleTapGroup
-                shortcutsGroup
             }
             .padding(20)
         }
@@ -70,7 +73,7 @@ struct RemapTabView: View {
 
     private var hyperGroup: some View {
         let symbols = vm.hyperShift ? "⌘⌥⌃⇧" : "⌘⌥⌃"
-        return GroupBox("Hyper Key") {
+        return GroupBox("Hyper Key — \(profileLabel)") {
             VStack(alignment: .leading, spacing: 10) {
                 SettingRow(title: "Enable Hyper Key",
                            subtitle: "Hold Caps Lock to act as \(symbols) together — a private shortcut layer no app conflicts with.") {
@@ -116,7 +119,7 @@ struct RemapTabView: View {
     // MARK: - Double-tap modifiers
 
     private var doubleTapGroup: some View {
-        GroupBox("Double-Tap") {
+        GroupBox("Double-Tap — \(profileLabel)") {
             VStack(alignment: .leading, spacing: 10) {
                 SettingRow(title: "Enable double-tap",
                            subtitle: "Tap a modifier twice quickly to run an action — normal shortcuts are never affected.") {
@@ -126,14 +129,7 @@ struct RemapTabView: View {
                 if vm.doubleTap.enabled {
                     ForEach(DoubleTapManager.modifiers, id: \.key) { mod in
                         Divider()
-                        SettingRow(title: "Double-tap \(mod.symbol) \(mod.name)", subtitle: "") {
-                            Button {
-                                doubleTapPicking = ModPick(id: mod.key)
-                            } label: {
-                                Text(vm.doubleTap.actions[mod.key]?.displayLabel ?? "Do Nothing")
-                                    .frame(minWidth: 110)
-                            }
-                        }
+                        doubleTapRow(mod.key, title: "Double-tap \(mod.symbol) \(mod.name)")
                     }
                 }
             }
@@ -147,6 +143,27 @@ struct RemapTabView: View {
                 vm.setDoubleTapAction(kind == .disabled ? nil : Action(kind: kind), for: pick.id)
             }
         }
+    }
+
+    /// The app-wide action-slot row: name left, current action right, chevron — click to pick.
+    private func doubleTapRow(_ key: String, title: String) -> some View {
+        let action = vm.doubleTap.actions[key]
+        return Button { doubleTapPicking = ModPick(id: key) } label: {
+            HStack(spacing: 8) {
+                Text(title)
+                    .font(.system(size: 12, weight: .medium))
+                Spacer(minLength: 8)
+                Text(action?.displayLabel ?? "—")
+                    .font(.system(size: 12))
+                    .foregroundStyle(action == nil ? .tertiary : .secondary)
+                    .lineLimit(1).truncationMode(.tail)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 9, weight: .semibold)).foregroundStyle(.tertiary)
+            }
+            .frame(minHeight: 34)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     /// Double-tap picks fire immediately — no target prompt flow — so exclude kinds needing one.
@@ -190,15 +207,15 @@ struct RemapTabView: View {
 
     // MARK: - Key mappings / Shortcuts
 
+    private var profileLabel: String {
+        vm.isEditingDefault ? "All apps" : vm.editingProfileName
+    }
+
     private var shortcutsGroup: some View {
-        GroupBox("Shortcuts") {
-            VStack(alignment: .leading, spacing: 10) {
-                profileStrip
-                Divider()
-                ruleList(vm.rules, empty: "No mappings yet — add one with “Add mapping”.")
-            }
-            .padding(6)
-            .opacity(vm.isEnabled ? 1 : 0.5)
+        GroupBox("Shortcuts — \(profileLabel)") {
+            ruleList(vm.rules, empty: "No mappings yet — add one with “Add mapping”.")
+                .padding(6)
+                .opacity(vm.isEnabled ? 1 : 0.5)
         }
     }
 
