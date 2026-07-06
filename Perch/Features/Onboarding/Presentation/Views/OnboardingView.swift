@@ -51,10 +51,10 @@ struct OnboardingView: View {
         VStack(spacing: 20) {
             hero("bird.fill", "Welcome to Perch", "The little Mac utilities macOS forgot — all in your menu bar.")
             VStack(spacing: 12) {
-                featureRow("doc.on.clipboard", "Clipboard", "History with images & files, quick paste.")
-                featureRow("note.text", "Snippets", "Reusable text you paste often.")
-                featureRow("computermouse", "Mouse", "Map buttons, gestures & scrolling.")
-                featureRow("keyboard", "Keys", "Remap keys and shortcuts, per app.")
+                featureRow("doc.on.clipboard", "Clipboard", "Full copy history — search it, pin it, paste it with one shortcut.")
+                featureRow("text.quote", "Snippets", "Type ;sig; anywhere and it becomes your saved text — with live dates and your clipboard inside.")
+                featureRow("computermouse", "Mouse", "Give every button a job — clicks, holds, gestures, smooth scrolling. Different per app.")
+                featureRow("keyboard", "Keys", "Remap keys, turn Caps Lock into a super-shortcut key, double-tap modifiers. Different per app.")
             }
         }
     }

@@ -21,17 +21,14 @@ struct MenuContentView: View {
                 Divider().padding(.vertical, 4)
             }
 
-            sectionHeader("Toggles")
-            ClipboardEnableToggleRow()
-            if clipboard.isEnabled { ClipboardSaveToggleRow() }
-            // Scroll & Remap toggles land here once those features ship.
-
-            Divider().padding(.vertical, 4)
-
             if clipboard.isEnabled {
                 menuButton("Open Clipboard", icon: "doc.on.clipboard", hint: settings.hotKeyDisplay) {
                     app.dismissMenu()
                     app.clipboardPanel.show()
+                }
+                menuButton("Open Snippets", icon: "text.quote") {
+                    app.dismissMenu()
+                    app.clipboardPanel.showSnippets()
                 }
             }
             menuButton("Open Perch…", icon: "macwindow") {

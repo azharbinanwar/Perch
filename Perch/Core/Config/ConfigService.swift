@@ -206,7 +206,12 @@ enum ConfigService {
         panel.allowedContentTypes = [.json]
         panel.allowsMultipleSelection = false
         guard panel.runModal() == .OK, let url = panel.url else { return nil }
+        return decodeFile(url)
+    }
 
+    /// Decode a config file (v2 or legacy v1) — or nil after explaining what's wrong.
+    /// Shared by the open panel and the drag-and-drop import zone.
+    static func decodeFile(_ url: URL) -> PerchConfig? {
         do {
             let data = try Data(contentsOf: url)
             // A "meta" block marks a v2 file; older exports decode with the legacy shape.

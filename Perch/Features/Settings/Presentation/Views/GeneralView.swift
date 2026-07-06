@@ -13,6 +13,7 @@ struct GeneralView: View {
     @Environment(ClipboardViewModel.self) private var clipboard
 
     @State private var backup: BackupRequest?
+    @State private var importingFile = false   // the drag-and-drop / browse entry sheet
 
     var body: some View {
         @Bindable var vm = settings
@@ -71,11 +72,7 @@ struct GeneralView: View {
                            subtitle: "Pick exactly which sections to save, or bring in — the rest stay as they are.") {
                     HStack(spacing: 8) {
                         Button("Export…") { backup = BackupRequest(mode: .export, config: ConfigService.export()) }
-                        Button("Import…") {
-                            if let config = ConfigService.pickFileAndDecode() {
-                                backup = BackupRequest(mode: .importing, config: config)
-                            }
-                        }
+                        Button("Import…") { importingFile = true }
                     }
                 }
                 .padding(6)
@@ -114,6 +111,11 @@ struct GeneralView: View {
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .sheet(isPresented: $importingFile) {
+            ImportDropSheet { config in
+                backup = BackupRequest(mode: .importing, config: config)
+            }
         }
         .sheet(item: $backup) { req in
             BackupSheet(mode: req.mode, config: req.config) { sections in
