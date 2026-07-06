@@ -22,6 +22,10 @@ final class MouseDeviceMonitor {
     private var last: [MouseDevice] = []
 
     func start() {
+        // No Input Monitoring → do NOTHING. Opening IOHID while denied hammers TCC on every
+        // poll and can wedge the whole app behind the system prompt. The Mouse tab's banner
+        // asks the user; detection starts on the next launch after granting.
+        guard InputMonitoringService.shared.trusted else { return }
         guard manager == nil else { resync(); return }
         let m = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
         let match: [String: Any] = [

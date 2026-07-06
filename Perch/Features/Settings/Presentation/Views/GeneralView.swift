@@ -52,17 +52,20 @@ struct GeneralView: View {
             }
 
             GroupBox("Permissions") {
-                HStack {
-                    Image(systemName: AccessibilityService.shared.trusted ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                        .foregroundStyle(AccessibilityService.shared.trusted ? .green : .orange)
-                    Text(AccessibilityService.shared.trusted
-                         ? "Accessibility granted — Mouse, Keys, Scroll & quick clipboard paste can run."
-                         : "Accessibility needed for Mouse, Keys, Scroll & quick clipboard paste.")
-                        .font(.system(size: 13))
-                    Spacer()
-                    if !AccessibilityService.shared.trusted {
-                        Button("Grant…") { AccessibilityService.shared.request() }
-                    }
+                VStack(spacing: 10) {
+                    permissionRow(
+                        title: "Accessibility",
+                        subtitle: "Controls input — Mouse, Keys, Scroll & quick clipboard paste.",
+                        granted: AccessibilityService.shared.trusted,
+                        grant: { AccessibilityService.shared.request() }
+                    )
+                    Divider()
+                    permissionRow(
+                        title: "Input Monitoring",
+                        subtitle: "Observes devices — mouse detection and key watching.",
+                        granted: InputMonitoringService.shared.trusted,
+                        grant: { InputMonitoringService.shared.request() }
+                    )
                 }
                 .padding(6)
             }
@@ -74,6 +77,23 @@ struct GeneralView: View {
                         Button("Export…") { backup = BackupRequest(mode: .export, config: ConfigService.export()) }
                         Button("Import…") { importingFile = true }
                     }
+                }
+                .padding(6)
+            }
+
+            GroupBox("About") {
+                HStack(spacing: 12) {
+                    Image("perch").resizable().scaledToFit()
+                        .frame(width: 34, height: 34)
+                        .foregroundStyle(Color.accentColor)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
+                             ?? Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "Perch")
+                            .font(.system(size: 13, weight: .semibold))
+                        Text("Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—") (\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—"))")
+                            .font(.system(size: 11)).foregroundStyle(.secondary)
+                    }
+                    Spacer()
                 }
                 .padding(6)
             }
@@ -144,6 +164,23 @@ struct GeneralView: View {
 
     private func toggle(_ binding: Binding<Bool>) -> some View {
         Toggle("", isOn: binding).toggleStyle(.switch).labelsHidden()
+    }
+
+    /// One permission line: status icon + name/what-it-powers + Grant only while it's missing.
+    private func permissionRow(title: String, subtitle: String, granted: Bool,
+                               grant: @escaping () -> Void) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: granted ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                .foregroundStyle(granted ? .green : .orange)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title).font(.system(size: 13))
+                Text(subtitle).font(.system(size: 11)).foregroundStyle(.secondary)
+            }
+            Spacer()
+            if !granted {
+                Button("Grant…") { grant() }.buttonStyle(.borderedProminent)
+            }
+        }
     }
 
     /// A mini window preview per theme — System split diagonally, Light white, Dark black —

@@ -10,13 +10,16 @@ import SwiftUI
 
 struct AccessibilityBanner: View {
     var message = "Perch needs Accessibility permission to control the mouse and keyboard."
+    /// Which pane "Open Settings" lands in — pass InputMonitoringService.shared.openSettings
+    /// for the Input Monitoring variant. Defaults to Accessibility.
+    var openSettings: () -> Void = { AccessibilityService.shared.openSettings() }
 
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
             Text(message).font(.system(size: 12))
             Spacer()
-            Button("Open Settings") { AccessibilityService.shared.openSettings() }
+            Button("Open Settings") { openSettings() }
                 .font(.system(size: 11))
         }
         .padding(.horizontal, 12)

@@ -13,6 +13,7 @@ struct MouseTabView: View {
     @Environment(MouseViewModel.self) private var mouse
 
     @State private var trusted = AccessibilityService.shared.trusted
+    @State private var monitoring = InputMonitoringService.shared.trusted
     @State private var showingReset = false
 
     // Button layer — selection state only; the config lives on the editing profile.
@@ -50,6 +51,10 @@ struct MouseTabView: View {
                 if !trusted {
                     AccessibilityBanner(message: "Grant Accessibility so scroll, pointer, and buttons can work.")
                 }
+                if !monitoring {
+                    AccessibilityBanner(message: "Grant Input Monitoring so Perch can detect your connected mice.",
+                                        openSettings: { InputMonitoringService.shared.openSettings() })
+                }
                 if mouse.hasMouse {
                     // One profile selector governs everything below — buttons, pointer AND scroll
                     // are all per-app; the engines follow the frontmost app's profile.
@@ -66,7 +71,10 @@ struct MouseTabView: View {
             }
             .padding(20)
         }
-        .onAppear { trusted = AccessibilityService.shared.trusted }
+        .onAppear {
+            trusted = AccessibilityService.shared.trusted
+            monitoring = InputMonitoringService.shared.trusted
+        }
         .onDisappear { mouse.stopScan() }
         .sheet(isPresented: $addingProfile) {
             AppPickerSheet { ids in ids.forEach { mouse.addProfile(bundleID: $0) } }

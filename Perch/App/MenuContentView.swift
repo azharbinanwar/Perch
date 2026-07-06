@@ -13,8 +13,27 @@ struct MenuContentView: View {
     @Environment(SettingsViewModel.self) private var settings
     let app: AppDelegate
 
+    @State private var accessibilityOK = AccessibilityService.shared.trusted
+    @State private var monitoringOK = InputMonitoringService.shared.trusted
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            // Each tile shows only while ITS permission is missing (status re-read from the
+            // services every time the dropdown opens).
+            if !accessibilityOK {
+                permissionTile(
+                    title: "Accessibility needed",
+                    detail: "Mouse, Keys, Scroll & quick paste are paused. Click to grant.",
+                    request: { AccessibilityService.shared.request() }
+                )
+            }
+            if !monitoringOK {
+                permissionTile(
+                    title: "Input Monitoring needed",
+                    detail: "Mouse detection is paused. Click to grant.",
+                    request: { InputMonitoringService.shared.request() }
+                )
+            }
             if clipboard.isEnabled {
                 sectionHeader("Clipboard")
                 ClipboardPeekView(onPick: app.menuPaste)
@@ -45,7 +64,41 @@ struct MenuContentView: View {
         .onAppear {
             app.captureMenuContext()
             app.openWindowAction = { openWindow(id: $0) }
+            accessibilityOK = AccessibilityService.shared.trusted
+            monitoringOK = InputMonitoringService.shared.trusted
         }
+    }
+
+    /// One warning tile per missing permission — the menu-bar icon is the app's ONLY
+    /// always-visible surface, so this is where a user learns something is off.
+    /// Click = system prompt + that permission's own System Settings pane.
+    private func permissionTile(title: String, detail: String,
+                                request: @escaping () -> Void) -> some View {
+        Button {
+            app.dismissMenu()
+            request()
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(title)
+                        .font(.system(size: 12, weight: .medium))
+                    Text(detail)
+                        .font(.system(size: 10.5))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)   // wrap as needed
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 8)
+        .padding(.bottom, 4)
     }
 
     private func sectionHeader(_ title: String, hint: String? = nil) -> some View {
