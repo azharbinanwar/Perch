@@ -27,70 +27,112 @@ struct OnboardingView: View {
             }
             .padding(.horizontal, 20).padding(.top, 16)
 
+            // Vertically centered (the old feel) — hero + step body sit together as one
+            // block, so it always looks balanced whatever the body's height.
             Spacer()
-            content.frame(maxWidth: 440).padding(.horizontal, 40)
+            VStack(spacing: 22) {
+                heroBlock
+                stepBody
+            }
+            .frame(maxWidth: 440).padding(.horizontal, 40)
             Spacer()
 
             footer.padding(.horizontal, 40).padding(.bottom, 28)
         }
-        .frame(minWidth: 640, minHeight: 470)
+        .frame(minWidth: 640, minHeight: 580)   // tall enough for the animated welcome on a FRESH launch
         .onAppear { trusted = Permissions.isAccessibilityTrusted }
-    }
-
-    @ViewBuilder private var content: some View {
-        switch step {
-        case 0:  welcome
-        case 1:  permission
-        default: finish
+        .task(id: step) {
+            // While the permission step is up, watch for the grant — the status flips to
+            // green the moment the user allows it in System Settings, no clicks needed.
+            guard step == 1 else { return }
+            while !Task.isCancelled {
+                trusted = Permissions.isAccessibilityTrusted
+                try? await Task.sleep(for: .seconds(1))
+            }
         }
     }
 
-    // MARK: - Steps
+    // MARK: - Hero (one fixed slot; only the text/icon inside change per step)
 
-    private var welcome: some View {
+    private var heroBlock: some View {
         VStack(spacing: 0) {
-            // The vector logo — crisp at any size, no icon-tile background, tinted accent.
-            Image("perch")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 84, height: 84)
-                .foregroundStyle(Color.accentColor)
-            Text("Welcome to Perch")
+            Group {
+                if step == 0 {
+                    // The vector logo — crisp, no tile, tinted accent.
+                    Image("perch").resizable().scaledToFit()
+                        .frame(width: 74, height: 74)
+                        .foregroundStyle(Color.accentColor)
+                } else {
+                    Image(systemName: heroIcon)
+                        .font(.system(size: 40))
+                        .foregroundStyle(Color.accentColor)
+                }
+            }
+            .frame(height: 78)   // icon zone constant → title/subtitle never shift between steps
+
+            Text(heroTitle)
                 .font(.title.bold())
-                .padding(.top, 14)
-            Text("The little Mac utilities macOS forgot — all in your menu bar.")
+                .multilineTextAlignment(.center)
+                .padding(.top, 12)
+            Text(heroSubtitle)
                 .font(.system(size: 13)).foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .lineLimit(2, reservesSpace: true)   // two-line reserve so a longer subtitle doesn't nudge the body
                 .padding(.top, 6)
-            // A living tour instead of a feature list — one press → payoff per feature.
-            WelcomeShowcase()
-                .padding(.top, 44)
+        }
+        .frame(maxWidth: 460)
+    }
+
+    private var heroIcon: String { step == 1 ? "hand.raised.fill" : "checkmark.seal.fill" }
+    private var heroTitle: String {
+        switch step {
+        case 0:  return "Welcome to Perch"
+        case 1:  return "One permission unlocks it all"
+        default: return "You're all set"
+        }
+    }
+    private var heroSubtitle: String {
+        switch step {
+        case 0:  return "The little Mac utilities macOS forgot — all in your menu bar."
+        case 1:  return "Mouse, Keys, Scroll and quick paste use macOS Accessibility. Clipboard works without it."
+        default: return "Perch lives in your menu bar — click the bird up top anytime."
         }
     }
 
-    private var permission: some View {
+    // MARK: - Step bodies (only this region changes; the hero above stays fixed)
+
+    @ViewBuilder private var stepBody: some View {
+        switch step {
+        case 0:  WelcomeShowcase()
+        case 1:  permissionBody
+        default: finishBody
+        }
+    }
+
+    private var permissionBody: some View {
         VStack(spacing: 20) {
-            hero("hand.raised.fill", "One permission unlocks it all",
-                 "Mouse, Keys, Scroll and quick clipboard paste use macOS Accessibility. Clipboard history works without it.")
+            PermissionShowcase()
             if trusted {
                 Label("Accessibility granted", systemImage: "checkmark.circle.fill")
                     .font(.system(size: 14, weight: .medium)).foregroundStyle(.green)
             } else {
                 Button {
+                    // The macOS prompt only ever shows once — the deep link ALWAYS lands
+                    // the user in the right pane, so repeat clicks never feel dead.
                     Permissions.requestAccessibility()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) { trusted = Permissions.isAccessibilityTrusted }
+                    Permissions.openAccessibilitySettings()
                 } label: {
-                    Label("Grant Accessibility…", systemImage: "lock.open")
+                    Label("Open Accessibility Settings…", systemImage: "lock.open")
                 }
                 .buttonStyle(.borderedProminent).controlSize(.large)
             }
         }
     }
 
-    private var finish: some View {
+    private var finishBody: some View {
         @Bindable var vm = settings
         return VStack(spacing: 20) {
-            hero("checkmark.seal.fill", "You're all set",
-                 "Perch lives in your menu bar — click the bird up top anytime.")
+            LaunchShowcase()
             GroupBox {
                 SettingRow(title: "Launch at login", subtitle: "Start Perch automatically when you log in.") {
                     Toggle("", isOn: $vm.settings.openAtLogin).toggleStyle(.switch).labelsHidden()
@@ -115,6 +157,7 @@ struct OnboardingView: View {
             HStack(spacing: 10) {
                 if step > 0 {
                     Button("Back") { withAnimation { step -= 1 } }
+                        .buttonStyle(.bordered).controlSize(.large)   // same size & shape as Continue
                 }
                 Button(step == lastStep ? "Get Started" : "Continue") {
                     if step == lastStep { onFinish() } else { withAnimation { step += 1 } }
@@ -124,24 +167,4 @@ struct OnboardingView: View {
         }
     }
 
-    // MARK: - Pieces
-
-    private func hero(_ icon: String, _ title: String, _ subtitle: String) -> some View {
-        VStack(spacing: 10) {
-            Image(systemName: icon).font(.system(size: 40)).foregroundStyle(Color.accentColor)
-            Text(title).font(.title.bold()).multilineTextAlignment(.center)
-            Text(subtitle).font(.system(size: 13)).foregroundStyle(.secondary).multilineTextAlignment(.center)
-        }
-    }
-
-    private func featureRow(_ icon: String, _ name: String, _ desc: String) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon).font(.system(size: 16)).foregroundStyle(Color.accentColor).frame(width: 26)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(name).font(.system(size: 13, weight: .semibold))
-                Text(desc).font(.system(size: 11.5)).foregroundStyle(.secondary)
-            }
-            Spacer()
-        }
-    }
 }
