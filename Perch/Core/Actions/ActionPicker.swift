@@ -14,7 +14,7 @@ struct ActionPicker: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var search = ""
-    @State private var detailKind: ActionKind?
+    @State private var detailKind: ActionKind? 
 
     private let columns = [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)]
 
