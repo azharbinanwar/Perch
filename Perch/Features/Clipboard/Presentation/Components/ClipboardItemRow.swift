@@ -30,6 +30,26 @@ struct ClipboardItemRow: View {
     private var lineLimit: Int { compact ? 1 : density.lineLimit }
     private var verticalPadding: CGFloat { compact ? 5 : density.verticalPadding }
     private var showsTime: Bool { !compact && density.showsTime }
+    private var showsMeta: Bool { !compact && density == .large }   // metadata sub-line only on the big tile
+
+    /// Second-line detail for Large rows: text → lines/chars, image/files → count.
+    /// Deliberately no disk I/O — cheap enough to compute per visible row.
+    private var metaLine: String? {
+        switch item.content {
+        case .text:
+            let text = item.text
+            let chars = text.count
+            let lineCount = text.reduce(1) { $1 == "\n" ? $0 + 1 : $0 }
+            if lineCount > 1 { return "\(lineCount) lines · \(chars) characters" }
+            let words = text.split { $0.isWhitespace || $0.isNewline }.count
+            return "\(words) word\(words == 1 ? "" : "s") · \(chars) characters"
+        case .image:
+            return "Image"
+        case .files:
+            let n = item.filePaths?.count ?? 0
+            return "\(n) file\(n == 1 ? "" : "s")"
+        }
+    }
     private var kind: ClipboardKind {
         item.content == .text ? ClipboardKind.detect(item.text) : .text   // smart types are text-only
     }
@@ -60,12 +80,19 @@ struct ClipboardItemRow: View {
     var body: some View {
         HStack(spacing: 10) {
             icon
-            HStack(spacing: 5) {
-                inlineTypeIcon
-                Text(preview)
-                    .lineLimit(lineLimit)
-                    .font(previewFont)
-                    .foregroundStyle(previewColor)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 5) {
+                    inlineTypeIcon
+                    Text(preview)
+                        .lineLimit(lineLimit)
+                        .font(previewFont)
+                        .foregroundStyle(previewColor)
+                }
+                if showsMeta, let metaLine {   // Large rows only — extra detail earns the space
+                    Text(metaLine)
+                        .font(.system(size: 10))
+                        .foregroundStyle(.tertiary)
+                }
             }
             Spacer(minLength: 8)
             trailing

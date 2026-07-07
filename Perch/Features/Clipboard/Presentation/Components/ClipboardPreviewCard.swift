@@ -13,6 +13,12 @@ struct ClipboardPreviewCard: View {
     @Binding var index: Int          // carousel position, driven by ← →
     let onDismiss: () -> Void
 
+    // Text preview is paged: rendering one giant Text (with selection) lays out the whole
+    // string up front and freezes on huge items. We split into lines once (off the main
+    // thread) and reveal a screenful at a time, growing as the user scrolls to the bottom.
+    @State private var lines: [String] = []
+    @State private var visibleCount = 0
+
     private var filePaths: [String] { item.filePaths ?? [] }
     private var filesAreImages: Bool { !filePaths.isEmpty && filePaths.allSatisfy(Thumbnailer.isImage) }
 
@@ -35,6 +41,17 @@ struct ClipboardPreviewCard: View {
         }
     }
 
+    private var closeButton: some View {
+        Button(action: onDismiss) {
+            Image(systemName: "xmark.circle.fill")
+                .font(.system(size: 18))
+                .foregroundStyle(.secondary)
+                .symbolRenderingMode(.hierarchical)
+        }
+        .buttonStyle(.plain)
+        .help("Close preview")
+    }
+
     @ViewBuilder
     private var content: some View {
         switch item.content {
@@ -55,11 +72,43 @@ struct ClipboardPreviewCard: View {
                 fileList
             }
         case .text:
+            textPreview
+        }
+    }
+
+    /// Paged, lazily-rendered text. Only the lines revealed so far are laid out; a sentinel
+    /// at the bottom pulls in the next page as it scrolls into view (auto, no button), so a
+    /// 100k-line item feels instant and stays light.
+    private var textPreview: some View {
+        GeometryReader { geo in
+            // Page ≈ one paneful + a cushion, sized to the window (not a magic number).
+            let lineHeight: CGFloat = 18
+            let perPage = max(20, Int(geo.size.height / lineHeight) + 10)
+            let shown = min(visibleCount, lines.count)
+            let chunk = 40   // lines per Text block — enough to keep view count low, small enough to stay lazy
+
             ScrollView {
-                Text(item.text)
-                    .font(.system(size: 13))
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(stride(from: 0, to: shown, by: chunk)), id: \.self) { start in
+                        Text(lines[start ..< min(start + chunk, shown)].joined(separator: "\n"))
+                            .font(.system(size: 13))
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    if visibleCount < lines.count {
+                        Color.clear.frame(height: 1)
+                            .onAppear { visibleCount = min(lines.count, visibleCount + perPage) }
+                    }
+                }
+            }
+            .task(id: item.id) {
+                let raw = item.text
+                // Split off the main thread — even the split can be costly on multi-MB text.
+                let split = await Task.detached(priority: .userInitiated) {
+                    raw.components(separatedBy: "\n")
+                }.value
+                lines = split
+                visibleCount = min(split.count, perPage)
             }
         }
     }
@@ -113,6 +162,7 @@ struct ClipboardPreviewCard: View {
             Text(item.copiedAt, format: .relative(presentation: .named))
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
+            closeButton   // sits to the right of the date, not over it
         }
     }
 

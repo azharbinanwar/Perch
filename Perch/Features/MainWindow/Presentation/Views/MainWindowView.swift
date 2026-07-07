@@ -34,6 +34,6 @@ struct MainWindowView: View {
             case .general:   GeneralView()
             }
         }
-        .frame(minWidth: 640, minHeight: 440)
+        .frame(minWidth: 640, minHeight: 580)   // match onboarding so the window is one consistent height
     }
 }

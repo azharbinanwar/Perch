@@ -283,14 +283,12 @@ struct ClipboardWindowView: View {
     private var footer: some View {
         HStack(spacing: 12) {
             ForEach(PopupShortcuts.footer) { shortcut in
-                if shortcut.keys == "⌘/" {
-                    Button { model.toggleHelp() } label: {
-                        legend(shortcut.keys, shortcut.footerLabel ?? "")
-                    }
-                    .buttonStyle(.plain)
-                } else {
+                // Same look as before — but the WHOLE item (keys + label) is a click target,
+                // so the popup stays usable by mouse even if it loses keyboard focus.
+                Button { footerAction(for: shortcut.keys) } label: {
                     legend(shortcut.keys, shortcut.footerLabel ?? "")
                 }
+                .buttonStyle(.plain)
             }
             Spacer()
             Button("Clear All") { model.clearAll() }
@@ -301,6 +299,18 @@ struct ClipboardWindowView: View {
         .foregroundStyle(.secondary)
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
+    }
+
+    /// Click equivalent of each footer shortcut (keyboard still works too).
+    private func footerAction(for keys: String) {
+        switch keys {
+        case "↑ ↓":    model.moveDown()        // single click steps down; keyboard keeps both directions
+        case "⇥ / ⇧⇥": model.cycleCategory()
+        case "⏎":      model.pasteSelected()
+        case "⌘/":     model.toggleHelp()
+        case "esc":    model.escape()
+        default:       break
+        }
     }
 
     private func legend(_ key: String, _ label: String) -> some View {
