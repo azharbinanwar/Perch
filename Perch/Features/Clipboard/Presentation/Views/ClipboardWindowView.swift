@@ -11,11 +11,10 @@ import SwiftUI
 struct ClipboardWindowView: View {
     let model: ClipboardPopupModel
 
+    @State private var showingDemo = false   // gate → "see what you'll unlock" tour
+
     var body: some View {
         VStack(spacing: 0) {
-            if model.needsPermission {
-                AccessibilityBanner(message: "Grant Accessibility for keyboard control & paste")
-            }
             if !model.isRecording { pausedBanner }
             if let notice = model.notice { noticeBanner(notice) }
             searchBar
@@ -45,6 +44,19 @@ struct ClipboardWindowView: View {
                 )
             }
         }
+        .overlay {
+            // Only while Accessibility is missing — the popup can't navigate or paste without it.
+            if model.needsPermission {
+                if showingDemo {
+                    ClipboardShowcase(onClose: { showingDemo = false })
+                        .transition(.opacity)
+                } else {
+                    ClipboardPermissionOverlay(onSeeDemo: { showingDemo = true })
+                        .transition(.opacity)
+                }
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: showingDemo)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(.white.opacity(0.08)))
     }
