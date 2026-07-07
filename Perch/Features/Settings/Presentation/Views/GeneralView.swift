@@ -98,7 +98,7 @@ struct GeneralView: View {
                 .padding(6)
             }
 
-            SafetyTimerBox()
+            // SafetyTimerBox()   // hidden for now — re-enable when we need the safety timer
 
             // Debug log — kept for future engine debugging; uncomment to show it again.
             // GroupBox("Debug log") {
