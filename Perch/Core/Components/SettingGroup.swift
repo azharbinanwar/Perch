@@ -2,9 +2,6 @@
 //  SettingGroup.swift
 //  Perch
 //
-//  Generic settings box: a GroupBox with an optional title and consistent inner padding, so every
-//  section matches by construction (no per-box `.padding(6)` to forget). Pairs with SettingRow.
-//
 
 import SwiftUI
 

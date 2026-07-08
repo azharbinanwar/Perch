@@ -13,15 +13,19 @@ struct GeneralView: View {
     @Environment(ClipboardViewModel.self) private var clipboard
 
     @State private var backup: BackupRequest?
-    @State private var importingFile = false   // the drag-and-drop / browse entry sheet
+    @State private var importingFile = false
+    @State private var devTaps = 0
+    @State private var showDev = false        // 7 taps on the title; resets each launch
 
     var body: some View {
         @Bindable var vm = settings
         ScrollView {
         VStack(alignment: .leading, spacing: 16) {
             PageHeader("General", subtitle: "Startup, permissions, and how Perch behaves.")
+                .contentShape(Rectangle())
+                .onTapGesture { devTaps += 1; if devTaps >= 7 { showDev = true } }
 
-            GroupBox("Startup") {
+            SettingGroup("Startup") {
                 VStack(spacing: 10) {
                     SettingRow(title: "Launch at login",
                                subtitle: "Start Perch automatically when you log in.",
@@ -41,40 +45,35 @@ struct GeneralView: View {
                         toggle($vm.settings.showInDock)
                     }
                 }
-                .padding(6)
             }
 
-            GroupBox("Appearance") {
+            SettingGroup("Appearance") {
                 SettingRow(title: "Theme",
                            subtitle: "System follows macOS; Light or Dark forces it everywhere in Perch.",
                            icon: "paintbrush") {
                     HStack(spacing: 12) {
-                        ForEach(AppTheme.allCases) { themeSwatch($0) }
+                        ForEach(AppTheme.allCases) { ThemeSwatch(theme: $0) }
                     }
                 }
-                .padding(6)
             }
 
-            GroupBox("Permissions") {
+            SettingGroup("Permissions") {
                 VStack(spacing: 10) {
-                    permissionRow(
+                    PermissionStatusRow(
                         title: "Accessibility",
                         subtitle: "Controls input — Mouse, Keys, Scroll & quick clipboard paste.",
                         granted: AccessibilityService.shared.trusted,
-                        grant: { AccessibilityService.shared.request() }
-                    )
+                        grant: { AccessibilityService.shared.request() })
                     Divider()
-                    permissionRow(
+                    PermissionStatusRow(
                         title: "Input Monitoring",
                         subtitle: "Observes devices — mouse detection and key watching.",
                         granted: InputMonitoringService.shared.trusted,
-                        grant: { InputMonitoringService.shared.request() }
-                    )
+                        grant: { InputMonitoringService.shared.request() })
                 }
-                .padding(6)
             }
 
-            GroupBox("Backup") {
+            SettingGroup("Backup") {
                 SettingRow(title: "Export or import settings",
                            subtitle: "Pick exactly which sections to save, or bring in — the rest stay as they are.",
                            icon: "arrow.up.arrow.down") {
@@ -83,10 +82,9 @@ struct GeneralView: View {
                         Button("Import…") { importingFile = true }
                     }
                 }
-                .padding(6)
             }
 
-            GroupBox("About") {
+            SettingGroup("About") {
                 HStack(spacing: 12) {
                     Image("perch").resizable().scaledToFit()
                         .frame(width: 34, height: 34)
@@ -100,41 +98,12 @@ struct GeneralView: View {
                     }
                     Spacer()
                 }
-                .padding(6)
             }
 
-            SafetyTimerBox()
-
-            // Debug log — kept for future engine debugging; uncomment to show it again.
-            // GroupBox("Debug log") {
-            //     VStack(alignment: .leading, spacing: 8) {
-            //         ScrollViewReader { proxy in
-            //             ScrollView {
-            //                 Text(DiagLog.shared.text.isEmpty ? "Engine diagnostics appear here." : DiagLog.shared.text)
-            //                     .font(.system(size: 11, design: .monospaced))
-            //                     .textSelection(.enabled)
-            //                     .frame(maxWidth: .infinity, alignment: .leading)
-            //                     .id("logEnd")
-            //             }
-            //             .frame(height: 320)
-            //             .onChange(of: DiagLog.shared.text) { _, _ in
-            //                 proxy.scrollTo("logEnd", anchor: .bottom)   // always follow the newest line
-            //             }
-            //         }
-            //         HStack {
-            //             Spacer()
-            //             Button("Clear") { DiagLog.shared.clear() }
-            //                 .disabled(DiagLog.shared.text.isEmpty)
-            //             Button("Copy") {
-            //                 NSPasteboard.general.clearContents()
-            //                 NSPasteboard.general.setString(DiagLog.shared.text, forType: .string)
-            //             }
-            //             .disabled(DiagLog.shared.text.isEmpty)
-            //         }
-            //     }
-            //     .padding(6)
-            // }
-
+            if showDev {
+                SafetyTimerBox()
+                DebugLogBox()
+            }
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -151,83 +120,22 @@ struct GeneralView: View {
                     ConfigService.writeToFile(ConfigService.keepingOnly(sections, of: req.config))
                 case .importing:
                     ConfigService.apply(req.config, sections: sections)
-                    reloadViewModels()   // refresh live via the injected VMs — no AppDelegate lookup
+                    reloadViewModels()
                 }
             }
         }
     }
 
-    /// Re-read storage into the view models already injected into this screen.
     private func reloadViewModels() {
         settings.reload()
         remap.reload()
-        mouse.reload()               // buttons, gestures, scroll AND pointer (per-app profiles)
+        mouse.reload()
         snippet.reload()
-        clipboard.reloadSettings()   // limits, toggles, exclusions — applied live
-        clipboard.reloadHistory()    // the saved item list (system clipboard untouched)
+        clipboard.reloadSettings()
+        clipboard.reloadHistory()
     }
 
     private func toggle(_ binding: Binding<Bool>) -> some View {
         Toggle("", isOn: binding).toggleStyle(.switch).labelsHidden()
-    }
-
-    /// One permission line: status icon + name/what-it-powers + Grant only while it's missing.
-    private func permissionRow(title: String, subtitle: String, granted: Bool,
-                               grant: @escaping () -> Void) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: granted ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                .foregroundStyle(granted ? .green : .orange)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(title).font(.system(size: 13))
-                Text(subtitle).font(.system(size: 11)).foregroundStyle(.secondary)
-            }
-            Spacer()
-            if !granted {
-                Button("Grant…") { grant() }.buttonStyle(.borderedProminent)
-            }
-        }
-    }
-
-    /// A mini window preview per theme — System split diagonally, Light white, Dark black —
-    /// with an accent ring on the selected one (same visual as CleanKit's picker).
-    private func themeSwatch(_ theme: AppTheme) -> some View {
-        let selected = settings.settings.theme == theme
-        return Button { settings.settings.theme = theme } label: {
-            VStack(spacing: 6) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(swatchBackground(theme))
-                        .frame(width: 58, height: 42)
-                        .overlay(RoundedRectangle(cornerRadius: 8)
-                            .stroke(selected ? Color.accentColor : Color.secondary.opacity(0.25),
-                                    lineWidth: selected ? 2 : 1))
-                    HStack(spacing: 3) {
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(theme == .dark ? Color.white.opacity(0.15)
-                                  : theme == .light ? Color.black.opacity(0.08) : Color.gray.opacity(0.45))
-                            .frame(width: 13, height: 26)
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(theme == .dark ? Color.white.opacity(0.08)
-                                  : theme == .light ? Color.black.opacity(0.04) : Color.gray.opacity(0.25))
-                            .frame(width: 30, height: 26)
-                    }
-                }
-                Text(theme.title)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(selected ? Color.accentColor : Color.secondary)
-            }
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func swatchBackground(_ theme: AppTheme) -> AnyShapeStyle {
-        switch theme {
-        case .light: return AnyShapeStyle(Color.white)
-        case .dark:  return AnyShapeStyle(Color.black)
-        case .system:
-            return AnyShapeStyle(LinearGradient(
-                stops: [.init(color: .black, location: 0.499), .init(color: .white, location: 0.501)],
-                startPoint: .topLeading, endPoint: .bottomTrailing))
-        }
     }
 }

@@ -2,9 +2,6 @@
 //  HyperKeyGroup.swift
 //  Perch
 //
-//  The Hyper Key section of the Keys tab — a standalone component, used directly in RemapTabView's
-//  body (no view-returning helper method). Owns its own info sheet.
-//
 
 import SwiftUI
 

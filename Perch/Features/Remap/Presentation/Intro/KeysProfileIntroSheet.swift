@@ -2,8 +2,6 @@
 //  KeysProfileIntroSheet.swift
 //  Perch
 //
-//  The per-app profile concept told in keys language. Mouse has its own version.
-//
 
 import SwiftUI
 

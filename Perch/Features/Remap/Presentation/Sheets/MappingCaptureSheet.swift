@@ -2,9 +2,6 @@
 //  MappingCaptureSheet.swift
 //  Perch
 //
-//  Add / edit one key mapping: record the FROM key, then record OR pick the TO action. The tab
-//  opens this (via addingRule) after seeding the draft (clearDraft for add, beginEdit for edit).
-//
 
 import SwiftUI
 

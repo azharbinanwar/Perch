@@ -2,10 +2,6 @@
 //  PermissionTile.swift
 //  Perch
 //
-//  Generic "this module needs a permission" tile, shown at the TOP of a page (not an overlay).
-//  The real controls stay visible-but-dimmed underneath, so the user sees what they unlock.
-//  Two actions: Grant (fixes it) and an optional "What you get" (opens the module's showcase).
-//
 
 import SwiftUI
 

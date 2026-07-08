@@ -15,17 +15,7 @@ struct RemapTabView: View {
     private var trusted: Bool { AccessibilityService.shared.isTrusted }
     /// Controls are live only when Accessibility is granted AND the module master is on.
     private var moduleActive: Bool { trusted && vm.isEnabled }
-    @State private var showingReset = false@ViewBuilder
-    private func targetSheet(_ kind: ActionKind) -> some View {
-        switch kind.target {
-        case .app:
-            AppPickerSheet(allowsMultipleSelection: false) { ids in if let b = ids.first { vm.setOutputAction(Action(kind: .openApp, target: b)) } }
-        case .keystroke:@ViewBuilder
-    private func targetSheet(_ kind: ActionKind) -> some View {
-        switch kind.target {
-        case .app:
-            AppPickerSheet(allowsMultipleSelection: false) { ids in if let b = ids.first { vm.setOutputAction(Action(kind: .openApp, target: b)) } }
-        case .keystroke:
+    @State private var showingReset = false
     @State private var addingRule = false
     @State private var addingProfile = false
     @State private var profileIntroShowing = false // per-app profiles, in keys language

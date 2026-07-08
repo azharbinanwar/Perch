@@ -2,9 +2,6 @@
 //  DoubleTapGroup.swift
 //  Perch
 //
-//  The Double-Tap section of the Keys tab — a standalone component, used directly in RemapTabView's
-//  body. Owns its action-picker and info sheets.
-//
 
 import SwiftUI
 

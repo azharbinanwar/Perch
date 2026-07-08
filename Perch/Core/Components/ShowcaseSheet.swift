@@ -2,10 +2,6 @@
 //  ShowcaseSheet.swift
 //  Perch
 //
-//  One shared, fixed-size dialog for every module's "What you get" showcase — so all four
-//  (Mouse, Keys, Clipboard, Snippets) are identical in size and chrome. Standard header /
-//  content / footer layout like the app's other sheets.
-//
 
 import SwiftUI
 

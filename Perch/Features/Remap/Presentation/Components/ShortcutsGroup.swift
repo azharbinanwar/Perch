@@ -47,9 +47,9 @@ struct RemapRuleRow: View {
                 .toggleStyle(.switch).labelsHidden().scaleEffect(0.85)
             Button(action: onEdit) {
                 HStack(spacing: 10) {
-                    chip(rule.input.displayName)
+                    Chip(text: rule.input.displayName)
                     Image(systemName: "arrow.right").font(.system(size: 11)).foregroundStyle(.secondary)
-                    chip(rule.output.displayLabel)
+                    Chip(text: rule.output.displayLabel)
                 }
                 .contentShape(Rectangle())
             }
@@ -61,12 +61,5 @@ struct RemapRuleRow: View {
             .buttonStyle(.borderless)
         }
         .padding(.horizontal, 6).padding(.vertical, 6)
-    }
-
-    private func chip(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 13, weight: .medium, design: .rounded))
-            .padding(.horizontal, 10).padding(.vertical, 4)
-            .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 6))
     }
 }
