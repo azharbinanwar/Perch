@@ -13,6 +13,9 @@ struct PerchApp: App {
         MenuBarExtra {
             MenuContentView(app: appDelegate)
                 .injecting(appDelegate)
+                // A UI moment: re-check permission each time the menu opens (catches a revoke
+                // made while Perch was in the background → marks modules off).
+                .onAppear { AccessibilityService.shared.refresh() }
         } label: {
             // The label renders the moment the app starts (the dropdown content doesn't),
             // so THIS is where the window-opening handle must be captured — otherwise

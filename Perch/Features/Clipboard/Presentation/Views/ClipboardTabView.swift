@@ -13,15 +13,33 @@ struct ClipboardTabView: View {
     @Environment(SettingsViewModel.self) private var settings
     @State private var showingShortcuts = false
     @State private var showingIntro = false
+    @State private var showingShowcase = false   // "What you get" showcase sheet
     @State private var showingReset = false
     @State private var showingClearAll = false
     @State private var imageBytes = 0
+    // Reactive read — when the grant flips (watcher/activation), the tile + dimming auto-update.
+    private var trusted: Bool { AccessibilityService.shared.isTrusted }
+    /// Controls are live only when Accessibility is granted AND the module master is on.
+    private var moduleActive: Bool { trusted && clipboard.isEnabled }
 
     var body: some View {
         @Bindable var vm = settings
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 header
+                // Tile appears only when Accessibility is off (nothing else is ever hidden).
+                // (The full blocking overlay lives on the floating ⌘⇧V window, not this tab.)
+                if !trusted {
+                    PermissionTile(
+                        title: "Accessibility needed",
+                        message: "Perch needs Accessibility to paste items for you. Your clipboard history still records without it.",
+                        onGrant: { AccessibilityService.shared.request() },
+                        onShowIntro: { showingShowcase = true })
+                }
+                // Master: interactive only when Accessibility is on; dimmed (not hidden) when off.
+                masterGroup
+                    .disabled(!trusted)
+                    .opacity(trusted ? 1 : 0.5)
                 InfoNote(systemImage: "lock.fill", text: "Passwords and sensitive copies are never recorded.")
                 togglesBox
                 limitsBox(vm: $vm.settings)
@@ -71,7 +89,10 @@ struct ClipboardTabView: View {
             .padding(20)
         }
         .sheet(isPresented: $showingIntro) { ClipboardIntroSheet() }
-        .onAppear { imageBytes = ImageStore.diskUsage() }
+        .sheet(isPresented: $showingShowcase) {
+            ShowcaseSheet(title: "Clipboard", content: AnyView(ClipboardIntroView()))
+        }
+        .onAppear { imageBytes = ImageStore.diskUsage(); AccessibilityService.shared.refresh() }
     }
 
     // MARK: - Header
@@ -86,7 +107,7 @@ struct ClipboardTabView: View {
             HeaderIconButton(icon: "doc.on.clipboard", help: "Open the clipboard popup") {
                 NotificationCenter.default.post(name: .openClipboardPopup, object: nil)
             }
-            .disabled(!clipboard.isEnabled)
+            .disabled(!moduleActive)
             HeaderIconButton(icon: "keyboard", help: "Keyboard shortcuts") {
                 showingShortcuts.toggle()
             }
@@ -94,36 +115,39 @@ struct ClipboardTabView: View {
                              help: "Reset clipboard settings to default — your items aren't affected") {
                 showingReset = true
             }
+            .disabled(!trusted)
             HeaderIconButton(icon: "trash", help: "Clear all clipboard items", destructive: true) {
                 showingClearAll = true
             }
-            .disabled(itemCount == 0)
+            .disabled(itemCount == 0 || !trusted)
         }
     }
 
     // MARK: - Toggles (master + recording)
 
+    private var masterGroup: some View {
+        GroupBox {
+            SettingRow(title: "Enable Clipboard",
+                       subtitle: clipboard.isEnabled ? "\(settings.hotKeyDisplay) and menu peek are available"
+                                                     : "Off — clipboard is hidden everywhere") {
+                switchToggle(isOn: clipboard.isEnabled) { clipboard.setEnabled($0) }
+            }
+        }
+    }
+
     private var togglesBox: some View {
         GroupBox {
-            VStack(spacing: 10) {
-                SettingRow(
-                    title: "Enable clipboard",
-                    subtitle: clipboard.isEnabled ? "\(settings.hotKeyDisplay) and menu peek are available" : "Off — clipboard is hidden everywhere"
-                ) {
-                    switchToggle(isOn: clipboard.isEnabled) { clipboard.setEnabled($0) }
-                }
-                Divider()
-                SettingRow(
-                    title: "Save clipboard history",
-                    subtitle: clipboard.isRecording ? "Recording copies" : "Paused — not recording"
-                ) {
-                    switchToggle(isOn: clipboard.isRecording) { clipboard.setRecording($0) }
-                        .disabled(!clipboard.isEnabled)
-                }
-                .opacity(clipboard.isEnabled ? 1 : 0.5)
+            SettingRow(
+                title: "Save clipboard history",
+                subtitle: clipboard.isRecording ? "Recording copies" : "Paused — not recording"
+            ) {
+                switchToggle(isOn: clipboard.isRecording) { clipboard.setRecording($0) }
+                    .disabled(!moduleActive)
             }
             .padding(6)
         }
+        .disabled(!moduleActive)
+        .opacity(moduleActive ? 1 : 0.5)
     }
 
     private func switchToggle(isOn: Bool, action: @escaping (Bool) -> Void) -> some View {
@@ -166,8 +190,8 @@ struct ClipboardTabView: View {
             }
             .padding(6)
         }
-        .disabled(!clipboard.isEnabled)
-        .opacity(clipboard.isEnabled ? 1 : 0.5)
+        .disabled(!moduleActive)
+        .opacity(moduleActive ? 1 : 0.5)
     }
 
     // MARK: - Appearance
@@ -183,8 +207,8 @@ struct ClipboardTabView: View {
             }
             .padding(6)
         }
-        .disabled(!clipboard.isEnabled)
-        .opacity(clipboard.isEnabled ? 1 : 0.5)
+        .disabled(!moduleActive)
+        .opacity(moduleActive ? 1 : 0.5)
     }
 
     // MARK: - Behavior
@@ -205,8 +229,8 @@ struct ClipboardTabView: View {
             }
             .padding(6)
         }
-        .disabled(!clipboard.isEnabled)
-        .opacity(clipboard.isEnabled ? 1 : 0.5)
+        .disabled(!moduleActive)
+        .opacity(moduleActive ? 1 : 0.5)
     }
 
     // MARK: - Privacy
@@ -226,8 +250,8 @@ struct ClipboardTabView: View {
             }
             .padding(6)
         }
-        .disabled(!clipboard.isEnabled)
-        .opacity(clipboard.isEnabled ? 1 : 0.5)
+        .disabled(!moduleActive)
+        .opacity(moduleActive ? 1 : 0.5)
     }
 
     // MARK: - Excluded apps (two separate lists)
@@ -253,8 +277,8 @@ struct ClipboardTabView: View {
             }
             .padding(6)
         }
-        .disabled(!clipboard.isEnabled)
-        .opacity(clipboard.isEnabled ? 1 : 0.5)
+        .disabled(!moduleActive)
+        .opacity(moduleActive ? 1 : 0.5)
     }
 
     private func intPicker<Content: View>(selection: Binding<Int>,

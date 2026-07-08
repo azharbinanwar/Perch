@@ -26,13 +26,7 @@ struct SnippetSettingsSheet: View {
 
             ScrollView {
                 VStack(spacing: 10) {
-                    SettingRow(title: "Expand abbreviations as you type",
-                               subtitle: "Type a snippet's abbreviation (like \(vm.expansionPrefix.rawValue)addr\(vm.expansionPrefix.rawValue)) in any app and it becomes the full text — the closing \(vm.expansionPrefix.rawValue) triggers it.") {
-                        Toggle("", isOn: Binding(get: { vm.expansionEnabled }, set: { vm.setExpansionEnabled($0) }))
-                            .toggleStyle(.switch).labelsHidden()
-                    }
                     if vm.expansionEnabled {
-                        Divider()
                         SettingRow(title: "Trigger prefix",
                                    subtitle: "Wraps every abbreviation, so normal typing never expands by accident.") {
                             Picker("", selection: Binding(get: { vm.expansionPrefix }, set: { vm.setExpansionPrefix($0) })) {
@@ -63,6 +57,11 @@ struct SnippetSettingsSheet: View {
                         Label("Placeholders: {date} · {time} · {clipboard} — replaced with live values the moment a snippet is inserted. {cursor} puts the caret there after expansion.",
                               systemImage: "curlybraces")
                             .font(.system(size: 11)).foregroundStyle(.secondary)
+                    } else {
+                        ContentUnavailableView(
+                            "Expansion is off",
+                            systemImage: "text.badge.xmark",
+                            description: Text("Turn on “Enable Snippets” to set the trigger prefix, date format, and excluded apps."))
                     }
                 }
                 .padding(20)

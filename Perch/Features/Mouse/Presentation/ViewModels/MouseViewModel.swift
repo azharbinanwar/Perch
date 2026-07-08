@@ -15,6 +15,7 @@ import AppKit
 
 @Observable
 final class MouseViewModel {
+    private(set) var masterEnabled: Bool   // top-level master — off = whole Mouse tab paused
     private(set) var isEnabled: Bool
 
     private(set) var scanning = false            // scan mode: press buttons, they light up on the mouse
@@ -79,6 +80,7 @@ final class MouseViewModel {
         self.autoScrollManager = autoScrollManager
         self.pointerManager = pointerManager
         self.pointerSystemDefault = pointerManager.acceleration() ?? 0.6875   // macOS default-ish
+        self.masterEnabled = defaults.object(forKey: Keys.Defaults.mouseMasterOn) as? Bool ?? true
         self.isEnabled = defaults.object(forKey: Keys.Defaults.mouseEnabled) as? Bool ?? true
         self.whitelist = repository.loadWhitelist()
         self.detectedButtons = repository.loadDetected()
@@ -104,6 +106,7 @@ final class MouseViewModel {
 
     /// Re-read from storage and re-apply (used after Import).
     func reload() {
+        masterEnabled = defaults.object(forKey: Keys.Defaults.mouseMasterOn) as? Bool ?? true
         isEnabled = defaults.object(forKey: Keys.Defaults.mouseEnabled) as? Bool ?? true
         whitelist = repository.loadWhitelist()
         detectedButtons = repository.loadDetected()
@@ -166,6 +169,21 @@ final class MouseViewModel {
     /// Push the frontmost app's profile to ALL engines (Default if the app has none):
     /// buttons + gestures + the button layer, and its scroll/pointer settings.
     private func applyActive() {
+        // Push the module master into every engine's cheap hot-path gate.
+        capture.mouseModuleEnabled = masterEnabled
+        scrollManager.mouseModuleEnabled = masterEnabled
+        autoScrollManager.mouseModuleEnabled = masterEnabled
+        debouncer.mouseModuleEnabled = masterEnabled
+        // Master off → pause EVERY mouse engine (buttons, scroll, auto-scroll, pointer).
+        guard masterEnabled else {
+            capture.apply(mappings: [], gestures: [], layers: [:])
+            capture.swapEnabled = false
+            capture.stop()
+            scrollManager.stop()
+            _ = autoScrollManager.apply(default: AutoScrollConfig(on: false, button: 0, speed: 1), perApp: [:])
+            restorePointerDefault()
+            return
+        }
         let active = profiles.first { $0.appBundleID == activeBundleID } ?? defaultProfile
         // Each shift key ships its OWN combo dict. A hold key with zero live combos is
         // skipped entirely so it never swallows the button for nothing.
@@ -299,6 +317,9 @@ final class MouseViewModel {
 
     private func registerActivationObserver() {
         guard activationObserver == nil else { return }
+        // Tell the permission service how to switch this module off (it calls this when a check
+        // finds Accessibility missing). Registered once.
+        AccessibilityService.shared.registerGate { [weak self] in self?.setMasterEnabled(false) }
         activationObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
         ) { [weak self] note in
@@ -346,6 +367,16 @@ final class MouseViewModel {
         defaults.set(on, forKey: Keys.Defaults.mouseEnabled)
         if on, !AccessibilityService.shared.trusted { AccessibilityService.shared.request() }
         applyActive()          // starts/keeps the tap alive when on; empties mappings (passthrough) when off
+        if !on { stopScan() }
+    }
+
+    /// Top-level master — off pauses every mouse engine at once; on restores each section's own setting.
+    func setMasterEnabled(_ on: Bool) {
+        masterEnabled = on
+        defaults.set(on, forKey: Keys.Defaults.mouseMasterOn)
+        if on, !AccessibilityService.shared.trusted { AccessibilityService.shared.request() }
+        applyActive()
+        debouncer.apply(enabled: on && debounce, thresholdMs: debounceMs)
         if !on { stopScan() }
     }
 

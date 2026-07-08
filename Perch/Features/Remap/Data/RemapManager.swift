@@ -60,16 +60,19 @@ final class RemapManager {
         runLoopSource = nil
     }
 
+    /// The Keys module's master switch, pushed by the ViewModel — the engine's cheap hot-path gate.
+    var keysModuleEnabled = false
+
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
-        // Accessibility revoked → an enabled active tap with no permission freezes all input.
-        // Disable it now and tear it down off the callback (idempotent). Recreated on re-grant.
-        if !AccessibilityService.shared.trusted {
-            if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: false) }
-            DispatchQueue.main.async { [weak self] in self?.stop() }
-            return Unmanaged.passUnretained(event)
-        }
+        // macOS disables the tap on timeout/revoke; re-enable + pass. Never call Accessibility here.
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: true) }
+            return Unmanaged.passUnretained(event)
+        }
+        if !keysModuleEnabled { return Unmanaged.passUnretained(event) }   // 1) master toggle
+        if !AccessibilityService.shared.isTrusted {                        // 2) cached permission
+            NSLog("[Perch:Acc] remap: cached permission off → markAllOff")
+            AccessibilityService.shared.markAllOff()
             return Unmanaged.passUnretained(event)
         }
 

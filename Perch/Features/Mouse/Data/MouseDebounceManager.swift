@@ -11,6 +11,9 @@ import CoreGraphics
 import Foundation
 
 final class MouseDebounceManager {
+    /// The Mouse module's master switch (pushed by the ViewModel) — separate from `enabled`,
+    /// which is the debounce feature's own on/off. Master off = the whole module is paused.
+    var mouseModuleEnabled = false
     private var enabled = false
     private var threshold: Double = 0.05    // seconds
 
@@ -64,15 +67,15 @@ final class MouseDebounceManager {
     }
 
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
-        // Accessibility revoked → an enabled active tap with no permission freezes all input.
-        // Disable it now and tear it down off the callback (idempotent). Recreated on re-grant.
-        if !AccessibilityService.shared.trusted {
-            if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: false) }
-            DispatchQueue.main.async { [weak self] in self?.stop() }
-            return Unmanaged.passUnretained(event)
-        }
+        // macOS disables the tap on timeout/revoke; re-enable + pass. Never call Accessibility here.
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: true) }
+            return Unmanaged.passUnretained(event)
+        }
+        if !mouseModuleEnabled { return Unmanaged.passUnretained(event) }   // 1) master toggle
+        if !AccessibilityService.shared.isTrusted {                         // 2) cached permission
+            NSLog("[Perch:Acc] debounce: cached permission off → markAllOff")
+            AccessibilityService.shared.markAllOff()
             return Unmanaged.passUnretained(event)
         }
         let button: Int64

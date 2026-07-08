@@ -23,6 +23,9 @@ final class MouseCaptureManager {
     /// Swap primary/secondary buttons (left-handed). Set by the ViewModel; read per event.
     var swapEnabled = false
 
+    /// The Mouse module's master switch, pushed by the ViewModel. The hot path reads this first.
+    var mouseModuleEnabled = false
+
     // Mouse Shift: while `layerHoldButton` is physically held, other buttons run their layer
     // mapping instead. HOLDING is the shift gesture — but a tap alone (no combo) still fires
     // the shift key's own click/double actions, or passes a raw click through if it has none.
@@ -160,15 +163,21 @@ final class MouseCaptureManager {
     // MARK: - Handling
 
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
-        // Accessibility revoked → an enabled active tap with no permission freezes all input.
-        // Disable it now and tear it down off the callback (idempotent). Recreated on re-grant.
-        if !AccessibilityService.shared.trusted {
-            if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: false) }
-            DispatchQueue.main.async { [weak self] in self?.stop() }
-            return Unmanaged.passUnretained(event)
-        }
+        // macOS may disable the tap (transient stall, or a revoke). Re-enabling is harmless — a
+        // permission-less tap simply won't fire. We do NOT call Accessibility here (that call,
+        // mid-revoke, is what froze all input).
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: true) }
+            return Unmanaged.passUnretained(event)
+        }
+
+        // 1) master toggle — one cheap Bool pushed by the ViewModel.
+        if !mouseModuleEnabled { return Unmanaged.passUnretained(event) }
+        // 2) permission — the CACHED snapshot (a Bool, no OS call). If off, ask the service to
+        //    mark every module off; never flip our own toggle from here.
+        if !AccessibilityService.shared.isTrusted {
+            NSLog("[Perch:Acc] mouse capture: cached permission off → markAllOff")
+            AccessibilityService.shared.markAllOff()
             return Unmanaged.passUnretained(event)
         }
 

@@ -179,6 +179,11 @@ final class RemapViewModel {
     /// Push the frontmost app's profile to ALL engines (Default if the app has none):
     /// rules + Hyper Key + Double-Tap. Master switch off beats everything.
     private func applyActive() {
+        // Push the module master into every engine's cheap hot-path gate.
+        manager.keysModuleEnabled = isEnabled
+        hyper.keysModuleEnabled = isEnabled
+        doubleTapManager.keysModuleEnabled = isEnabled
+
         let active = profiles.first { $0.appBundleID == activeBundleID } ?? defaultProfile
         manager.rules = isEnabled ? active.rules : []
 
@@ -199,6 +204,12 @@ final class RemapViewModel {
 
     private func registerActivationObserver() {
         guard activationObserver == nil else { return }
+        // Tell the permission service how to switch this module off (called when a check finds
+        // Accessibility missing). toggleEnabled off also tears down Hyper (undoes the Caps remap).
+        AccessibilityService.shared.registerGate { [weak self] in
+            guard let self, self.isEnabled else { return }
+            self.toggleEnabled()
+        }
         activationObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
         ) { [weak self] note in

@@ -220,18 +220,34 @@ struct ClipboardDemoStage: View {
         }
     }
 
+    /// ‹  • • • • •  ›  — auto-plays, but the user can step back/next or jump to a dot.
     private var dots: some View {
-        HStack(spacing: 6) {
-            ForEach(scenes.indices, id: \.self) { i in
-                Button { present(i) } label: {
-                    Circle()
-                        .fill(i == sceneIndex ? Color.accentColor : Color.secondary.opacity(0.3))
-                        .frame(width: i == sceneIndex ? 7 : 5, height: i == sceneIndex ? 7 : 5)
+        HStack(spacing: 12) {
+            navButton("chevron.left") { present(sceneIndex - 1) }
+            HStack(spacing: 6) {
+                ForEach(scenes.indices, id: \.self) { i in
+                    Button { present(i) } label: {
+                        Circle()
+                            .fill(i == sceneIndex ? Color.accentColor : Color.secondary.opacity(0.3))
+                            .frame(width: i == sceneIndex ? 7 : 5, height: i == sceneIndex ? 7 : 5)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
+            .animation(.easeOut(duration: 0.2), value: sceneIndex)
+            navButton("chevron.right") { present(sceneIndex + 1) }
         }
-        .animation(.easeOut(duration: 0.2), value: sceneIndex)
+    }
+
+    private func navButton(_ symbol: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 24, height: 24)
+                .background(.quaternary.opacity(0.5), in: Circle())
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Playback

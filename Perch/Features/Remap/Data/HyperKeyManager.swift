@@ -39,6 +39,10 @@ final class HyperKeyManager {
 
     private(set) var isEnabled = false
 
+    /// The Keys module's master switch (pushed by the ViewModel) — separate from `isEnabled`,
+    /// which is this engine's own state. Master off = the whole Keys module is paused.
+    var keysModuleEnabled = false
+
     /// For the key recorder: is the hyper key physically held right now, and with which flags.
     var isHyperHeld: Bool { isEnabled && hyperDown }
     var activeFlags: CGEventFlags { hyperFlags }
@@ -116,25 +120,17 @@ final class HyperKeyManager {
     }
 
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
-        // Accessibility revoked → an enabled active tap with no permission freezes all input.
-        // Disable it now, then off the callback undo the Caps remap and tear the tap down so a
-        // later enable() rebuilds it.
-        if !AccessibilityService.shared.trusted {
-            if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: false) }
-            DispatchQueue.main.async { [weak self] in
-                guard let self else { return }
-                self.disable()
-                if let tap = self.eventTap {
-                    CFMachPortInvalidate(tap)
-                    if let source = self.runLoopSource { CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes) }
-                    self.eventTap = nil
-                    self.runLoopSource = nil
-                }
-            }
-            return Unmanaged.passUnretained(event)
-        }
+        // macOS disables the tap on timeout/revoke; re-enable + pass. Never call Accessibility here.
+        // ponytail: on revoke the Caps hidutil remap is undone when the service marks the module
+        // off (applyActive → disable()), i.e. at the next UI moment — not this instant.
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: true) }
+            return Unmanaged.passUnretained(event)
+        }
+        if !keysModuleEnabled { return Unmanaged.passUnretained(event) }   // 1) master toggle
+        if !AccessibilityService.shared.isTrusted {                        // 2) cached permission
+            NSLog("[Perch:Acc] hyper: cached permission off → markAllOff")
+            AccessibilityService.shared.markAllOff()
             return Unmanaged.passUnretained(event)
         }
         guard isEnabled else { return Unmanaged.passUnretained(event) }

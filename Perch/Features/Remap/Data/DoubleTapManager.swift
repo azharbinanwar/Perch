@@ -29,6 +29,8 @@ final class DoubleTapManager {
 
     var config = DoubleTapConfig()
     var isActive = false          // master switch && section toggle — set by the ViewModel
+    /// The Keys module's master switch, pushed by the ViewModel — the engine's cheap hot-path gate.
+    var keysModuleEnabled = false
 
     private let window: TimeInterval = 0.35
     private let significant: CGEventFlags = [.maskShift, .maskCommand, .maskAlternate, .maskControl]
@@ -66,6 +68,12 @@ final class DoubleTapManager {
     private func handle(type: CGEventType, event: CGEvent) {
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: true) }
+            return
+        }
+        if !keysModuleEnabled { return }                    // 1) master toggle
+        if !AccessibilityService.shared.isTrusted {         // 2) cached permission
+            NSLog("[Perch:Acc] double-tap: cached permission off → markAllOff")
+            AccessibilityService.shared.markAllOff()
             return
         }
         guard isActive else { return }

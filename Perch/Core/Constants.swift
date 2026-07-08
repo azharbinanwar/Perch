@@ -31,6 +31,7 @@ enum Keys {
         static let pointerOverride  = "mouse.pointer.override" // control pointer acceleration
         static let pointerValue     = "mouse.pointer.value"    // acceleration amount (0 = flat)
         static let mouseMappings    = "mouse.mappings"
+        static let mouseMasterOn    = "mouse.master"      // top-level master switch — gates the whole Mouse tab
         static let mouseEnabled     = "mouse.enabled"
         static let mouseSwap        = "mouse.swap"        // swap primary/secondary buttons (left-handed)
         static let mouseWhitelist   = "mouse.whitelist"   // registered key-chord buttons

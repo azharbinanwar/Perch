@@ -56,6 +56,9 @@ final class ScrollManager {
     private var runLoopSource: CFRunLoopSource?
     private(set) var isRunning = false
 
+    /// The Mouse module's master switch, pushed by the ViewModel — the engine's cheap hot-path gate.
+    var mouseModuleEnabled = false
+
     // Per-app configs. Scrolling goes to the window under the CURSOR (macOS scrolls it without
     // activating the app), so the config is chosen by the app under the pointer, not frontmost.
     private var defaultConfig = ScrollConfig()
@@ -115,16 +118,18 @@ final class ScrollManager {
     }
 
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
-        // Accessibility revoked → an enabled active tap with no permission freezes all input.
-        // Disable it now and tear it down off the callback (idempotent). Recreated on re-grant.
-        if !AccessibilityService.shared.trusted {
-            if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: false) }
-            DispatchQueue.main.async { [weak self] in self?.stop() }
-            return Unmanaged.passUnretained(event)
-        }
-        // macOS disables the tap on timeout/user-input; re-enable and pass through.
+        // macOS disables the tap on timeout/revoke; re-enable and pass through. We never call
+        // Accessibility here (that call mid-revoke is what froze input).
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: true) }
+            return Unmanaged.passUnretained(event)
+        }
+        // 1) master toggle (cheap Bool, pushed by the ViewModel).
+        if !mouseModuleEnabled { return Unmanaged.passUnretained(event) }
+        // 2) cached permission — if off, ask the service to mark every module off.
+        if !AccessibilityService.shared.isTrusted {
+            NSLog("[Perch:Acc] scroll: cached permission off → markAllOff")
+            AccessibilityService.shared.markAllOff()
             return Unmanaged.passUnretained(event)
         }
         guard type == .scrollWheel else { return Unmanaged.passUnretained(event) }

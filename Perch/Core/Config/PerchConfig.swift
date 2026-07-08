@@ -41,30 +41,19 @@ extension PerchConfig {
 
     struct KeysCfg: Codable {
         var enabled: Bool
-        var profiles: [RemapProfile]
-        var hyper: HyperCfg? = nil           // optionals so files from before these existed still decode
-        var doubleTap: DoubleTapConfig? = nil
-
-        struct HyperCfg: Codable { var enabled: Bool; var tap: String; var doubleTap: String; var shift: Bool }
+        var profiles: [RemapProfile]   // hyper + double-tap live inside each profile
     }
 
     struct MouseCfg: Codable {
+        var master: Bool? = nil        // top-level master switch (optional-with-default for hand-edited files)
         var enabled: Bool
         var debounce: Debounce
         var detected: [MouseTrigger]
         var whitelist: [MouseTrigger]
-        var profiles: [MouseProfile]   // scroll/pointer now live INSIDE each profile
-        var swap: Bool? = nil          // optional so files from before this field still decode
-
-        // Legacy fields — old backup files carried global scroll/pointer; import folds them
-        // into the Default profile. New exports leave them nil.
-        var scroll: Scroll? = nil
-        var pointer: Pointer? = nil
+        var profiles: [MouseProfile]   // scroll/pointer live INSIDE each profile
+        var swap: Bool? = nil
 
         struct Debounce: Codable { var on: Bool; var ms: Double }
-        struct Scroll: Codable { var reversed: Bool; var linear: Bool; var speed: Double; var auto: Auto; var smooth: Bool? = nil }
-        struct Auto: Codable { var on: Bool; var button: Int; var speed: Double }
-        struct Pointer: Codable { var override: Bool; var value: Double }
     }
 
     struct ClipboardCfg: Codable {

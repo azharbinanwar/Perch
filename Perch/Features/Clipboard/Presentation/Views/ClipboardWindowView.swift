@@ -11,7 +11,6 @@ import SwiftUI
 struct ClipboardWindowView: View {
     let model: ClipboardPopupModel
 
-    @State private var showingDemo = false   // gate → "see what you'll unlock" tour
 
     var body: some View {
         VStack(spacing: 0) {
@@ -47,16 +46,21 @@ struct ClipboardWindowView: View {
         .overlay {
             // Only while Accessibility is missing — the popup can't navigate or paste without it.
             if model.needsPermission {
-                if showingDemo {
-                    ClipboardShowcase(onClose: { showingDemo = false })
-                        .transition(.opacity)
-                } else {
-                    ClipboardPermissionOverlay(onSeeDemo: { showingDemo = true })
-                        .transition(.opacity)
-                }
+                ClipboardPermissionOverlay()
+                    // ✕ belongs to the popup window (its keyboard exit may not work without
+                    // permission), not the generic overlay — so it lives here.
+                    .overlay(alignment: .topTrailing) {
+                        Button { model.onClose() } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 18)).foregroundStyle(.secondary)
+                                .symbolRenderingMode(.hierarchical)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Close")
+                        .padding(12)
+                    }
             }
         }
-        .animation(.easeInOut(duration: 0.25), value: showingDemo)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(.white.opacity(0.08)))
     }

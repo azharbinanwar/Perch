@@ -11,7 +11,10 @@ import SwiftUI
 
 struct RemapTabView: View {
     @Environment(RemapViewModel.self) private var vm
-    @State private var trusted = AccessibilityService.shared.trusted
+    // Reactive read — when the grant flips (watcher/activation), the tile + dimming auto-update.
+    private var trusted: Bool { AccessibilityService.shared.isTrusted }
+    /// Controls are live only when Accessibility is granted AND the module master is on.
+    private var moduleActive: Bool { trusted && vm.isEnabled }
     @State private var showingReset = false
     @State private var addingRule = false
     @State private var addingProfile = false
@@ -23,6 +26,7 @@ struct RemapTabView: View {
     @State private var hyperIntroShowing = false   // the auto-playing how-it-works demo
     @State private var profileIntroShowing = false // per-app profiles, in keys language
     @State private var doubleTapIntroShowing = false
+    @State private var showingKeysIntro = false   // "What you get" showcase sheet
 
 
     var body: some View {
@@ -31,29 +35,43 @@ struct RemapTabView: View {
                 HStack {
                     PageHeader("Keys", subtitle: "Remap keys and shortcuts, app by app.")
                     Spacer()
-                    HeaderIconButton(icon: "arrow.counterclockwise",
-                                     help: "Reset Keys settings to default — your mappings and profiles aren't affected") {
-                        showingReset = true
+                    // Header actions only make sense on a usable tab (hidden behind the lock otherwise).
+                    if trusted {
+                        HeaderIconButton(icon: "arrow.counterclockwise",
+                                         help: "Reset Keys settings to default — your mappings and profiles aren't affected") {
+                            showingReset = true
+                        }
+                        HeaderIconButton(icon: "plus", help: "Add a key mapping") {
+                            vm.clearDraft(); addingRule = true
+                        }
+                        .disabled(!moduleActive)
                     }
-                    HeaderIconButton(icon: "plus", help: "Add a key mapping") {
-                        vm.clearDraft(); addingRule = true
-                    }
-                    .disabled(!vm.isEnabled)
                 }
+                // Tile appears only when Accessibility is off (nothing else is ever hidden).
                 if !trusted {
-                    AccessibilityBanner(message: "Grant Accessibility so key remapping can work.")
+                    PermissionTile(
+                        title: "Accessibility needed",
+                        message: "Perch needs Accessibility to remap your keys, Hyper Key and double-tap shortcuts.",
+                        onGrant: { AccessibilityService.shared.request() },
+                        onShowIntro: { showingKeysIntro = true })
                 }
+                // Master: interactive only when Accessibility is on; dimmed (not hidden) when off.
                 keyboardGroup
+                    .disabled(!trusted)
+                    .opacity(trusted ? 1 : 0.5)
                 // Profile strip on top, like Mouse — it governs the per-app section below.
                 GroupBox { profileStrip.padding(6) }
-                    .opacity(vm.isEnabled ? 1 : 0.5)
+                    .opacity(moduleActive ? 1 : 0.5)
                 shortcutsGroup
                 hyperGroup
                 doubleTapGroup
             }
             .padding(20)
         }
-        .onAppear { trusted = AccessibilityService.shared.trusted }
+        .sheet(isPresented: $showingKeysIntro) {
+            ShowcaseSheet(title: "Keys", content: AnyView(KeysIntroView()))
+        }
+        .onAppear { AccessibilityService.shared.refresh() }
         .sheet(isPresented: $hyperIntroShowing) { HyperKeyIntroSheet() }
         .sheet(isPresented: $profileIntroShowing) { profileIntroSheet }
         .sheet(isPresented: $doubleTapIntroShowing) { DoubleTapIntroSheet() }
@@ -121,8 +139,8 @@ struct RemapTabView: View {
             }
             .padding(6)
         }
-        .opacity(vm.isEnabled ? 1 : 0.5)
-        .disabled(!vm.isEnabled)
+        .opacity(moduleActive ? 1 : 0.5)
+        .disabled(!moduleActive)
     }
 
     private func tapPicker(_ value: HyperKeyManager.TapAction,
@@ -161,8 +179,8 @@ struct RemapTabView: View {
             }
             .padding(6)
         }
-        .opacity(vm.isEnabled ? 1 : 0.5)
-        .disabled(!vm.isEnabled)
+        .opacity(moduleActive ? 1 : 0.5)
+        .disabled(!moduleActive)
         .sheet(item: $doubleTapPicking) { pick in
             // Target-needing actions (Open App…, scripts) skipped for now — keeps the flow one click.
             ActionPicker(excluding: doubleTapExcluded) { kind in
@@ -209,7 +227,6 @@ struct RemapTabView: View {
                 }
             }
             .padding(6)
-            .opacity(vm.isEnabled ? 1 : 0.5)
         }
     }
 
@@ -263,7 +280,7 @@ struct RemapTabView: View {
         GroupBox("Shortcuts — \(profileLabel)") {
             ruleList(vm.rules, empty: "No mappings yet — add one with “Add mapping”.")
                 .padding(6)
-                .opacity(vm.isEnabled ? 1 : 0.5)
+                .opacity(moduleActive ? 1 : 0.5)
         }
     }
 

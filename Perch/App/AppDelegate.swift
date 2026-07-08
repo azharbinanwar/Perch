@@ -106,6 +106,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Global hotkey → toggle the clipboard popup from any app (only when enabled).
         hotKey.onTrigger = { [weak self] in
             guard let self, self.clipboardVM.isEnabled else { return }
+            AccessibilityService.shared.refresh()   // UI moment: re-check permission on popup open
             let front = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
             guard self.clipboardVM.canOpenPopup(in: front) else { return }   // excluded app
             self.clipboardPanel.toggle()
@@ -124,6 +125,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         openClipboardObserver = NotificationCenter.default.addObserver(
             forName: .openClipboardPopup, object: nil, queue: .main
         ) { [weak self] _ in
+            AccessibilityService.shared.refresh()   // UI moment: re-check permission on popup open
             self?.clipboardPanel.show()
         }
 

@@ -35,6 +35,7 @@ enum ConfigService {
             keys: .init(enabled: defaults.bool(forKey: K.remapEnabled),
                         profiles: remapRepo.loadProfiles()),
             mouse: .init(
+                master: defaults.object(forKey: K.mouseMasterOn) as? Bool ?? true,
                 enabled: defaults.object(forKey: K.mouseEnabled) as? Bool ?? true,
                 debounce: .init(on: defaults.bool(forKey: K.mouseDebounceOn),
                                 ms: defaults.object(forKey: K.mouseDebounceMs) as? Double ?? 50),
@@ -84,45 +85,18 @@ enum ConfigService {
 
         if sections.contains(.keys) {
             put(K.remapEnabled, c.keys.enabled)
-
-            // Old backup files carried global hyper/double-tap — fold them into EVERY imported
-            // profile (they applied everywhere, so behavior stays identical). New files carry
-            // them inside each profile already.
-            var profiles = c.keys.profiles
-            if let h = c.keys.hyper {
-                for i in profiles.indices {
-                    profiles[i].hyper = HyperSettings(enabled: h.enabled, tap: h.tap,
-                                                      doubleTap: h.doubleTap, shift: h.shift)
-                }
-            }
-            if let dt = c.keys.doubleTap {
-                for i in profiles.indices { profiles[i].doubleTap = dt }
-            }
-            remapRepo.saveProfiles(profiles)
+            remapRepo.saveProfiles(c.keys.profiles)   // hyper + double-tap live inside each profile
         }
 
         if sections.contains(.mouse) {
+            put(K.mouseMasterOn, c.mouse.master ?? true)
             put(K.mouseEnabled, c.mouse.enabled)
             put(K.mouseDebounceOn, c.mouse.debounce.on)
             put(K.mouseDebounceMs, c.mouse.debounce.ms)
             put(K.mouseSwap, c.mouse.swap ?? false)
             mouseRepo.saveDetected(c.mouse.detected)
             mouseRepo.saveWhitelist(c.mouse.whitelist)
-
-            // Old backup files carried global scroll/pointer — fold them into the Default profile.
-            var profiles = c.mouse.profiles
-            if let i = profiles.firstIndex(where: { $0.isDefault }) {
-                if let s = c.mouse.scroll {
-                    profiles[i].scroll = ScrollSettings(
-                        reversed: s.reversed, linear: s.linear, speed: s.speed,
-                        smooth: s.smooth ?? false,
-                        autoOn: s.auto.on, autoButton: s.auto.button, autoSpeed: s.auto.speed)
-                }
-                if let p = c.mouse.pointer {
-                    profiles[i].pointer = PointerSettings(override: p.override, value: p.value)
-                }
-            }
-            mouseRepo.saveProfiles(profiles)
+            mouseRepo.saveProfiles(c.mouse.profiles)   // each profile carries its own scroll/pointer
         }
 
         if sections.contains(.clipboard) {
@@ -192,10 +166,7 @@ enum ConfigService {
         guard panel.runModal() == .OK, let url = panel.url else { return }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        // Files are written in the v2 shape (meta block, hotkey under clipboard, one
-        // snippets section, UI-named profile keys). Import reads v1 AND v2.
-        let v2 = PerchConfigV2(config, exportedAt: stamp.string(from: Date()))
-        try? encoder.encode(v2).write(to: url)
+        try? encoder.encode(config).write(to: url)   // PerchConfig is the single file format (carries `version`)
     }
 
     /// Show the open panel, decode, and return the config — or nil after explaining what's wrong.
@@ -209,16 +180,11 @@ enum ConfigService {
         return decodeFile(url)
     }
 
-    /// Decode a config file (v2 or legacy v1) — or nil after explaining what's wrong.
+    /// Decode a config file — or nil after explaining what's wrong.
     /// Shared by the open panel and the drag-and-drop import zone.
     static func decodeFile(_ url: URL) -> PerchConfig? {
         do {
             let data = try Data(contentsOf: url)
-            // A "meta" block marks a v2 file; older exports decode with the legacy shape.
-            struct Probe: Codable { var meta: PerchConfigV2.Meta? }
-            if (try? JSONDecoder().decode(Probe.self, from: data))?.meta != nil {
-                return try JSONDecoder().decode(PerchConfigV2.self, from: data).toLegacy()
-            }
             return try JSONDecoder().decode(PerchConfig.self, from: data)
         } catch {
             showInvalidFileAlert(url: url, error: error)

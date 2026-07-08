@@ -12,9 +12,13 @@ import SwiftUI
 struct MouseTabView: View {
     @Environment(MouseViewModel.self) private var mouse
 
-    @State private var trusted = AccessibilityService.shared.trusted
+    // Reactive read — when the grant flips (watcher/activation), the tile + dimming auto-update.
+    private var trusted: Bool { AccessibilityService.shared.isTrusted }
+    /// Controls are live only when Accessibility is granted AND the module master is on.
+    private var moduleActive: Bool { trusted && mouse.masterEnabled }
     @State private var monitoring = InputMonitoringService.shared.trusted
     @State private var showingReset = false
+    @State private var showingMouseIntro = false   // "What you get" showcase sheet
 
     // Button layer — selection state only; the config lives on the editing profile.
     @State private var layerSel = "left"                      // selected target hotspot
@@ -43,21 +47,33 @@ struct MouseTabView: View {
                 HStack {
                     PageHeader("Mouse", subtitle: mouse.deviceSubtitle)
                     Spacer()
-                    HeaderIconButton(icon: "arrow.counterclockwise",
-                                     help: "Reset Mouse settings to default — your mappings, gestures and profiles aren't affected") {
-                        showingReset = true
+                    // Reset only makes sense on a usable tab — hidden when locked or paused.
+                    if trusted && mouse.masterEnabled {
+                        HeaderIconButton(icon: "arrow.counterclockwise",
+                                         help: "Reset Mouse settings to default — your mappings, gestures and profiles aren't affected") {
+                            showingReset = true
+                        }
                     }
                 }
+                // Tile appears only when Accessibility is off (nothing else is ever hidden).
                 if !trusted {
-                    AccessibilityBanner(message: "Grant Accessibility so scroll, pointer, and buttons can work.")
+                    PermissionTile(
+                        title: "Accessibility needed",
+                        message: "Perch needs Accessibility to remap your mouse buttons, gestures and scroll.",
+                        onGrant: { AccessibilityService.shared.request() },
+                        onShowIntro: { showingMouseIntro = true })
                 }
+                // Input Monitoring is OPTIONAL — it only adds device details (connected mice + names).
                 if !monitoring {
-                    AccessibilityBanner(message: "Grant Input Monitoring so Perch can detect your connected mice.",
+                    AccessibilityBanner(message: "Allow Input Monitoring to see your connected mouse and their details.",
                                         openSettings: { InputMonitoringService.shared.openSettings() })
                 }
-                if mouse.hasMouse {
-                    // One profile selector governs everything below — buttons, pointer AND scroll
-                    // are all per-app; the engines follow the frontmost app's profile.
+                // Master: interactive only when Accessibility is on; dimmed (not hidden) when off.
+                masterGroup
+                    .disabled(!trusted)
+                    .opacity(trusted ? 1 : 0.5)
+                // Controls: live only when Accessibility is on AND the master is on.
+                Group {
                     GroupBox { profileStrip.padding(6) }
                     buttonsGroup
                     layerGroup
@@ -65,14 +81,17 @@ struct MouseTabView: View {
                     pointerGroup
                     scrollGroup
                     reliabilityGroup
-                } else {
-                    noMouse
                 }
+                .opacity(moduleActive ? 1 : 0.4)
+                .disabled(!moduleActive)
             }
             .padding(20)
         }
+        .sheet(isPresented: $showingMouseIntro) {
+            ShowcaseSheet(title: "Mouse", content: AnyView(MouseIntroView()))
+        }
         .onAppear {
-            trusted = AccessibilityService.shared.trusted
+            AccessibilityService.shared.refresh()
             monitoring = InputMonitoringService.shared.trusted
         }
         .onDisappear { mouse.stopScan() }
@@ -276,6 +295,18 @@ struct MouseTabView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 70)
+    }
+
+    // MARK: - Master
+
+    private var masterGroup: some View {
+        GroupBox {
+            SettingRow(title: "Enable Mouse",
+                       subtitle: "Master switch for the whole tab — buttons, scroll, pointer and gestures. Applies to all mice.") {
+                toggle(mouse.masterEnabled) { mouse.setMasterEnabled($0) }
+            }
+            .padding(6)
+        }
     }
 
     // MARK: - Buttons
