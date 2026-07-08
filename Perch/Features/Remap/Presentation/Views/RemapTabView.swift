@@ -50,6 +50,7 @@ struct RemapTabView: View {
                 // Tile appears only when Accessibility is off (nothing else is ever hidden).
                 if !trusted {
                     PermissionTile(
+                        icon: "keyboard",
                         title: "Accessibility needed",
                         message: "Perch needs Accessibility to remap your keys, Hyper Key and double-tap shortcuts.",
                         onGrant: { AccessibilityService.shared.request() },
@@ -218,15 +219,15 @@ struct RemapTabView: View {
     // MARK: - Enable + profile + modifier-swap note
 
     private var keyboardGroup: some View {
-        GroupBox("Keyboard") {
+        SettingGroup("Keyboard") {
             VStack(alignment: .leading, spacing: 12) {
                 SettingRow(title: "Enable Keys",
-                           subtitle: "Master switch — key remapping, Hyper Key, and double-tap. Applies to all keyboards.") {
+                           subtitle: "Master switch — key remapping, Hyper Key, and double-tap. Applies to all keyboards.",
+                           icon: "keyboard") {
                     Toggle("", isOn: Binding(get: { vm.isEnabled }, set: { _ in vm.toggleEnabled() }))
                         .toggleStyle(.switch).labelsHidden()
                 }
             }
-            .padding(6)
         }
     }
 

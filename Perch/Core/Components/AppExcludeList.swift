@@ -11,6 +11,7 @@ import SwiftUI
 struct AppExcludeList: View {
     let title: String
     let subtitle: String
+    var icon: String? = nil          // optional leading SF Symbol, matches SettingRow
     let bundleIDs: [String]
     let onAdd: (String) -> Void
     let onRemove: (String) -> Void
@@ -19,9 +20,18 @@ struct AppExcludeList: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.system(size: 13))
-                Text(subtitle).font(.system(size: 11)).foregroundStyle(.secondary)
+            HStack(spacing: 10) {
+                if let icon {
+                    Image(systemName: icon)
+                        .font(.system(size: 15))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 22)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.system(size: 13))
+                    Text(subtitle).font(.system(size: 11)).foregroundStyle(.secondary)
+                }
+                Spacer()
             }
 
             FlowLayout(spacing: 12) {

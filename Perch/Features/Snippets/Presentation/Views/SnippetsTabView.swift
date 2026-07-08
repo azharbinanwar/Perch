@@ -28,6 +28,7 @@ struct SnippetsTabView: View {
                 // Tile appears only when Accessibility is off (nothing else is ever hidden).
                 if !trusted {
                     PermissionTile(
+                        icon: "text.quote",
                         title: "Accessibility needed",
                         message: "Grant Accessibility to expand snippets as you type. Your snippets stay saved in the clipboard either way.",
                         onGrant: { AccessibilityService.shared.request() },
@@ -97,14 +98,14 @@ struct SnippetsTabView: View {
     // MARK: - Master
 
     private var masterGroup: some View {
-        GroupBox {
+        SettingGroup {
             SettingRow(title: "Enable Snippets",
                        subtitle: vm.expansionEnabled ? "Type an abbreviation in any app and it expands."
-                                                     : "Off — snippets are still available in the clipboard.") {
+                                                     : "Off — snippets are still available in the clipboard.",
+                       icon: "text.quote") {
                 Toggle("", isOn: Binding(get: { vm.expansionEnabled }, set: { vm.setExpansionEnabled($0) }))
                     .toggleStyle(.switch).labelsHidden()
             }
-            .padding(6)
         }
         .padding(.horizontal, 20)
         .padding(.bottom, 12)

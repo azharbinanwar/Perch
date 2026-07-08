@@ -58,6 +58,7 @@ struct MouseTabView: View {
                 // Tile appears only when Accessibility is off (nothing else is ever hidden).
                 if !trusted {
                     PermissionTile(
+                        icon: "cursorarrow.click",
                         title: "Accessibility needed",
                         message: "Perch needs Accessibility to remap your mouse buttons, gestures and scroll.",
                         onGrant: { AccessibilityService.shared.request() },

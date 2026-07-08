@@ -31,6 +31,7 @@ struct ClipboardTabView: View {
                 // (The full blocking overlay lives on the floating ⌘⇧V window, not this tab.)
                 if !trusted {
                     PermissionTile(
+                        icon: "doc.on.clipboard",
                         title: "Accessibility needed",
                         message: "Perch needs Accessibility to paste items for you. Your clipboard history still records without it.",
                         onGrant: { AccessibilityService.shared.request() },
@@ -126,25 +127,26 @@ struct ClipboardTabView: View {
     // MARK: - Toggles (master + recording)
 
     private var masterGroup: some View {
-        GroupBox {
+        SettingGroup {
             SettingRow(title: "Enable Clipboard",
                        subtitle: clipboard.isEnabled ? "\(settings.hotKeyDisplay) and menu peek are available"
-                                                     : "Off — clipboard is hidden everywhere") {
+                                                     : "Off — clipboard is hidden everywhere",
+                       icon: "doc.on.clipboard") {
                 switchToggle(isOn: clipboard.isEnabled) { clipboard.setEnabled($0) }
             }
         }
     }
 
     private var togglesBox: some View {
-        GroupBox {
+        SettingGroup {
             SettingRow(
                 title: "Save clipboard history",
-                subtitle: clipboard.isRecording ? "Recording copies" : "Paused — not recording"
+                subtitle: clipboard.isRecording ? "Recording copies" : "Paused — not recording",
+                icon: "clock.arrow.circlepath"
             ) {
                 switchToggle(isOn: clipboard.isRecording) { clipboard.setRecording($0) }
                     .disabled(!moduleActive)
             }
-            .padding(6)
         }
         .disabled(!moduleActive)
         .opacity(moduleActive ? 1 : 0.5)
@@ -168,27 +170,26 @@ struct ClipboardTabView: View {
     // MARK: - Limits
 
     private func limitsBox(vm: Binding<AppSettings>) -> some View {
-        GroupBox("How many to keep") {
+        SettingGroup("How many to keep") {
             VStack(spacing: 10) {
-                SettingRow(title: "Clipboard", subtitle: "Items kept and shown in the \(settings.hotKeyDisplay) clipboard.") {
+                SettingRow(title: "Clipboard", subtitle: "Items kept and shown in the \(settings.hotKeyDisplay) clipboard.", icon: "list.bullet") {
                     intPicker(selection: Binding(get: { clipboard.maxItems }, set: { clipboard.setMaxItems($0) })) {
                         ForEach(clipboardSizeOptions, id: \.self) { Text("\($0) items").tag($0) }
                     }
                 }
                 Divider()
-                SettingRow(title: "Menu", subtitle: "Items shown in the menu-bar peek.") {
+                SettingRow(title: "Menu", subtitle: "Items shown in the menu-bar peek.", icon: "menubar.rectangle") {
                     intPicker(selection: vm.menuItemCount) {
                         ForEach(menuSizeOptions, id: \.self) { Text("\($0) items").tag($0) }
                     }
                 }
                 Divider()
-                SettingRow(title: "Pins", subtitle: "Max items you can pin to the top.") {
+                SettingRow(title: "Pins", subtitle: "Max items you can pin to the top.", icon: "pin") {
                     intPicker(selection: Binding(get: { clipboard.pinLimit }, set: { clipboard.setPinLimit($0) })) {
                         ForEach(pinLimitOptions, id: \.self) { Text("\($0) pins").tag($0) }
                     }
                 }
             }
-            .padding(6)
         }
         .disabled(!moduleActive)
         .opacity(moduleActive ? 1 : 0.5)
@@ -197,15 +198,14 @@ struct ClipboardTabView: View {
     // MARK: - Appearance
 
     private var appearanceBox: some View {
-        GroupBox("Appearance") {
-            SettingRow(title: "Row size", subtitle: "How roomy each item is in the clipboard.") {
+        SettingGroup("Appearance") {
+            SettingRow(title: "Row size", subtitle: "How roomy each item is in the clipboard.", icon: "arrow.up.and.down.text.horizontal") {
                 Picker("", selection: Binding(get: { clipboard.rowDensity }, set: { clipboard.setRowDensity($0) })) {
                     ForEach(RowDensity.allCases, id: \.self) { Text($0.title).tag($0) }
                 }
                 .labelsHidden()
                 .frame(width: 130)
             }
-            .padding(6)
         }
         .disabled(!moduleActive)
         .opacity(moduleActive ? 1 : 0.5)
@@ -214,20 +214,20 @@ struct ClipboardTabView: View {
     // MARK: - Behavior
 
     private var behaviorBox: some View {
-        GroupBox("Behavior") {
+        SettingGroup("Behavior") {
             VStack(spacing: 10) {
-                SettingRow(title: "Keyboard shortcut", subtitle: "Click the shortcut to record a new one.") {
+                SettingRow(title: "Keyboard shortcut", subtitle: "Click the shortcut to record a new one.", icon: "keyboard") {
                     HotKeyRecorder(display: settings.hotKeyDisplay) { code, mods, label in
                         settings.setHotKey(code: code, modifiers: mods, label: label)
                     }
                 }
                 Divider()
                 SettingRow(title: "Restore clipboard after paste",
-                           subtitle: "Paste an item without changing your current clipboard.") {
+                           subtitle: "Paste an item without changing your current clipboard.",
+                           icon: "arrow.uturn.backward") {
                     switchToggle(isOn: clipboard.restoreAfterPaste) { clipboard.setRestoreAfterPaste($0) }
                 }
             }
-            .padding(6)
         }
         .disabled(!moduleActive)
         .opacity(moduleActive ? 1 : 0.5)
@@ -236,19 +236,18 @@ struct ClipboardTabView: View {
     // MARK: - Privacy
 
     private var privacyBox: some View {
-        GroupBox("Privacy") {
+        SettingGroup("Privacy") {
             VStack(spacing: 10) {
-                SettingRow(title: "Auto-clear history", subtitle: "Remove copies older than the selected time.") {
+                SettingRow(title: "Auto-clear history", subtitle: "Remove copies older than the selected time.", icon: "clock.badge.xmark") {
                     intPicker(selection: Binding(get: { clipboard.autoClearMinutes }, set: { clipboard.setAutoClear($0) })) {
                         ForEach(autoClearOptions, id: \.value) { Text($0.label).tag($0.value) }
                     }
                 }
                 Divider()
-                SettingRow(title: "Clear history on quit", subtitle: "Wipe everything when Perch quits.") {
+                SettingRow(title: "Clear history on quit", subtitle: "Wipe everything when Perch quits.", icon: "trash") {
                     switchToggle(isOn: clipboard.clearOnQuit) { clipboard.setClearOnQuit($0) }
                 }
             }
-            .padding(6)
         }
         .disabled(!moduleActive)
         .opacity(moduleActive ? 1 : 0.5)
@@ -257,11 +256,12 @@ struct ClipboardTabView: View {
     // MARK: - Excluded apps (two separate lists)
 
     private var exclusionsBox: some View {
-        GroupBox("Excluded apps") {
+        SettingGroup("Excluded apps") {
             VStack(alignment: .leading, spacing: 12) {
                 AppExcludeList(
                     title: "Don't record here",
                     subtitle: "Copies made while these apps are focused aren't saved.",
+                    icon: "eye.slash",
                     bundleIDs: clipboard.excludedRecordApps,
                     onAdd: clipboard.addExcludedRecordApp,
                     onRemove: clipboard.removeExcludedRecordApp
@@ -270,12 +270,12 @@ struct ClipboardTabView: View {
                 AppExcludeList(
                     title: "Don't open here",
                     subtitle: "\(settings.hotKeyDisplay) won't open while these apps are focused.",
+                    icon: "rectangle.slash",
                     bundleIDs: clipboard.excludedOpenApps,
                     onAdd: clipboard.addExcludedOpenApp,
                     onRemove: clipboard.removeExcludedOpenApp
                 )
             }
-            .padding(6)
         }
         .disabled(!moduleActive)
         .opacity(moduleActive ? 1 : 0.5)

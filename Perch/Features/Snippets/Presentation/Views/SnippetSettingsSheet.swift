@@ -28,7 +28,8 @@ struct SnippetSettingsSheet: View {
                 VStack(spacing: 10) {
                     if vm.expansionEnabled {
                         SettingRow(title: "Trigger prefix",
-                                   subtitle: "Wraps every abbreviation, so normal typing never expands by accident.") {
+                                   subtitle: "Wraps every abbreviation, so normal typing never expands by accident.",
+                                   icon: "textformat") {
                             Picker("", selection: Binding(get: { vm.expansionPrefix }, set: { vm.setExpansionPrefix($0) })) {
                                 ForEach(ExpansionPrefix.allCases) { prefix in
                                     Text(prefix.rawValue).font(.system(.body, design: .monospaced)).tag(prefix)
@@ -38,7 +39,8 @@ struct SnippetSettingsSheet: View {
                         }
                         Divider()
                         SettingRow(title: "Date format",
-                                   subtitle: "How the {date} placeholder is written when a snippet is inserted.") {
+                                   subtitle: "How the {date} placeholder is written when a snippet is inserted.",
+                                   icon: "calendar") {
                             Picker("", selection: Binding(get: { vm.dateFormat }, set: { vm.setDateFormat($0) })) {
                                 ForEach(SnippetPlaceholders.dateFormats, id: \.self) { pattern in
                                     Text(SnippetPlaceholders.example(pattern)).tag(pattern)
@@ -50,6 +52,7 @@ struct SnippetSettingsSheet: View {
                         AppExcludeList(
                             title: "Don't expand here",
                             subtitle: "Abbreviations are ignored while these apps are focused.",
+                            icon: "hand.raised.slash",
                             bundleIDs: vm.excludedApps,
                             onAdd: { vm.addExcludedApps([$0]) },
                             onRemove: { vm.removeExcludedApp($0) }

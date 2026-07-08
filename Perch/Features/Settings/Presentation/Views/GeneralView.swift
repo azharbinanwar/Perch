@@ -24,17 +24,20 @@ struct GeneralView: View {
             GroupBox("Startup") {
                 VStack(spacing: 10) {
                     SettingRow(title: "Launch at login",
-                               subtitle: "Start Perch automatically when you log in.") {
+                               subtitle: "Start Perch automatically when you log in.",
+                               icon: "power") {
                         toggle($vm.settings.openAtLogin)
                     }
                     Divider()
                     SettingRow(title: "Open window at launch",
-                               subtitle: "Show this window on start — otherwise Perch stays in the menu bar.") {
+                               subtitle: "Show this window on start — otherwise Perch stays in the menu bar.",
+                               icon: "macwindow") {
                         toggle($vm.settings.openWindowAtLaunch)
                     }
                     Divider()
                     SettingRow(title: "Show in Dock",
-                               subtitle: "Also keep a Dock icon. Off keeps Perch menu-bar only.") {
+                               subtitle: "Also keep a Dock icon. Off keeps Perch menu-bar only.",
+                               icon: "dock.rectangle") {
                         toggle($vm.settings.showInDock)
                     }
                 }
@@ -43,7 +46,8 @@ struct GeneralView: View {
 
             GroupBox("Appearance") {
                 SettingRow(title: "Theme",
-                           subtitle: "System follows macOS; Light or Dark forces it everywhere in Perch.") {
+                           subtitle: "System follows macOS; Light or Dark forces it everywhere in Perch.",
+                           icon: "paintbrush") {
                     HStack(spacing: 12) {
                         ForEach(AppTheme.allCases) { themeSwatch($0) }
                     }
@@ -72,7 +76,8 @@ struct GeneralView: View {
 
             GroupBox("Backup") {
                 SettingRow(title: "Export or import settings",
-                           subtitle: "Pick exactly which sections to save, or bring in — the rest stay as they are.") {
+                           subtitle: "Pick exactly which sections to save, or bring in — the rest stay as they are.",
+                           icon: "arrow.up.arrow.down") {
                     HStack(spacing: 8) {
                         Button("Export…") { backup = BackupRequest(mode: .export, config: ConfigService.export()) }
                         Button("Import…") { importingFile = true }
