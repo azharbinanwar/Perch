@@ -75,7 +75,7 @@ struct MouseTabView: View {
                     .opacity(trusted ? 1 : 0.5)
                 // Controls: live only when Accessibility is on AND the master is on.
                 Group {
-                    GroupBox { profileStrip.padding(6) }
+                    SettingGroup { profileStrip }
                     buttonsGroup
                     layerGroup
                     swapGroup
@@ -184,24 +184,28 @@ struct MouseTabView: View {
     // MARK: - Scroll / Pointer / Reliability
 
     private var scrollGroup: some View {
-        GroupBox("Scroll — \(profileLabel)") {
+        SettingGroup("Scroll — \(profileLabel)") {
             VStack(spacing: 10) {
                 SettingRow(title: "Reverse scroll direction",
-                           subtitle: "Reverses external mouse scroll; the trackpad is left untouched.") {
+                           subtitle: "Reverses external mouse scroll; the trackpad is left untouched.",
+                           icon: "arrow.up.arrow.down") {
                     toggle(mouse.editingScroll.reversed) { on in mouse.updateScroll { $0.reversed = on } }
                 }
                 Divider()
                 SettingRow(title: "Smooth scrolling",
-                           subtitle: "Each wheel tick glides instead of jumping — trackpad feel on a notchy wheel.") {
+                           subtitle: "Each wheel tick glides instead of jumping — trackpad feel on a notchy wheel.",
+                           icon: "scroll") {
                     toggle(mouse.editingScroll.smooth) { on in mouse.updateScroll { $0.smooth = on } }
                 }
                 Divider()
                 SettingRow(title: "No acceleration (flat)",
-                           subtitle: "Every notch scrolls the same amount, regardless of how fast you spin.") {
+                           subtitle: "Every notch scrolls the same amount, regardless of how fast you spin.",
+                           icon: "equal") {
                     toggle(mouse.editingScroll.linear) { on in mouse.updateScroll { $0.linear = on } }
                 }
                 Divider()
-                SettingRow(title: "Scroll speed", subtitle: "Faster or slower than the system default.") {
+                SettingRow(title: "Scroll speed", subtitle: "Faster or slower than the system default.",
+                           icon: "speedometer") {
                     slider(mouse.editingScroll.speed, in: 0.25...10, step: 0.25, format: "%.2f×") { v in
                         mouse.updateScroll { $0.speed = v }
                     }
@@ -210,7 +214,8 @@ struct MouseTabView: View {
                 SettingRow(title: "Turbo scroll",
                            subtitle: mouse.editingScroll.turboOn
                                ? "Hold \(mouse.editingScroll.turboKey.rawValue.prefix(1)) while scrolling for \(String(format: "%.1f", mouse.editingScroll.turboSpeed))× speed."
-                               : "Hold a key while scrolling to go extra fast — for very long pages.") {
+                               : "Hold a key while scrolling to go extra fast — for very long pages.",
+                           icon: "hare") {
                     toggle(mouse.editingScroll.turboOn) { on in mouse.updateScroll { $0.turboOn = on } }
                 }
                 if mouse.editingScroll.turboOn {
@@ -232,7 +237,8 @@ struct MouseTabView: View {
                 }
                 Divider()
                 SettingRow(title: "Auto-scroll",
-                           subtitle: "Long-press the middle button, then move to scroll. Release to keep scrolling; any click stops.") {
+                           subtitle: "Long-press the middle button, then move to scroll. Release to keep scrolling; any click stops.",
+                           icon: "arrow.down.circle") {
                     toggle(mouse.editingScroll.autoOn) { on in mouse.updateScroll { $0.autoOn = on } }
                 }
                 if mouse.editingScroll.autoOn {
@@ -243,15 +249,15 @@ struct MouseTabView: View {
                     }
                 }
             }
-            .padding(6)
         }
     }
 
     private var pointerGroup: some View {
-        GroupBox("Pointer — \(profileLabel)") {
+        SettingGroup("Pointer — \(profileLabel)") {
             VStack(spacing: 10) {
                 SettingRow(title: "Control pointer acceleration",
-                           subtitle: "Override macOS cursor acceleration — off leaves the system default.") {
+                           subtitle: "Override macOS cursor acceleration — off leaves the system default.",
+                           icon: "cursorarrow.motionlines") {
                     toggle(mouse.editingPointer.override) { on in mouse.updatePointer { $0.override = on } }
                 }
                 if mouse.editingPointer.override {
@@ -263,15 +269,15 @@ struct MouseTabView: View {
                     }
                 }
             }
-            .padding(6)
         }
     }
 
     private var reliabilityGroup: some View {
-        GroupBox("Reliability") {
+        SettingGroup("Reliability") {
             VStack(spacing: 10) {
                 SettingRow(title: "Ignore accidental double-clicks",
-                           subtitle: "Fixes a worn switch that fires twice on one press.") {
+                           subtitle: "Fixes a worn switch that fires twice on one press.",
+                           icon: "hand.tap") {
                     toggle(mouse.debounce) { mouse.setDebounce($0) }
                 }
                 if mouse.debounce {
@@ -280,7 +286,6 @@ struct MouseTabView: View {
                     }
                 }
             }
-            .padding(6)
         }
     }
 
@@ -301,22 +306,23 @@ struct MouseTabView: View {
     // MARK: - Master
 
     private var masterGroup: some View {
-        GroupBox {
+        SettingGroup {
             SettingRow(title: "Enable Mouse",
-                       subtitle: "Master switch for the whole tab — buttons, scroll, pointer and gestures. Applies to all mice.") {
+                       subtitle: "Master switch for the whole tab — buttons, scroll, pointer and gestures. Applies to all mice.",
+                       icon: "magicmouse") {
                 toggle(mouse.masterEnabled) { mouse.setMasterEnabled($0) }
             }
-            .padding(6)
         }
     }
 
     // MARK: - Buttons
 
     private var buttonsGroup: some View {
-        GroupBox("Buttons — \(profileLabel)") {
+        SettingGroup("Buttons — \(profileLabel)") {
             VStack(alignment: .leading, spacing: 12) {
                 SettingRow(title: "Enable button mapping",
-                           subtitle: "Assign buttons to shortcuts, actions, and gestures.") {
+                           subtitle: "Assign buttons to shortcuts, actions, and gestures.",
+                           icon: "cursorarrow.click") {
                     toggle(mouse.isEnabled) { mouse.setEnabled($0) }
                 }
                 Divider()
@@ -339,18 +345,17 @@ struct MouseTabView: View {
                 .opacity(mouse.isEnabled ? 1 : 0.4)
                 .disabled(!mouse.isEnabled)
             }
-            .padding(6)
         }
     }
 
     /// Handedness — its own box after the layer (was an odd last row inside Buttons).
     private var swapGroup: some View {
-        GroupBox {
+        SettingGroup {
             SettingRow(title: "Swap primary & secondary buttons",
-                       subtitle: "Left-handed use — left click becomes right click and vice versa.") {
+                       subtitle: "Left-handed use — left click becomes right click and vice versa.",
+                       icon: "arrow.left.arrow.right") {
                 toggle(mouse.swapButtons) { mouse.setSwapButtons($0) }
             }
-            .padding(6)
         }
         .opacity(mouse.isEnabled ? 1 : 0.5)
         .disabled(!mouse.isEnabled)
@@ -398,12 +403,13 @@ struct MouseTabView: View {
     private var layerGroup: some View {
         let layerOn = mouse.editingLayer.enabled
         let count = mouse.layerActionCount
-        return GroupBox("Mouse Shift — \(profileLabel)") {
+        return SettingGroup("Mouse Shift — \(profileLabel)") {
             VStack(alignment: .leading, spacing: 10) {
                 SettingRow(title: "Enable Mouse Shift",
                            subtitle: layerOn
                                ? "Hold a shift key, then press another button — it runs that combo's action. \(count) combo\(count == 1 ? "" : "s") set."
-                               : "Hold one button to give every other button a second set of actions — like ⇧ for your mouse.") {
+                               : "Hold one button to give every other button a second set of actions — like ⇧ for your mouse.",
+                           icon: "command") {
                     HStack(spacing: 10) {
                         Button { layerIntroShowing = true } label: {
                             Image(systemName: "info.circle").font(.system(size: 16)).foregroundStyle(.secondary)
@@ -525,7 +531,6 @@ struct MouseTabView: View {
                     .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .padding(6)
         }
         .opacity(mouse.isEnabled ? 1 : 0.5)
         .disabled(!mouse.isEnabled)
