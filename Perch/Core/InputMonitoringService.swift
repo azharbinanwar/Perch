@@ -22,7 +22,15 @@ final class InputMonitoringService {
     /// Observable snapshot for the UI. Refreshed on demand via `refresh()`, never polled.
     private(set) var isTrusted: Bool
 
-    private init() { isTrusted = IOHIDCheckAccess(kIOHIDRequestTypeListenEvent) == kIOHIDAccessTypeGranted }
+    @ObservationIgnored private var activationObserver: NSObjectProtocol?
+
+    private init() {
+        isTrusted = IOHIDCheckAccess(kIOHIDRequestTypeListenEvent) == kIOHIDAccessTypeGranted
+        // Re-sync when the user returns to Perch after granting in System Settings.
+        activationObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main
+        ) { [weak self] _ in self?.refresh() }
+    }
 
     /// Live, synchronous status — cheap; safe to check before any IOHID open.
     var trusted: Bool { IOHIDCheckAccess(kIOHIDRequestTypeListenEvent) == kIOHIDAccessTypeGranted }

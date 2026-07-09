@@ -25,6 +25,24 @@ struct GeneralView: View {
                 .contentShape(Rectangle())
                 .onTapGesture { devTaps += 1; if devTaps >= 7 { showDev = true } }
 
+            SettingGroup("Permissions") {
+                VStack(spacing: 10) {
+                    PermissionStatusRow(
+                        icon: "accessibility",
+                        title: "Accessibility",
+                        subtitle: "Controls input — Mouse, Keys, Scroll & quick clipboard paste.",
+                        granted: AccessibilityService.shared.isTrusted,
+                        grant: { AccessibilityService.shared.request() })
+                    Divider()
+                    PermissionStatusRow(
+                        icon: "dot.viewfinder",
+                        title: "Input Monitoring",
+                        subtitle: "Observes devices — mouse detection and key watching.",
+                        granted: InputMonitoringService.shared.isTrusted,
+                        grant: { InputMonitoringService.shared.request() })
+                }
+            }
+
             SettingGroup("Startup") {
                 VStack(spacing: 10) {
                     SettingRow(title: "Launch at login",
@@ -54,22 +72,6 @@ struct GeneralView: View {
                     HStack(spacing: 12) {
                         ForEach(AppTheme.allCases) { ThemeSwatch(theme: $0) }
                     }
-                }
-            }
-
-            SettingGroup("Permissions") {
-                VStack(spacing: 10) {
-                    PermissionStatusRow(
-                        title: "Accessibility",
-                        subtitle: "Controls input — Mouse, Keys, Scroll & quick clipboard paste.",
-                        granted: AccessibilityService.shared.trusted,
-                        grant: { AccessibilityService.shared.request() })
-                    Divider()
-                    PermissionStatusRow(
-                        title: "Input Monitoring",
-                        subtitle: "Observes devices — mouse detection and key watching.",
-                        granted: InputMonitoringService.shared.trusted,
-                        grant: { InputMonitoringService.shared.request() })
                 }
             }
 

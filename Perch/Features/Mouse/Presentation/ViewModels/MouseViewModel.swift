@@ -409,6 +409,10 @@ final class MouseViewModel {
         if scanning { armIdleStop() } else { monitor.stop(); keyRecorder.stop() }
     }
 
+    /// (Re)start device detection — no-op if already running, and self-guards on Input Monitoring.
+    /// Call when the tab appears or the app reactivates so granting IM mid-session populates the list.
+    func refreshDevices() { deviceMonitor.start() }
+
     func stopScan() {
         scanning = false
         idleStop?.cancel(); idleStop = nil

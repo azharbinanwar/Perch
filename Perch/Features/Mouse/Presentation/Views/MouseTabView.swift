@@ -9,8 +9,10 @@ struct MouseTabView: View {
     @Environment(MouseViewModel.self) private var mouse
 
     private var trusted: Bool { AccessibilityService.shared.isTrusted }
+    private var monitoring: Bool { InputMonitoringService.shared.isTrusted }
     private var moduleActive: Bool { trusted && mouse.masterEnabled }
-    @State private var monitoring = InputMonitoringService.shared.trusted
+    // We can only be sure there's no mouse when Input Monitoring is on (detection needs it).
+    private var showNoMouse: Bool { moduleActive && monitoring && !mouse.hasMouse }
     @State private var showingReset = false
     @State private var showingMouseIntro = false
     @State private var showingMonitorIntro = false
@@ -57,6 +59,13 @@ struct MouseTabView: View {
                 .disabled(!trusted)
                 .opacity(trusted ? 1 : 0.5)
                 Group {
+                    if showNoMouse {
+                        ContentUnavailableView("No mouse connected",
+                                               systemImage: "magicmouse",
+                                               description: Text("Connect a mouse to configure buttons, scroll and gestures."))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 40)
+                    } else {
                     SettingGroup {
                         AppProfileStrip(
                             items: [AppProfileStrip.Item(bundleID: nil, name: "All apps")]
@@ -85,6 +94,7 @@ struct MouseTabView: View {
                     PointerGroup()
                     ScrollGroup()
                     ReliabilityGroup()
+                    }
                 }
                 .opacity(moduleActive ? 1 : 0.4)
                 .disabled(!moduleActive)
@@ -99,7 +109,10 @@ struct MouseTabView: View {
         }
         .onAppear {
             AccessibilityService.shared.refresh()
-            monitoring = InputMonitoringService.shared.trusted
+            mouse.refreshDevices()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            mouse.refreshDevices()   // granted Input Monitoring in System Settings → detect on return
         }
         .onDisappear { mouse.stopScan() }
         .sheet(isPresented: $addingProfile) {
