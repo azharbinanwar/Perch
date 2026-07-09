@@ -59,7 +59,7 @@ enum ConfigSection: String, CaseIterable, Identifiable {
             return [K.clipboardEnabled, K.clipboardRecording, K.clipboardAutoClear,
                     K.clipboardMaxItems, K.clipboardClearOnQuit, K.clipboardPinLimit,
                     K.clipboardRowDensity, K.clipboardExcludeRecord, K.clipboardExcludeOpen,
-                    K.clipboardRestoreAfterPaste]
+                    K.clipboardRestoreAfterPaste, K.clipboardScreenshots, K.clipboardScreenshotFolder]
         case .snippets:
             return [K.snippetsExpansionOn, K.snippetsExpansionPrefix,
                     K.snippetsDateFormat, K.snippetsExcludeApps]

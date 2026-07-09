@@ -21,6 +21,8 @@ enum Keys {
         static let clipboardExcludeRecord = "clipboard.excludeRecord"  // don't record from these apps
         static let clipboardExcludeOpen   = "clipboard.excludeOpen"    // don't open ⌘⇧V over these apps
         static let clipboardRestoreAfterPaste = "clipboard.restoreAfterPaste"
+        static let clipboardScreenshots = "clipboard.screenshots"       // auto-capture new screenshots
+        static let clipboardScreenshotFolder = "clipboard.screenshotFolder"  // override the watched folder
         static let scrollReversed   = "mouse.scroll.reversed"
         static let scrollLinear     = "mouse.scroll.linear"    // flat, no acceleration
         static let scrollSmooth     = "mouse.scroll.smooth"    // glide wheel ticks instead of jumping

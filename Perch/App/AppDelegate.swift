@@ -155,6 +155,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupDI() {
         ServiceLocator.shared.register(ClipboardRepository.self) { ClipboardRepository() }
         ServiceLocator.shared.register(ClipboardMonitor.self)    { ClipboardMonitor() }
+        ServiceLocator.shared.register(ScreenshotWatcher.self)   { ScreenshotWatcher() }
         ServiceLocator.shared.register(ScrollManager.self)       { ScrollManager() }
         ServiceLocator.shared.register(AutoScrollManager.self)   { AutoScrollManager() }
         ServiceLocator.shared.register(MouseButtonMonitor.self)  { MouseButtonMonitor() }

@@ -65,6 +65,7 @@ struct ClipboardTabView: View {
                     .opacity(trusted ? 1 : 0.5)
                 InfoNote(systemImage: "lock.fill", text: "Passwords and sensitive copies are never recorded.")
                 ClipboardRecordingGroup()
+                ClipboardScreenshotGroup()
                 ClipboardLimitsGroup(menuItemCount: $vm.settings.menuItemCount)
                 ClipboardAppearanceGroup()
                 ClipboardBehaviorGroup()
@@ -115,7 +116,11 @@ struct ClipboardTabView: View {
         .sheet(isPresented: $showingShowcase) {
             ShowcaseSheet(title: "Clipboard", content: AnyView(ClipboardIntroView()))
         }
-        .onAppear { imageBytes = ImageStore.diskUsage(); AccessibilityService.shared.refresh() }
+        .onAppear {
+            imageBytes = ImageStore.diskUsage()
+            AccessibilityService.shared.refresh()
+            clipboard.updateScreenshotWatcher()   // re-resolve the folder in case the OS location changed
+        }
     }
 
     // MARK: - Header

@@ -19,11 +19,17 @@ final class ClipboardViewModel {
     private(set) var excludedRecordApps: [String]  // bundle ids we don't record copies from
     private(set) var excludedOpenApps: [String]     // bundle ids where ⌘⇧V won't open
     private(set) var restoreAfterPaste: Bool        // put the old clipboard back after pasting
+    private(set) var screenshotsToClipboard: Bool   // auto-capture new screenshot files
+    private(set) var screenshotFolderOverride: String?  // nil = follow the OS screenshot location
+
+    /// The folder currently watched — the override, else the OS location, else ~/Desktop.
+    var screenshotFolder: String { ScreenshotWatcher.resolvedFolder(override: screenshotFolderOverride) }
 
     private var savedClipboard: [(data: Data, type: NSPasteboard.PasteboardType)]?
 
     private let repository: ClipboardRepository
     private let monitor: ClipboardMonitor
+    private let screenshotWatcher: ScreenshotWatcher
     private let pasteboard = NSPasteboard.general
     private let defaults = UserDefaults.standard
 
@@ -44,9 +50,11 @@ final class ClipboardViewModel {
     var recentItems: [ClipboardItem] { items }
 
     init(repository: ClipboardRepository = ServiceLocator.shared.resolve(ClipboardRepository.self),
-         monitor: ClipboardMonitor = ServiceLocator.shared.resolve(ClipboardMonitor.self)) {
+         monitor: ClipboardMonitor = ServiceLocator.shared.resolve(ClipboardMonitor.self),
+         screenshotWatcher: ScreenshotWatcher = ServiceLocator.shared.resolve(ScreenshotWatcher.self)) {
         self.repository = repository
         self.monitor = monitor
+        self.screenshotWatcher = screenshotWatcher
         self.isEnabled = defaults.object(forKey: Keys.Defaults.clipboardEnabled) as? Bool ?? true
         self.isRecording = defaults.object(forKey: Keys.Defaults.clipboardRecording) as? Bool ?? true
         self.autoClearMinutes = defaults.object(forKey: Keys.Defaults.clipboardAutoClear) as? Int ?? 0
@@ -57,6 +65,8 @@ final class ClipboardViewModel {
         self.excludedRecordApps = defaults.stringArray(forKey: Keys.Defaults.clipboardExcludeRecord) ?? []
         self.excludedOpenApps = defaults.stringArray(forKey: Keys.Defaults.clipboardExcludeOpen) ?? []
         self.restoreAfterPaste = defaults.bool(forKey: Keys.Defaults.clipboardRestoreAfterPaste)
+        self.screenshotsToClipboard = defaults.bool(forKey: Keys.Defaults.clipboardScreenshots)
+        self.screenshotFolderOverride = defaults.string(forKey: Keys.Defaults.clipboardScreenshotFolder)
         self.items = repository.load()
         state = items.isEmpty ? .empty : .loaded(orderedItems)   // pinned-first, matching didSet
         ImageStore.pruneOrphans(keeping: referencedBlobs)   // drop blobs left over from a crash
@@ -72,8 +82,39 @@ final class ClipboardViewModel {
         monitor.onCopy = { [weak self] copy in
             self?.capture(copy)
         }
+        screenshotWatcher.onScreenshot = { [weak self] png in
+            self?.capture(CapturedCopy(text: "Screenshot", source: nil, imageDatas: [png]))
+        }
+        screenshotWatcher.onRecording = { [weak self] path in
+            let name = (path as NSString).lastPathComponent
+            self?.capture(CapturedCopy(text: name, source: nil, filePaths: [path]))
+        }
         updateMonitor()
+        updateScreenshotWatcher()
         pruneExpired()
+    }
+
+    /// Re-resolve the folder and start/stop the watcher — called on toggle, launch, and app-active
+    /// (so a changed OS screenshot location is picked up).
+    func updateScreenshotWatcher() {
+        if screenshotsToClipboard && isEnabled {
+            screenshotWatcher.start(folder: screenshotFolder)
+        } else {
+            screenshotWatcher.stop()
+        }
+    }
+
+    func setScreenshotsToClipboard(_ on: Bool) {
+        screenshotsToClipboard = on
+        defaults.set(on, forKey: Keys.Defaults.clipboardScreenshots)
+        updateScreenshotWatcher()
+    }
+
+    func setScreenshotFolder(_ path: String?) {
+        screenshotFolderOverride = path
+        if let path { defaults.set(path, forKey: Keys.Defaults.clipboardScreenshotFolder) }
+        else { defaults.removeObject(forKey: Keys.Defaults.clipboardScreenshotFolder) }
+        updateScreenshotWatcher()
     }
 
     /// Drop items older than the auto-clear window; 0 = never.
@@ -200,6 +241,7 @@ final class ClipboardViewModel {
     /// Capture only when the feature is enabled AND recording.
     private func updateMonitor() {
         if isEnabled && isRecording { monitor.start() } else { monitor.stop() }
+        updateScreenshotWatcher()   // master-off also stops the screenshot watcher
     }
 
     /// Put an item on the clipboard and promote it to the top (⌘C / menu "copy").
@@ -319,7 +361,10 @@ final class ClipboardViewModel {
         excludedRecordApps = defaults.stringArray(forKey: Keys.Defaults.clipboardExcludeRecord) ?? []
         excludedOpenApps = defaults.stringArray(forKey: Keys.Defaults.clipboardExcludeOpen) ?? []
         restoreAfterPaste = defaults.bool(forKey: Keys.Defaults.clipboardRestoreAfterPaste)
+        screenshotsToClipboard = defaults.bool(forKey: Keys.Defaults.clipboardScreenshots)
+        screenshotFolderOverride = defaults.string(forKey: Keys.Defaults.clipboardScreenshotFolder)
         if isEnabled && isRecording { monitor.start() } else { monitor.stop() }
+        updateScreenshotWatcher()
     }
 
     var historyCount: Int { items.count }   // for the import debug summary
