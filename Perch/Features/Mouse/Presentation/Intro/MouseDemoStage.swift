@@ -28,11 +28,11 @@ struct MouseDemoStage: View {
 
     private let scenes: [Scene] = [
         .init(caption: "Assign any button to an action or shortcut — even one that types a hotkey.",
-              button: "middle", trigger: "Middle click", actionIcon: "square.grid.3x3.fill", actionLabel: "Mission Control"),
+              button: "middle", trigger: "Middle click", actionIcon: "magnifyingglass", actionLabel: "Spotlight"),
         .init(caption: "Every button gets click, double-click and hold — three actions each.",
               button: "back", trigger: "Hold Button 4", actionIcon: "doc.on.doc.fill", actionLabel: "Copy"),
         .init(caption: "Hold and flick in a direction for four more actions per button.",
-              button: "top", trigger: "Flick ↑", actionIcon: "plus.rectangle.on.rectangle.fill", actionLabel: "New Desktop"),
+              button: "top", trigger: "Flick ↑", actionIcon: "square.grid.3x3.fill", actionLabel: "Mission Control"),
         .init(caption: "Hold one button, press another — a whole second layer for every button.",
               button: "left", holdIDs: ["middle"], trigger: "Hold Middle → Left", actionIcon: "doc.on.clipboard.fill", actionLabel: "Paste"),
         .init(caption: "Reverse, smooth, flatten and speed up your scroll wheel — per app.",

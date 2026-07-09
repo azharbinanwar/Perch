@@ -318,9 +318,16 @@ final class MouseCaptureManager {
     private func synthesizeClick(_ button: Int) {
         let position = CGEvent(source: nil)?.location ?? .zero
         let source = CGEventSource(stateID: .combinedSessionState)
-        for type in [CGEventType.otherMouseDown, .otherMouseUp] {
+        let types: [CGEventType]
+        let mouseButton: CGMouseButton
+        switch button {
+        case 0:  types = [.leftMouseDown, .leftMouseUp];   mouseButton = .left
+        case 1:  types = [.rightMouseDown, .rightMouseUp]; mouseButton = .right
+        default: types = [.otherMouseDown, .otherMouseUp]; mouseButton = .center
+        }
+        for type in types {
             let event = CGEvent(mouseEventSource: source, mouseType: type,
-                                mouseCursorPosition: position, mouseButton: .center)
+                                mouseCursorPosition: position, mouseButton: mouseButton)
             event?.setIntegerValueField(.mouseEventButtonNumber, value: Int64(button))
             event?.post(tap: .cgSessionEventTap)
         }
@@ -381,23 +388,32 @@ final class MouseCaptureManager {
 
         let mapping = activePressMapping        // the set that was in force when the press began
         let single = mapping?.action
-        if mapping?.doubleAction.kind != .disabled {
+        if let double = mapping?.doubleAction, double.kind != .disabled {
             // Wait for a possible second click before committing the single.
             lastUp[button] = ProcessInfo.processInfo.systemUptime
             let work = DispatchWorkItem { [weak self] in
                 self?.pendingSingle[button] = nil
-                if let single, single.kind != .disabled {
-                    DiagLog.shared.append("✨ CLICK action → \(single.displayLabel)")
-                    self?.run(single)
-                }
+                self?.fireSingle(single, button: button)
             }
             pendingSingle[button] = work
             DispatchQueue.main.asyncAfter(deadline: .now() + doubleWindow, execute: work)
-        } else if let single, single.kind != .disabled {
-            DiagLog.shared.append("✨ CLICK action → \(single.displayLabel)")
-            run(single)
+        } else {
+            fireSingle(single, button: button)
         }
         return nil
+    }
+
+    /// The press's click: the mapped action if there is one; otherwise replay the raw click so
+    /// the button's native behavior (middle-click open/close tab, paste…) still works. The press
+    /// was swallowed at down-time to disambiguate hold/double/gesture — this gives it back.
+    private func fireSingle(_ single: Action?, button: Int) {
+        if let single, single.kind != .disabled, single.kind != .passThrough {
+            DiagLog.shared.append("✨ CLICK action → \(single.displayLabel)")
+            run(single)
+        } else {
+            DiagLog.shared.append("↩️ no click action — replaying raw \(MouseButton.name(for: button)) click")
+            synthesizeClick(button)
+        }
     }
 
     // MARK: - Helpers

@@ -27,10 +27,6 @@ struct ActionPicker: View {
             .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 8)
 
             SearchField(placeholder: "Search actions", text: $search, autofocus: true)
-                .padding(.horizontal, 16).padding(.bottom, 6)
-
-            Label("Long-press an action to try it first.", systemImage: "hand.tap")
-                .font(.system(size: 11)).foregroundStyle(.secondary)
                 .padding(.horizontal, 16).padding(.bottom, 8)
 
             Divider()
@@ -49,9 +45,18 @@ struct ActionPicker: View {
                 }
                 .padding(16)
             }
+
+            Divider()
+
+            HStack {
+                Label("Long-press an action to try it first.", systemImage: "hand.tap")
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                Spacer()
+                Button("Close") { dismiss() }.keyboardShortcut(.cancelAction)
+            }
+            .padding(12)
         }
         .frame(width: 540, height: 480)
-        .onExitCommand { dismiss() }   // Esc closes — no Done needed (tap picks & dismisses)
     }
 
     private func matches(in group: ActionGroup) -> [ActionKind] {
