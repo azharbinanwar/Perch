@@ -154,11 +154,8 @@ struct PermissionOverlay: View {
             Text(item.text).font(.system(size: 12.5)).foregroundStyle(.primary)
             Spacer(minLength: 8)
             if let keys = item.keys {
-                Text(keys)
-                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                Chip(text: keys, size: .small)
                     .foregroundStyle(.secondary)
-                    .padding(.horizontal, 6).padding(.vertical, 2)
-                    .background(.quaternary, in: RoundedRectangle(cornerRadius: 5))
             }
         }
     }

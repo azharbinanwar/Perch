@@ -14,11 +14,7 @@ struct ShortcutRow: View {
 
     var body: some View {
         GridRow {
-            Text(keys)
-                .font(.system(size: 13, weight: .medium))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+            Chip(text: keys)
                 .gridColumnAlignment(.leading)
             Text(label)
                 .font(.system(size: 13))

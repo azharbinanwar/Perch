@@ -11,12 +11,14 @@ struct SearchField: View {
     let placeholder: String
     @Binding var text: String
     var autofocus = false
+    var onSubmit: (() -> Void)? = nil   // Return key while typing (e.g. pick highlighted result)
     @FocusState private var focused: Bool
 
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
             TextField(placeholder, text: $text).textFieldStyle(.plain).focused($focused)
+                .onSubmit { onSubmit?() }
             if !text.isEmpty {
                 Button { text = "" } label: {
                     Image(systemName: "xmark.circle.fill")

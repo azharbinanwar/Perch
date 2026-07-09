@@ -1,11 +1,3 @@
-//
-//  ActionPicker.swifthen 
-//  Perch
-//
-//  Searchable, grouped, multi-column dialog for choosing an action — replaces the long
-//  dropdown. Emits the picked kind; the caller resolves any target it needs. Reusable.
-//
-
 import SwiftUI
 
 struct ActionPicker: View {
@@ -14,9 +6,21 @@ struct ActionPicker: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var search = ""
-    @State private var detailKind: ActionKind? 
+    @State private var detailKind: ActionKind?
+    @State private var selection = 0      // keyboard highlight — index into visibleKinds
 
     private let columns = [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)]
+
+    /// All matching kinds in on-screen order (group by group) — the arrow keys walk this.
+    private var visibleKinds: [ActionKind] {
+        ActionGroup.allCases.flatMap { matches(in: $0) }
+    }
+
+    private var highlighted: ActionKind? {
+        let kinds = visibleKinds
+        guard kinds.indices.contains(selection) else { return kinds.first }
+        return kinds[selection]
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -26,24 +30,30 @@ struct ActionPicker: View {
             }
             .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 8)
 
-            SearchField(placeholder: "Search actions", text: $search, autofocus: true)
+            SearchField(placeholder: "Search actions", text: $search, autofocus: true,
+                        onSubmit: { pickHighlighted() })
                 .padding(.horizontal, 16).padding(.bottom, 8)
 
             Divider()
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    ForEach(ActionGroup.allCases) { group in
-                        let kinds = matches(in: group)
-                        if !kinds.isEmpty {
-                            SectionLabel(title: group.title)
-                            LazyVGrid(columns: columns, spacing: 8) {
-                                ForEach(kinds) { kind in cell(kind) }
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 14) {
+                        ForEach(ActionGroup.allCases) { group in
+                            let kinds = matches(in: group)
+                            if !kinds.isEmpty {
+                                SectionLabel(title: group.title)
+                                LazyVGrid(columns: columns, spacing: 8) {
+                                    ForEach(kinds) { kind in cell(kind).id(kind) }
+                                }
                             }
                         }
                     }
+                    .padding(16)
                 }
-                .padding(16)
+                .onChange(of: selection) {
+                    if let kind = highlighted { withAnimation(.easeOut(duration: 0.1)) { proxy.scrollTo(kind, anchor: .center) } }
+                }
             }
 
             Divider()
@@ -52,11 +62,28 @@ struct ActionPicker: View {
                 Label("Long-press an action to try it first.", systemImage: "hand.tap")
                     .font(.system(size: 11)).foregroundStyle(.secondary)
                 Spacer()
+                KeyHint(keys: "↑ ↓", label: "navigate")
+                KeyHint(keys: "⏎", label: "pick")
                 Button("Close") { dismiss() }.keyboardShortcut(.cancelAction)
             }
             .padding(12)
         }
         .frame(width: 540, height: 480)
+        .onChange(of: search) { selection = 0 }   // Return always picks the top match after filtering
+        .onKeyPress(.upArrow)   { moveSelection(-1); return .handled }
+        .onKeyPress(.downArrow) { moveSelection(+1); return .handled }
+    }
+
+    private func moveSelection(_ delta: Int) {
+        let count = visibleKinds.count
+        guard count > 0 else { return }
+        selection = min(max(selection + delta, 0), count - 1)
+    }
+
+    private func pickHighlighted() {
+        guard let kind = highlighted, !kind.isPremium else { return }
+        onPick(kind)
+        dismiss()
     }
 
     private func matches(in group: ActionGroup) -> [ActionKind] {
@@ -66,7 +93,8 @@ struct ActionPicker: View {
     }
 
     private func cell(_ kind: ActionKind) -> some View {
-        HStack(spacing: 8) {
+        let isHighlighted = kind == highlighted
+        return HStack(spacing: 8) {
             Image(systemName: kind.icon).frame(width: 18).foregroundStyle(.secondary)
             Text(kind.title).font(.system(size: 12)).lineLimit(1)
             Spacer(minLength: 0)
@@ -79,7 +107,11 @@ struct ActionPicker: View {
         }
         .padding(.horizontal, 10).padding(.vertical, 7)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.quaternary.opacity(0.3), in: RoundedRectangle(cornerRadius: 7))
+        .background(
+            isHighlighted ? AnyShapeStyle(Color.accentColor.opacity(0.18)) : AnyShapeStyle(.quaternary.opacity(0.3)),
+            in: RoundedRectangle(cornerRadius: 7)
+        )
+        .overlay(RoundedRectangle(cornerRadius: 7).stroke(isHighlighted ? Color.accentColor.opacity(0.6) : .clear, lineWidth: 1))
         .contentShape(Rectangle())
         .opacity(kind.isPremium ? 0.5 : 1)
         // tap = choose · long-press = show details (with Try when it's self-contained)

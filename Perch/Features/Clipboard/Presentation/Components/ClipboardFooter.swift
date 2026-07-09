@@ -7,10 +7,7 @@ struct ClipboardFooter: View {
         HStack(spacing: 12) {
             ForEach(PopupShortcuts.footer) { shortcut in
                 Button { action(for: shortcut.keys) } label: {
-                    HStack(spacing: 4) {
-                        Chip(text: shortcut.keys, size: .small)
-                        Text(shortcut.footerLabel ?? "")
-                    }
+                    KeyHint(keys: shortcut.keys, label: shortcut.footerLabel ?? "")
                 }
                 .buttonStyle(.plain)
             }
