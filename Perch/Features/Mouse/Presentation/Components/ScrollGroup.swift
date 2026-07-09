@@ -86,6 +86,8 @@ struct ScrollGroup: View {
                         }
                     }
                 }
+                InfoNote(systemImage: "lightbulb",
+                         text: "Some apps — JetBrains IDEs like Android Studio, and other Java-based apps — ignore scroll speed, turbo and smooth. For those, add a per-app profile with Smooth off for clean native scrolling.")
             }
         }
         .alert("Turn on Auto-scroll?", isPresented: $autoConflictWarn) {

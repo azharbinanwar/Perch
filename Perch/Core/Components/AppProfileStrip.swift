@@ -54,26 +54,32 @@ struct AppProfileStrip: View {
     private func tile(_ item: Item) -> some View {
         let selected = item.bundleID == selectedBundleID
         return Button { onSelect(item.bundleID) } label: {
-            VStack(spacing: 5) {
+            VStack(spacing: 6) {
                 icon(item)
                     .clipShape(RoundedRectangle(cornerRadius: 9))
-                    .overlay(RoundedRectangle(cornerRadius: 9).stroke(selected ? Color.accentColor : Color.clear, lineWidth: 2))
+                    .overlay(alignment: .topTrailing) {
+                        if let bundleID = item.bundleID, hovered == item.id {
+                            Button { onRemove(bundleID) } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 16))
+                                    .symbolRenderingMode(.palette)
+                                    .foregroundStyle(.white, .red)
+                            }
+                            .buttonStyle(.plain)
+                            .offset(x: 5, y: -2)   // sit on the icon's corner, badge-style
+                        }
+                    }
                 Text(item.name).font(.system(size: 10, weight: selected ? .semibold : .regular))
-                    .foregroundStyle(selected ? Color.accentColor : .secondary).lineLimit(1)
+                    .foregroundStyle(selected ? Color.accentColor : .secondary)
+                    .lineLimit(1).truncationMode(.tail)
+                    .padding(.horizontal, 7)
             }
-            .frame(width: 76)
+            .padding(.vertical, 7)
+            .frame(width: 80)
+            .background(RoundedRectangle(cornerRadius: 13).fill(selected ? Color.accentColor.opacity(0.14) : .clear))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .overlay(alignment: .topTrailing) {
-            if let bundleID = item.bundleID, hovered == item.id {
-                Button { onRemove(bundleID) } label: {
-                    Image(systemName: "xmark.circle.fill").font(.system(size: 14))
-                        .symbolRenderingMode(.palette).foregroundStyle(.white, Color.black.opacity(0.55))
-                }
-                .buttonStyle(.plain).offset(x: -8, y: -2)
-            }
-        }
         .onHover { h in hovered = h ? item.id : (hovered == item.id ? nil : hovered) }
     }
 
@@ -107,7 +113,8 @@ struct AppProfileStrip: View {
                     .frame(width: 55, height: 55)
                 Text("Add app").font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1)
             }
-            .frame(width: 76)
+            .padding(.vertical, 7)
+            .frame(width: 80)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

@@ -11,7 +11,7 @@
 import AppKit
 
 final class AutoScrollIndicator {
-    private let size: CGFloat = 34
+    private let size: CGFloat = 64
     private lazy var glyph = GlyphView(frame: NSRect(x: 0, y: 0, width: size, height: size))
     private var window: NSWindow?
 
@@ -21,7 +21,7 @@ final class AutoScrollIndicator {
         window = win
         glyph.update(dx: 0, dy: 0)             // idle: dot only
         position(win, at: cgPoint)
-        win.orderFront(nil)
+        win.orderFrontRegardless()             // Perch is inactive during scroll → plain orderFront is ignored
     }
 
     /// Point the caret along a scroll displacement (0,0 = inside dead-zone → idle dot).
@@ -30,14 +30,19 @@ final class AutoScrollIndicator {
     func hide() { window?.orderOut(nil) }
 
     private func makeWindow() -> NSWindow {
-        let win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: size, height: size),
-                           styleMask: .borderless, backing: .buffered, defer: false)
+        // Must be a non-activating NSPanel: plain NSWindows from a background app are not
+        // admitted into another app's fullscreen Space, even with .fullScreenAuxiliary.
+        let win = NSPanel(contentRect: NSRect(x: 0, y: 0, width: size, height: size),
+                          styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        win.isFloatingPanel = true
+        win.hidesOnDeactivate = false          // panel default is true → would vanish while Perch is inactive
+        win.isReleasedWhenClosed = false
         win.isOpaque = false
         win.backgroundColor = .clear
-        win.level = .statusBar
+        win.level = .screenSaver               // above everything incl. another app's fullscreen space
         win.ignoresMouseEvents = true          // click-through, never steals the scroll gesture
         win.hasShadow = false
-        win.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
+        win.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
         win.contentView = glyph
         return win
     }
@@ -73,34 +78,31 @@ private final class GlyphView: NSView {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
         ctx.saveGState()
         ctx.translateBy(x: bounds.midX, y: bounds.midY)
-        ctx.rotate(by: angle)
+        ctx.scaleBy(x: 0.8, y: 0.8)   // 20% smaller anchor
+        ctx.setShadow(offset: .zero, blur: 5,
+                      color: NSColor.black.withAlphaComponent(0.55).cgColor)
 
-        let caret = NSBezierPath()
+        let halo = NSColor.white.withAlphaComponent(0.9)   // outline
+        let ink = NSColor.black                              // fill — matches the stock pointer
+
+        // Anchor dot at the press point.
+        halo.setFill()
+        NSBezierPath(ovalIn: CGRect(x: -5, y: -5, width: 10, height: 10)).fill()
+        ink.setFill()
+        NSBezierPath(ovalIn: CGRect(x: -3.5, y: -3.5, width: 7, height: 7)).fill()
+
+        // Solid triangle pointing the scroll direction (only while moving).
         if showCaret {
-            caret.move(to: CGPoint(x: -5, y: 3))
-            caret.line(to: CGPoint(x: 0, y: 9))
-            caret.line(to: CGPoint(x: 5, y: 3))
-            caret.lineCapStyle = .round
-            caret.lineJoinStyle = .round
+            ctx.rotate(by: angle)
+            let tri = NSBezierPath()
+            tri.move(to: CGPoint(x: -7, y: 11.5))
+            tri.line(to: CGPoint(x: 0, y: 21))
+            tri.line(to: CGPoint(x: 7, y: 11.5))
+            tri.close()
+            tri.lineJoinStyle = .round
+            halo.setStroke(); tri.lineWidth = 3; tri.stroke()
+            ink.setFill(); tri.fill()
         }
-
-        // White outline layer (fat stroke + larger dot) with a soft grey glow behind it.
-        ctx.saveGState()
-        ctx.setShadow(offset: .zero, blur: 4, color: NSColor.gray.withAlphaComponent(0.6).cgColor)
-        NSColor.white.setStroke()
-        caret.lineWidth = 4.6
-        caret.stroke()
-        NSColor.white.setFill()
-        NSBezierPath(ovalIn: CGRect(x: -3, y: -3, width: 6, height: 6)).fill()
-        ctx.restoreGState()
-
-        // Black glyph on top (no shadow).
-        NSColor.black.setStroke()
-        caret.lineWidth = 2.4
-        caret.stroke()
-        NSColor.black.setFill()
-        NSBezierPath(ovalIn: CGRect(x: -1.9, y: -1.9, width: 3.8, height: 3.8)).fill()
-
         ctx.restoreGState()
     }
 }
