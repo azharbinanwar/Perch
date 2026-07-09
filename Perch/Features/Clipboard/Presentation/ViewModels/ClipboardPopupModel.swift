@@ -22,6 +22,7 @@ final class ClipboardPopupModel {
     var notice: String?
     var editing = false
     var editText = ""
+    var confirmingClear = false   // in-panel "clear all?" confirm (native alert squares the corners)
 
     var onPaste: () -> Void = {}
     var onPasteKeepOpen: () -> Void = {}

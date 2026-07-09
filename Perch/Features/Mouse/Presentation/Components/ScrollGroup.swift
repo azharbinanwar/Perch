@@ -2,7 +2,15 @@ import SwiftUI
 
 struct ScrollGroup: View {
     @Environment(MouseViewModel.self) private var mouse
+    @State private var autoConflictWarn = false
     private var profileLabel: String { mouse.isEditingDefault ? "All apps" : mouse.editingProfileName }
+
+    /// The Hold action currently set on the auto-scroll button, if any — it's what turning
+    /// auto-scroll on will pause.
+    private var autoHoldAction: Action? {
+        let a = mouse.action(for: .button(mouse.editingScroll.autoButton), phase: .hold)
+        return a.kind == .disabled ? nil : a
+    }
 
     var body: some View {
         SettingGroup("Scroll — \(profileLabel)") {
@@ -61,7 +69,15 @@ struct ScrollGroup: View {
                 SettingRow(title: "Auto-scroll",
                            subtitle: "Long-press the middle button, then move to scroll. Release to keep scrolling; any click stops.",
                            icon: "arrow.down.circle") {
-                    SwitchToggle(isOn: mouse.editingScroll.autoOn) { on in mouse.updateScroll { $0.autoOn = on } }
+                    SwitchToggle(isOn: mouse.editingScroll.autoOn) { on in
+                        // Turning on while the button already has a Hold action → warn first (it'll be
+                        // paused). No action set → just turn on. Turning off is always immediate.
+                        if on, autoHoldAction != nil {
+                            autoConflictWarn = true
+                        } else {
+                            mouse.updateScroll { $0.autoOn = on }
+                        }
+                    }
                 }
                 if mouse.editingScroll.autoOn {
                     SettingRow(title: "Sensitivity", indented: true) {
@@ -71,6 +87,12 @@ struct ScrollGroup: View {
                     }
                 }
             }
+        }
+        .alert("Turn on Auto-scroll?", isPresented: $autoConflictWarn) {
+            Button("Cancel", role: .cancel) {}
+            Button("Turn On") { mouse.updateScroll { $0.autoOn = true } }
+        } message: {
+            Text("The middle button's Hold action\(autoHoldAction.map { " — \($0.displayLabel)" } ?? "") pauses while Auto-scroll is on. It returns when you turn Auto-scroll off. Click and double-click keep working.")
         }
     }
 }

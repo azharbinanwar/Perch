@@ -75,7 +75,7 @@ struct ClipboardTabView: View {
         }
         .alert("Reset Clipboard settings to default?", isPresented: $showingReset) {
             Button("Cancel", role: .cancel) {}
-            Button("Reset to Default") {
+            Button("Reset", role: .destructive) {
                 ConfigService.resetSettings(.clipboard)
                 clipboard.reloadSettings()
             }
@@ -92,7 +92,7 @@ struct ClipboardTabView: View {
         }
         .alert("Clear all clipboard items?", isPresented: $showingClearAll) {
             Button("Cancel", role: .cancel) {}
-            Button("Clear All", role: .destructive) {
+            Button("Clear", role: .destructive) {
                 clipboard.clear()
                 imageBytes = ImageStore.diskUsage()
             }

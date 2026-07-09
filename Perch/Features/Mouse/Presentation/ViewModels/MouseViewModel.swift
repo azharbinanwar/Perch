@@ -197,7 +197,17 @@ final class MouseViewModel {
                 if !live.isEmpty { layers[n] = live }
             }
         }
-        capture.apply(mappings: isEnabled ? active.mappings : [],
+        // A Hold owned by another feature is suppressed in the pushed copy (kept in storage, just
+        // not fired): auto-scroll's button, and any Mouse-Shift hold key. Non-destructive.
+        var pushed = active.mappings
+        var holdOwned = Set(layers.keys)                                   // shift-hold buttons
+        if active.scroll.autoOn { holdOwned.insert(active.scroll.autoButton) }
+        for n in holdOwned {
+            if let i = pushed.firstIndex(where: { $0.trigger == .button(n) }) {
+                pushed[i].setAction(.disabled, for: .hold)
+            }
+        }
+        capture.apply(mappings: isEnabled ? pushed : [],
                       gestures: isEnabled ? active.gestures : [],
                       layers: layers)
         capture.swapEnabled = isEnabled && swapButtons
@@ -283,6 +293,11 @@ final class MouseViewModel {
     /// True when this button powers Mouse Shift (has ≥1 combo) — its Hold phase is locked.
     func isShiftHold(_ trigger: MouseTrigger) -> Bool {
         editingLayer.enabled && layerActionCount(hold: trigger) > 0
+    }
+
+    /// True when auto-scroll owns this button's Hold phase — the button that starts auto-scroll.
+    func isAutoScrollHold(_ trigger: MouseTrigger) -> Bool {
+        editingScroll.autoOn && buttonNumber(trigger) == editingScroll.autoButton
     }
 
     private func actionCount(in mappings: [MouseMapping]) -> Int {

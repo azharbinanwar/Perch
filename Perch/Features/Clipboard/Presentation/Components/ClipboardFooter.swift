@@ -15,7 +15,7 @@ struct ClipboardFooter: View {
                 .buttonStyle(.plain)
             }
             Spacer()
-            Button("Clear All") { model.clearAll() }
+            Button("Clear All") { model.confirmingClear = true }   // in-panel confirm overlay
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
         }

@@ -16,4 +16,7 @@ extension Color {
     /// "Something needs your attention / action" — permission gates, warnings. Kept separate
     /// from `secondaryAccent` so re-theming Mouse Shift never changes what a warning looks like.
     static let warning = Color.orange
+
+    /// "This deletes data / can't be undone" — destructive confirm buttons.
+    static let destructive = Color.red
 }

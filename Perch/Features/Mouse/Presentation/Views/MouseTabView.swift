@@ -108,7 +108,7 @@ struct MouseTabView: View {
         .sheet(isPresented: $profileIntroShowing) { MouseProfileIntroSheet() }
         .alert("Reset Mouse to default?", isPresented: $showingReset) {
             Button("Cancel", role: .cancel) {}
-            Button("Reset to Default", role: .destructive) {
+            Button("Reset", role: .destructive) {
                 ConfigService.resetAll(prefix: "mouse.")
                 mouse.reload()
             }

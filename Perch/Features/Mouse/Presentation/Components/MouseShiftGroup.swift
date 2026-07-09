@@ -5,7 +5,6 @@ struct MouseShiftGroup: View {
     @State private var layerSel = "left"
     @State private var layerHoldPick: MouseTrigger?
     @State private var layerSlotPicking: LayerSlotPick?
-    @State private var layerHoldWarning: LayerHoldWarning?
     @State private var layerDeleteConfirm = false
     @State private var layerIntroShowing = false
     @State private var targetPrompt: MappingTarget?
@@ -14,11 +13,6 @@ struct MouseShiftGroup: View {
         let id: String
         let target: String
         let phase: ClickPhase
-    }
-    private struct LayerHoldWarning: Identifiable {
-        let id = UUID()
-        let holdLabel: String
-        let pendingPick: LayerSlotPick
     }
 
     private static let layerNames: [String: String] = [
@@ -162,7 +156,6 @@ struct MouseShiftGroup: View {
         }
         .opacity(mouse.isEnabled ? 1 : 0.5)
         .disabled(!mouse.isEnabled)
-        .alert(item: $layerHoldWarning) { layerHoldAlert($0) }
         .sheet(isPresented: $layerIntroShowing) { MouseShiftIntroSheet() }
         .sheet(item: $layerSlotPicking) { pick in
             ActionPicker(excluding: [.passThrough]) { kind in
@@ -190,39 +183,26 @@ struct MouseShiftGroup: View {
             HStack(spacing: 10) {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.system(size: 12))
-                    .foregroundStyle(Color.secondaryAccent)
+                    .foregroundStyle(Color.warning)
                     .frame(width: 26, height: 26)
-                    .background(Color.secondaryAccent.opacity(0.15), in: RoundedRectangle(cornerRadius: 7))
+                    .background(Color.warning.opacity(0.15), in: RoundedRectangle(cornerRadius: 7))
                 VStack(alignment: .leading, spacing: 1) {
                     HStack(spacing: 6) {
                         Text(layerHoldName).font(.system(size: 13, weight: .semibold))
                         Text("HOLD IN USE")
                             .font(.system(size: 9, weight: .bold)).kerning(0.5)
-                            .foregroundStyle(Color.secondaryAccent)
+                            .foregroundStyle(Color.warning)
                             .padding(.horizontal, 7).padding(.vertical, 2)
-                            .background(Color.secondaryAccent.opacity(0.15), in: RoundedRectangle(cornerRadius: 4))
+                            .background(Color.warning.opacity(0.15), in: RoundedRectangle(cornerRadius: 4))
                     }
-                    Text("Its Hold action — \(conflict) — will be removed when you set its first shift combo. Click and double-click keep working.")
+                    Text("Its Hold action — \(conflict) — is paused while this button powers Mouse Shift. Click and double-click keep working, and it returns if you turn Mouse Shift off.")
                         .font(.system(size: 11)).foregroundStyle(.secondary)
                 }
                 Spacer()
             }
             .padding(10)
-            .background(Color.secondaryAccent.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
+            .background(Color.warning.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
         }
-    }
-
-    private func layerHoldAlert(_ warning: LayerHoldWarning) -> Alert {
-        Alert(
-            title: Text("Remove \(layerHoldName)'s Hold action?"),
-            message: Text("\(layerHoldName) uses Hold for “\(warning.holdLabel)”. Holding becomes the shift gesture, so that action is removed first — then pick your shift action. Click and double-click keep working."),
-            primaryButton: .destructive(Text("Remove & Continue")) {
-                mouse.setAction(.disabled, for: layerHoldSelected, phase: .hold)
-                let pick = warning.pendingPick
-                DispatchQueue.main.async { layerSlotPicking = pick }
-            },
-            secondaryButton: .cancel()
-        )
     }
 
     private func layerPhaseLabel(_ phase: ClickPhase) -> String {
@@ -235,15 +215,9 @@ struct MouseShiftGroup: View {
 
     private func layerSlotRow(target: String, phase: ClickPhase) -> some View {
         let action = mouse.triggerFor(target).map { mouse.layerAction(hold: layerHoldSelected, for: $0, phase: phase) } ?? .disabled
-        return SettingRow(title: layerPhaseLabel(phase),
-                          value: action.kind == .disabled ? "" : action.displayLabel,
-                          compact: true) {
-            let pick = LayerSlotPick(id: "\(target)|\(phase.rawValue)", target: target, phase: phase)
-            if let conflict = holdConflict(for: layerHoldSelected) {
-                layerHoldWarning = LayerHoldWarning(holdLabel: conflict, pendingPick: pick)
-            } else {
-                layerSlotPicking = pick
-            }
+        return ActionSlotRow(title: layerPhaseLabel(phase),
+                             value: action.kind == .disabled ? "" : action.displayLabel) {
+            layerSlotPicking = LayerSlotPick(id: "\(target)|\(phase.rawValue)", target: target, phase: phase)
         }
     }
 }

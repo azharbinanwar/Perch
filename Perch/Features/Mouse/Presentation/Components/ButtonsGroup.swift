@@ -6,6 +6,8 @@ struct ButtonsGroup: View {
     @State private var clickPick: ClickPick?
     @State private var gesturePick: GesturePick?
     @State private var targetPrompt: MappingTarget?
+    @State private var autoScrollHoldWarn: ClickPick?   // tapped Auto-scroll's Middle·Hold
+    @State private var shiftHoldClear: ClickPick?       // tapped a Mouse-Shift Hold to reclaim it
 
     private var profileLabel: String { mouse.isEditingDefault ? "All apps" : mouse.editingProfileName }
 
@@ -46,6 +48,68 @@ struct ButtonsGroup: View {
             ActionPicker { kind in mouse.setGestureAction(Action(kind: kind), for: pick.button, direction: pick.direction) }
         }
         .sheet(item: $targetPrompt) { MouseTargetSheet(prompt: $0) }
+        .alert("Change Middle · Hold?", isPresented: Binding(
+            get: { autoScrollHoldWarn != nil },
+            set: { if !$0 { autoScrollHoldWarn = nil } })) {
+            Button("Cancel", role: .cancel) { autoScrollHoldWarn = nil }
+            Button("Turn Off") {   // reversible → not destructive
+                if let pick = autoScrollHoldWarn {
+                    mouse.updateScroll { $0.autoOn = false }
+                    clickPick = pick
+                }
+                autoScrollHoldWarn = nil
+            }
+        } message: {
+            Text("Hold powers Auto-scroll. Setting an action here turns Auto-scroll off. Click and double-click keep working.")
+        }
+        // Mouse Shift: reclaiming the button clears that shift key's combos — same action & wording
+        // as the delete-combos confirm in the Mouse Shift section (unify styling later).
+        .alert("Delete \(shiftHoldName)'s combos?", isPresented: Binding(
+            get: { shiftHoldClear != nil },
+            set: { if !$0 { shiftHoldClear = nil } })) {
+            Button("Cancel", role: .cancel) { shiftHoldClear = nil }
+            Button("Delete", role: .destructive) {
+                if let pick = shiftHoldClear {
+                    mouse.removeLayer(hold: pick.trigger)   // frees just this shift key; others keep theirs
+                    clickPick = pick
+                }
+                shiftHoldClear = nil
+            }
+        } message: {
+            Text(shiftHoldClearMessage)
+        }
+    }
+
+    private var shiftHoldName: String {
+        guard let t = shiftHoldClear?.trigger else { return "this button" }
+        return mouse.hotspotMeta(mouse.hotspotFor(t) ?? "").name
+    }
+
+    private var shiftHoldClearMessage: String {
+        guard let t = shiftHoldClear?.trigger else { return "" }
+        let n = mouse.layerActionCount(hold: t)
+        return "All \(n) combo\(n == 1 ? "" : "s") under \(shiftHoldName) are removed. Other shift keys keep theirs."
+    }
+
+    // A Hold slot claimed by another feature (Mouse Shift / Auto-scroll): the owner is named in an
+    // amber lock subtitle, and any stored action stays visible but struck-through (kept, just inert).
+    // Tapping runs `onTap` to reclaim the slot (turn auto-scroll off / clear the shift key).
+    private func lockedHoldRow(_ trigger: MouseTrigger, owner: String, onTap: (() -> Void)? = nil) -> some View {
+        let action = mouse.action(for: trigger, phase: .hold)
+        return ActionSlotRow(title: "Hold", onTap: onTap) {
+            Text("Used by \(owner)").font(.system(size: 11)).foregroundStyle(Color.warning)
+        } trailing: {
+            HStack(spacing: 8) {
+                if action.kind != .disabled {
+                    Text(action.displayLabel)
+                        .font(.system(size: 12)).foregroundStyle(.tertiary)
+                        .strikethrough(true, color: .secondary)
+                        .lineLimit(1).truncationMode(.tail)
+                }
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 10)).foregroundStyle(Color.warning)
+            }
+        }
     }
 
     @ViewBuilder
@@ -85,16 +149,15 @@ struct ButtonsGroup: View {
                     ForEach(Array(phases.enumerated()), id: \.element) { index, phase in
                         if index > 0 { Divider() }
                         if isShiftKey && phase == .hold {
-                            HStack(spacing: 8) {
-                                Text(phase.title).font(.system(size: 12, weight: .medium))
-                                    .frame(width: 100, alignment: .leading)
-                                Spacer(minLength: 8)
-                                Text("Powers Mouse Shift")
-                                    .font(.system(size: 12)).foregroundStyle(Color.secondaryAccent)
-                                Image(systemName: "lock.fill")
-                                    .font(.system(size: 9)).foregroundStyle(Color.secondaryAccent)
+                            // Restricted BY a shift key → tap to reclaim it (clears that key's combos).
+                            lockedHoldRow(trigger, owner: "Mouse Shift") {
+                                shiftHoldClear = ClickPick(trigger: trigger, phase: .hold)
                             }
-                            .frame(minHeight: 36)
+                        } else if mouse.isAutoScrollHold(trigger) && phase == .hold {
+                            // Owned by auto-scroll → tap to reclaim it (turns auto-scroll off).
+                            lockedHoldRow(trigger, owner: "Auto-scroll") {
+                                autoScrollHoldWarn = ClickPick(trigger: trigger, phase: .hold)
+                            }
                         } else {
                             panelRow(phase.title, action: mouse.action(for: trigger, phase: phase),
                                      fallback: mouse.predefinedLabel(trigger, phase)) {
@@ -153,9 +216,7 @@ struct ButtonsGroup: View {
     private func panelRow(_ title: String, action: Action, fallback: String? = nil,
                           onTap: @escaping () -> Void) -> some View {
         let off = action.kind == .disabled
-        return SettingRow(title: title,
-                          value: off ? (fallback ?? "") : action.displayLabel,
-                          compact: true, onTap: onTap)
+        return ActionSlotRow(title: title, value: off ? (fallback ?? "") : action.displayLabel, onTap: onTap)
     }
 
     private func pickClick(_ kind: ActionKind, trigger: MouseTrigger, phase: ClickPhase) {

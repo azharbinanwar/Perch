@@ -34,6 +34,13 @@ struct ClipboardWindowView: View {
         .background(.regularMaterial)
         .overlay { if model.showHelp { ClipboardShortcutsOverlay { model.showHelp = false } } }
         .overlay {
+            if model.confirmingClear {
+                ClipboardClearConfirmOverlay(
+                    onCancel: { model.confirmingClear = false },
+                    onClear: { model.clearAll(); model.confirmingClear = false })
+            }
+        }
+        .overlay {
             if model.previewing, let item = model.previewItem {
                 ClipboardPreviewCard(
                     item: item,

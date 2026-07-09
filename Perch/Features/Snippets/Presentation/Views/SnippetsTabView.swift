@@ -81,7 +81,7 @@ struct SnippetsTabView: View {
         .sheet(isPresented: $showingSettings) { SnippetSettingsSheet() }
         .alert("Clear all snippets?", isPresented: $showingClearAll) {
             Button("Cancel", role: .cancel) {}
-            Button("Clear All", role: .destructive) { vm.clearAll() }
+            Button("Clear", role: .destructive) { vm.clearAll() }
         } message: {
             Text("This permanently deletes all \(vm.snippets.count) saved snippets. This can't be undone.")
         }

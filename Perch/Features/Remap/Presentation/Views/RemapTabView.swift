@@ -94,7 +94,7 @@ struct RemapTabView: View {
         }
         .alert("Reset Keys to default?", isPresented: $showingReset) {
             Button("Cancel", role: .cancel) {}
-            Button("Reset to Default", role: .destructive) {
+            Button("Reset", role: .destructive) {
                 ConfigService.resetAll(prefix: "keys.")
                 vm.reload()
             }
