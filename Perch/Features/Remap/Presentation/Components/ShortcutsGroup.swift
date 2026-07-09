@@ -1,8 +1,3 @@
-//
-//  ShortcutsGroup.swift
-//  Perch
-//
-
 import SwiftUI
 
 // The list of key mappings for the current profile. Editing a row calls back to the tab, which

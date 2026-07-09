@@ -1,8 +1,3 @@
-//
-//  HyperKeyGroup.swift
-//  Perch
-//
-
 import SwiftUI
 
 struct HyperKeyGroup: View {

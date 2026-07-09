@@ -1,8 +1,3 @@
-//
-//  SwitchToggle.swift
-//  Perch
-//
-
 import SwiftUI
 
 struct SwitchToggle: View {

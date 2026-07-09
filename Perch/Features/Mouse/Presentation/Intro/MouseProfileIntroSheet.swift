@@ -1,8 +1,3 @@
-//
-//  MouseProfileIntroSheet.swift
-//  Perch
-//
-
 import SwiftUI
 
 struct MouseProfileIntroSheet: View {

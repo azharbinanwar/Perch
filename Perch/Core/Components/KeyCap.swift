@@ -1,8 +1,3 @@
-//
-//  KeyCap.swift
-//  Perch
-//
-
 import SwiftUI
 
 struct KeyCap: View {

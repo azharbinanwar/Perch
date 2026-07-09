@@ -36,12 +36,30 @@ struct SnippetsTabView: View {
                         .padding(.horizontal, 20).padding(.bottom, 12)
                 }
                 // Master: interactive only when Accessibility is on; dimmed (not hidden) when off.
-                masterGroup
-                    .disabled(!trusted)
-                    .opacity(trusted ? 1 : 0.5)
+                SettingGroup {
+                    SettingRow(title: "Enable Snippets",
+                               subtitle: vm.expansionEnabled ? "Type an abbreviation in any app and it expands."
+                                                             : "Off — snippets are still available in the clipboard.",
+                               icon: "text.quote") {
+                        SwitchToggle(isOn: vm.expansionEnabled) { vm.setExpansionEnabled($0) }
+                    }
+                }
+                .padding(.horizontal, 20).padding(.bottom, 12)
+                .disabled(!trusted)
+                .opacity(trusted ? 1 : 0.5)
                 // List: dimmed (not hidden) when Accessibility is off or expansion is off.
                 Group {
-                    if vm.snippets.isEmpty { emptyState } else { listContent }
+                    if vm.snippets.isEmpty {
+                        emptyState
+                    } else {
+                        LazyVStack(spacing: 0) {
+                            ForEach(Array(vm.snippets.enumerated()), id: \.element.id) { index, snippet in
+                                if index > 0 { Divider() }
+                                SnippetRow(snippet: snippet) { editing = snippet }
+                            }
+                        }
+                        .padding(8)
+                    }
                 }
                 .opacity(moduleActive ? 1 : 0.5)
                 .disabled(!moduleActive)
@@ -95,23 +113,6 @@ struct SnippetsTabView: View {
         .padding(.bottom, 12)
     }
 
-    // MARK: - Master
-
-    private var masterGroup: some View {
-        SettingGroup {
-            SettingRow(title: "Enable Snippets",
-                       subtitle: vm.expansionEnabled ? "Type an abbreviation in any app and it expands."
-                                                     : "Off — snippets are still available in the clipboard.",
-                       icon: "text.quote") {
-                Toggle("", isOn: Binding(get: { vm.expansionEnabled }, set: { vm.setExpansionEnabled($0) }))
-                    .toggleStyle(.switch).labelsHidden()
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.bottom, 12)
-    }
-
-
     private var emptyState: some View {
         ContentUnavailableView {
             Label("No Snippets", systemImage: "text.badge.plus")
@@ -121,44 +122,5 @@ struct SnippetsTabView: View {
             Button("New Snippet") { showingNew = true }
         }
         .frame(maxWidth: .infinity, minHeight: 280)
-    }
-
-    // Rows only — the page-level ScrollView does the scrolling (no nested ScrollView).
-    private var listContent: some View {
-        LazyVStack(spacing: 0) {
-            ForEach(Array(vm.snippets.enumerated()), id: \.element.id) { index, snippet in
-                if index > 0 { Divider() }
-                row(snippet)
-            }
-        }
-        .padding(8)
-    }
-
-    private func row(_ snippet: Snippet) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: "note.text").foregroundStyle(.secondary).frame(width: 18)
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(snippet.name).font(.system(size: 13, weight: .medium))
-                    if vm.expansionEnabled, let abbreviation = snippet.abbreviation {
-                        Text("\(vm.expansionPrefix.rawValue)\(abbreviation)\(vm.expansionPrefix.rawValue)")
-                            .font(.system(size: 10, design: .monospaced))
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 5).padding(.vertical, 1)
-                            .background(.quaternary.opacity(0.5), in: Capsule())
-                    }
-                }
-                Text(snippet.text).lineLimit(2).font(.system(size: 11)).foregroundStyle(.secondary)
-            }
-            Spacer()
-            Button { editing = snippet } label: { Image(systemName: "pencil") }
-                .buttonStyle(.borderless).foregroundStyle(.secondary)
-            Button(role: .destructive) { vm.delete(snippet) } label: { Image(systemName: "trash") }
-                .buttonStyle(.borderless).foregroundStyle(.secondary)
-        }
-        .padding(.vertical, 6)
-        .padding(.horizontal, 10)
-        .contentShape(Rectangle())
-        .onTapGesture { editing = snippet }   // whole row opens the snippet
     }
 }

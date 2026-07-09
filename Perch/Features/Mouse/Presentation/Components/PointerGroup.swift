@@ -1,8 +1,3 @@
-//
-//  PointerGroup.swift
-//  Perch
-//
-
 import SwiftUI
 
 struct PointerGroup: View {

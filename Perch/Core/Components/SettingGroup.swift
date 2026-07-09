@@ -1,8 +1,3 @@
-//
-//  SettingGroup.swift
-//  Perch
-//
-
 import SwiftUI
 
 struct SettingGroup<Content: View>: View {

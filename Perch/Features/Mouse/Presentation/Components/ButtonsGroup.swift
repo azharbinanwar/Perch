@@ -1,8 +1,3 @@
-//
-//  ButtonsGroup.swift
-//  Perch
-//
-
 import SwiftUI
 
 struct ButtonsGroup: View {

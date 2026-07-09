@@ -26,7 +26,29 @@ struct ClipboardTabView: View {
         @Bindable var vm = settings
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                header
+                HStack(alignment: .firstTextBaseline) {
+                    PageHeader("Clipboard", subtitle: storageSubtitle)
+                    Spacer()
+                    HeaderIconButton(icon: "info.circle", help: "See how the clipboard popup works") {
+                        showingIntro = true
+                    }
+                    HeaderIconButton(icon: "doc.on.clipboard", help: "Open the clipboard popup") {
+                        NotificationCenter.default.post(name: .openClipboardPopup, object: nil)
+                    }
+                    .disabled(!moduleActive)
+                    HeaderIconButton(icon: "keyboard", help: "Keyboard shortcuts") {
+                        showingShortcuts.toggle()
+                    }
+                    HeaderIconButton(icon: "arrow.counterclockwise",
+                                     help: "Reset clipboard settings to default — your items aren't affected") {
+                        showingReset = true
+                    }
+                    .disabled(!trusted)
+                    HeaderIconButton(icon: "trash", help: "Clear all clipboard items", destructive: true) {
+                        showingClearAll = true
+                    }
+                    .disabled(itemCount == 0 || !trusted)
+                }
                 // Tile appears only when Accessibility is off (nothing else is ever hidden).
                 // (The full blocking overlay lives on the floating ⌘⇧V window, not this tab.)
                 if !trusted {
@@ -38,16 +60,16 @@ struct ClipboardTabView: View {
                         onShowIntro: { showingShowcase = true })
                 }
                 // Master: interactive only when Accessibility is on; dimmed (not hidden) when off.
-                masterGroup
+                ClipboardMasterGroup()
                     .disabled(!trusted)
                     .opacity(trusted ? 1 : 0.5)
                 InfoNote(systemImage: "lock.fill", text: "Passwords and sensitive copies are never recorded.")
-                togglesBox
-                limitsBox(vm: $vm.settings)
-                appearanceBox
-                behaviorBox
-                privacyBox
-                exclusionsBox
+                ClipboardRecordingGroup()
+                ClipboardLimitsGroup(menuItemCount: $vm.settings.menuItemCount)
+                ClipboardAppearanceGroup()
+                ClipboardBehaviorGroup()
+                ClipboardPrivacyGroup()
+                ClipboardExclusionsGroup()
             }
             .padding(20)
         }
@@ -97,196 +119,6 @@ struct ClipboardTabView: View {
     }
 
     // MARK: - Header
-
-    private var header: some View {
-        HStack(alignment: .firstTextBaseline) {
-            PageHeader("Clipboard", subtitle: storageSubtitle)
-            Spacer()
-            HeaderIconButton(icon: "info.circle", help: "See how the clipboard popup works") {
-                showingIntro = true
-            }
-            HeaderIconButton(icon: "doc.on.clipboard", help: "Open the clipboard popup") {
-                NotificationCenter.default.post(name: .openClipboardPopup, object: nil)
-            }
-            .disabled(!moduleActive)
-            HeaderIconButton(icon: "keyboard", help: "Keyboard shortcuts") {
-                showingShortcuts.toggle()
-            }
-            HeaderIconButton(icon: "arrow.counterclockwise",
-                             help: "Reset clipboard settings to default — your items aren't affected") {
-                showingReset = true
-            }
-            .disabled(!trusted)
-            HeaderIconButton(icon: "trash", help: "Clear all clipboard items", destructive: true) {
-                showingClearAll = true
-            }
-            .disabled(itemCount == 0 || !trusted)
-        }
-    }
-
-    // MARK: - Toggles (master + recording)
-
-    private var masterGroup: some View {
-        SettingGroup {
-            SettingRow(title: "Enable Clipboard",
-                       subtitle: clipboard.isEnabled ? "\(settings.hotKeyDisplay) and menu peek are available"
-                                                     : "Off — clipboard is hidden everywhere",
-                       icon: "doc.on.clipboard") {
-                switchToggle(isOn: clipboard.isEnabled) { clipboard.setEnabled($0) }
-            }
-        }
-    }
-
-    private var togglesBox: some View {
-        SettingGroup {
-            SettingRow(
-                title: "Save clipboard history",
-                subtitle: clipboard.isRecording ? "Recording copies" : "Paused — not recording",
-                icon: "clock.arrow.circlepath"
-            ) {
-                switchToggle(isOn: clipboard.isRecording) { clipboard.setRecording($0) }
-                    .disabled(!moduleActive)
-            }
-        }
-        .disabled(!moduleActive)
-        .opacity(moduleActive ? 1 : 0.5)
-    }
-
-    private func switchToggle(isOn: Bool, action: @escaping (Bool) -> Void) -> some View {
-        Toggle("", isOn: Binding(get: { isOn }, set: action))
-            .toggleStyle(.switch)
-            .labelsHidden()
-    }
-
-    // MARK: - Privacy
-
-    private let autoClearOptions: [(label: String, value: Int)] = [
-        ("Never", 0), ("15 minutes", 15), ("1 hour", 60), ("6 hours", 360), ("24 hours", 1440)
-    ]
-    private let clipboardSizeOptions: [Int] = [25, 50, 100, 200]
-    private let menuSizeOptions = SettingsViewModel.menuCountOptions
-    private let pinLimitOptions: [Int] = [5, 10, 15]
-
-    // MARK: - Limits
-
-    private func limitsBox(vm: Binding<AppSettings>) -> some View {
-        SettingGroup("How many to keep") {
-            VStack(spacing: 10) {
-                SettingRow(title: "Clipboard", subtitle: "Items kept and shown in the \(settings.hotKeyDisplay) clipboard.", icon: "list.bullet") {
-                    intPicker(selection: Binding(get: { clipboard.maxItems }, set: { clipboard.setMaxItems($0) })) {
-                        ForEach(clipboardSizeOptions, id: \.self) { Text("\($0) items").tag($0) }
-                    }
-                }
-                Divider()
-                SettingRow(title: "Menu", subtitle: "Items shown in the menu-bar peek.", icon: "menubar.rectangle") {
-                    intPicker(selection: vm.menuItemCount) {
-                        ForEach(menuSizeOptions, id: \.self) { Text("\($0) items").tag($0) }
-                    }
-                }
-                Divider()
-                SettingRow(title: "Pins", subtitle: "Max items you can pin to the top.", icon: "pin") {
-                    intPicker(selection: Binding(get: { clipboard.pinLimit }, set: { clipboard.setPinLimit($0) })) {
-                        ForEach(pinLimitOptions, id: \.self) { Text("\($0) pins").tag($0) }
-                    }
-                }
-            }
-        }
-        .disabled(!moduleActive)
-        .opacity(moduleActive ? 1 : 0.5)
-    }
-
-    // MARK: - Appearance
-
-    private var appearanceBox: some View {
-        SettingGroup("Appearance") {
-            SettingRow(title: "Row size", subtitle: "How roomy each item is in the clipboard.", icon: "arrow.up.and.down.text.horizontal") {
-                Picker("", selection: Binding(get: { clipboard.rowDensity }, set: { clipboard.setRowDensity($0) })) {
-                    ForEach(RowDensity.allCases, id: \.self) { Text($0.title).tag($0) }
-                }
-                .labelsHidden()
-                .frame(width: 130)
-            }
-        }
-        .disabled(!moduleActive)
-        .opacity(moduleActive ? 1 : 0.5)
-    }
-
-    // MARK: - Behavior
-
-    private var behaviorBox: some View {
-        SettingGroup("Behavior") {
-            VStack(spacing: 10) {
-                SettingRow(title: "Keyboard shortcut", subtitle: "Click the shortcut to record a new one.", icon: "keyboard") {
-                    HotKeyRecorder(display: settings.hotKeyDisplay) { code, mods, label in
-                        settings.setHotKey(code: code, modifiers: mods, label: label)
-                    }
-                }
-                Divider()
-                SettingRow(title: "Restore clipboard after paste",
-                           subtitle: "Paste an item without changing your current clipboard.",
-                           icon: "arrow.uturn.backward") {
-                    switchToggle(isOn: clipboard.restoreAfterPaste) { clipboard.setRestoreAfterPaste($0) }
-                }
-            }
-        }
-        .disabled(!moduleActive)
-        .opacity(moduleActive ? 1 : 0.5)
-    }
-
-    // MARK: - Privacy
-
-    private var privacyBox: some View {
-        SettingGroup("Privacy") {
-            VStack(spacing: 10) {
-                SettingRow(title: "Auto-clear history", subtitle: "Remove copies older than the selected time.", icon: "clock.badge.xmark") {
-                    intPicker(selection: Binding(get: { clipboard.autoClearMinutes }, set: { clipboard.setAutoClear($0) })) {
-                        ForEach(autoClearOptions, id: \.value) { Text($0.label).tag($0.value) }
-                    }
-                }
-                Divider()
-                SettingRow(title: "Clear history on quit", subtitle: "Wipe everything when Perch quits.", icon: "trash") {
-                    switchToggle(isOn: clipboard.clearOnQuit) { clipboard.setClearOnQuit($0) }
-                }
-            }
-        }
-        .disabled(!moduleActive)
-        .opacity(moduleActive ? 1 : 0.5)
-    }
-
-    // MARK: - Excluded apps (two separate lists)
-
-    private var exclusionsBox: some View {
-        SettingGroup("Excluded apps") {
-            VStack(alignment: .leading, spacing: 12) {
-                AppExcludeList(
-                    title: "Don't record here",
-                    subtitle: "Copies made while these apps are focused aren't saved.",
-                    icon: "eye.slash",
-                    bundleIDs: clipboard.excludedRecordApps,
-                    onAdd: clipboard.addExcludedRecordApp,
-                    onRemove: clipboard.removeExcludedRecordApp
-                )
-                Divider()
-                AppExcludeList(
-                    title: "Don't open here",
-                    subtitle: "\(settings.hotKeyDisplay) won't open while these apps are focused.",
-                    icon: "rectangle.slash",
-                    bundleIDs: clipboard.excludedOpenApps,
-                    onAdd: clipboard.addExcludedOpenApp,
-                    onRemove: clipboard.removeExcludedOpenApp
-                )
-            }
-        }
-        .disabled(!moduleActive)
-        .opacity(moduleActive ? 1 : 0.5)
-    }
-
-    private func intPicker<Content: View>(selection: Binding<Int>,
-                                          @ViewBuilder content: () -> Content) -> some View {
-        Picker("", selection: selection) { content() }
-            .labelsHidden()
-            .frame(width: 130)
-    }
 
     // MARK: - Data
 

@@ -1,13 +1,3 @@
-//
-//  SafetyTimerBox.swift
-//  Perch
-//
-//  Freeze-test safety net: arm a countdown; when it hits zero, Perch force-quits ITSELF
-//  from a background thread (SIGKILL) — which fires even if the main thread is frozen, so a
-//  hung app (e.g. an event-tap stall) releases and the Mac unfreezes without a reboot.
-//  Plus a shortcut to the Accessibility pane for toggling Perch while testing.
-//
-
 import SwiftUI
 import Darwin
 

@@ -1,8 +1,3 @@
-//
-//  ValueSlider.swift
-//  Perch
-//
-
 import SwiftUI
 
 struct ValueSlider: View {

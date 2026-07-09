@@ -1,12 +1,3 @@
-//
-//  ClipboardShortcutsOverlay.swift
-//  Perch
-//
-//  The clipboard's keyboard-shortcuts card, shown as a centered overlay (dimmed backdrop,
-//  tap to dismiss). Reused by the ⌘⇧V popup and the Clipboard settings tab so both match.
-//  Other modules get their own shortcuts overlay.
-//
-
 import SwiftUI
 
 struct ClipboardShortcutsOverlay: View {

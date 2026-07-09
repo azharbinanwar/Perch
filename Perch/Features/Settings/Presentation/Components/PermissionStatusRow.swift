@@ -1,8 +1,3 @@
-//
-//  PermissionStatusRow.swift
-//  Perch
-//
-
 import SwiftUI
 
 struct PermissionStatusRow: View {

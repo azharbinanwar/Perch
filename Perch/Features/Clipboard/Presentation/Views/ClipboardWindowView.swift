@@ -14,14 +14,21 @@ struct ClipboardWindowView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if !model.isRecording { pausedBanner }
-            if let notice = model.notice { noticeBanner(notice) }
-            searchBar
-            categoryBar
+            if !model.isRecording {
+                ClipboardBanner(icon: "pause.circle.fill",
+                                text: "Recording paused — new copies aren't saved",
+                                actionLabel: "Resume") { model.resumeRecording() }
+            }
+            if let notice = model.notice {
+                ClipboardBanner(icon: "pin.slash.fill", text: notice,
+                                actionLabel: "Open Settings") { model.onOpenSettings() }
+            }
+            ClipboardSearchBar(search: model.search)
+            ClipboardCategoryBar(model: model)
             Divider()
             list
             Divider()
-            footer
+            ClipboardFooter(model: model)
         }
         .frame(width: 640, height: 500)
         .background(.regularMaterial)
@@ -66,62 +73,6 @@ struct ClipboardWindowView: View {
     }
 
     // MARK: - Paused banner
-
-    private var pausedBanner: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "pause.circle.fill").foregroundStyle(.orange)
-            Text("Recording paused — new copies aren't saved")
-                .font(.system(size: 12))
-            Spacer()
-            Button("Resume") { model.resumeRecording() }
-                .font(.system(size: 11))
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(.orange.opacity(0.12))
-    }
-
-    private func noticeBanner(_ text: String) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: "pin.slash.fill").foregroundStyle(.orange)
-            Text(text).font(.system(size: 12))
-            Spacer()
-            Button("Open Settings") { model.onOpenSettings() }
-                .font(.system(size: 11))
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(.orange.opacity(0.12))
-    }
-
-    // MARK: - Search (display only; typing is captured by the key tap)
-
-    private var searchBar: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-            if model.search.isEmpty {
-                Text("Type to search").foregroundStyle(.tertiary)
-            } else {
-                Text(model.search)
-            }
-            Spacer()
-        }
-        .font(.system(size: 15))
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-    }
-
-    // MARK: - List
-
-    private var categoryBar: some View {
-        Picker("", selection: Binding(get: { model.category }, set: { model.setCategory($0) })) {
-            ForEach(model.availableCategories) { Text($0.title).tag($0) }
-        }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-        .padding(.horizontal, 16)
-        .padding(.bottom, 8)
-    }
 
     @ViewBuilder
     private var list: some View {
@@ -296,46 +247,4 @@ struct ClipboardWindowView: View {
 
     // MARK: - Footer
 
-    private var footer: some View {
-        HStack(spacing: 12) {
-            ForEach(PopupShortcuts.footer) { shortcut in
-                // Same look as before — but the WHOLE item (keys + label) is a click target,
-                // so the popup stays usable by mouse even if it loses keyboard focus.
-                Button { footerAction(for: shortcut.keys) } label: {
-                    legend(shortcut.keys, shortcut.footerLabel ?? "")
-                }
-                .buttonStyle(.plain)
-            }
-            Spacer()
-            Button("Clear All") { model.clearAll() }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-        }
-        .font(.system(size: 11))
-        .foregroundStyle(.secondary)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-    }
-
-    /// Click equivalent of each footer shortcut (keyboard still works too).
-    private func footerAction(for keys: String) {
-        switch keys {
-        case "↑ ↓":    model.moveDown()        // single click steps down; keyboard keeps both directions
-        case "⇥ / ⇧⇥": model.cycleCategory()
-        case "⏎":      model.pasteSelected()
-        case "⌘/":     model.toggleHelp()
-        case "esc":    model.escape()
-        default:       break
-        }
-    }
-
-    private func legend(_ key: String, _ label: String) -> some View {
-        HStack(spacing: 4) {
-            Text(key)
-                .padding(.horizontal, 5).padding(.vertical, 1)
-                .background(.quaternary)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
-            Text(label)
-        }
-    }
 }

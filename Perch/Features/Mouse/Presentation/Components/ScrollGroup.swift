@@ -1,8 +1,3 @@
-//
-//  ScrollGroup.swift
-//  Perch
-//
-
 import SwiftUI
 
 struct ScrollGroup: View {

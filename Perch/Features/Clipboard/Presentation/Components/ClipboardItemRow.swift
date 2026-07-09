@@ -1,13 +1,3 @@
-//
-//  ClipboardItemRow.swift
-//  Perch
-//
-//  One clipboard row. Single clean line: source-app icon (quick-pick number as a badge
-//  on its corner) + inline smart-type marker + one-line preview + hover actions / time.
-//  - compact → menu peek (icon + text, tap = copy)
-//  - full    → popup (density-sized, hover Copy/Pin/Delete, double-click = copy)
-//
-
 import SwiftUI
 
 struct ClipboardItemRow: View {

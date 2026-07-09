@@ -1,8 +1,3 @@
-//
-//  SettingRow.swift
-//  Perch
-//
-
 import SwiftUI
 
 struct SettingRow<Trailing: View>: View {

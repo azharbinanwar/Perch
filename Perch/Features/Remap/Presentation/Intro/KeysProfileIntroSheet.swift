@@ -1,8 +1,3 @@
-//
-//  KeysProfileIntroSheet.swift
-//  Perch
-//
-
 import SwiftUI
 
 struct KeysProfileIntroSheet: View {

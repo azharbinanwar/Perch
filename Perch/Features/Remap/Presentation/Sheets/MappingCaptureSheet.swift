@@ -1,8 +1,3 @@
-//
-//  MappingCaptureSheet.swift
-//  Perch
-//
-
 import SwiftUI
 
 struct MappingCaptureSheet: View {

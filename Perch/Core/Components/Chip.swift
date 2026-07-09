@@ -1,8 +1,3 @@
-//
-//  Chip.swift
-//  Perch
-//
-
 import SwiftUI
 
 struct Chip: View {

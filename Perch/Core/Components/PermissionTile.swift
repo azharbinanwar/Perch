@@ -1,8 +1,3 @@
-//
-//  PermissionTile.swift
-//  Perch
-//
-
 import SwiftUI
 
 struct PermissionTile: View {

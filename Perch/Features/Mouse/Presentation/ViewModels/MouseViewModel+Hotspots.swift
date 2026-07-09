@@ -1,8 +1,3 @@
-//
-//  MouseViewModel+Hotspots.swift
-//  Perch
-//
-
 import Foundation
 
 struct MouseHotspotMeta {

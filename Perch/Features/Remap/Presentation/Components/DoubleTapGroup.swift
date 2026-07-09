@@ -1,8 +1,3 @@
-//
-//  DoubleTapGroup.swift
-//  Perch
-//
-
 import SwiftUI
 
 struct DoubleTapGroup: View {

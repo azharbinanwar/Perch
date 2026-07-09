@@ -13,6 +13,7 @@ struct MouseTabView: View {
     @State private var monitoring = InputMonitoringService.shared.trusted
     @State private var showingReset = false
     @State private var showingMouseIntro = false
+    @State private var showingMonitorIntro = false
     @State private var addingProfile = false
     @State private var profileIntroShowing = false
 
@@ -38,8 +39,13 @@ struct MouseTabView: View {
                         onShowIntro: { showingMouseIntro = true })
                 }
                 if !monitoring {
-                    AccessibilityBanner(message: "Allow Input Monitoring to see your connected mouse and their details.",
-                                        openSettings: { InputMonitoringService.shared.openSettings() })
+                    PermissionTile(
+                        icon: "cable.connector",
+                        title: "Input Monitoring (optional)",
+                        message: "Allow Input Monitoring to see your connected mouse and its details. Remapping works without it.",
+                        grantTitle: "Allow",
+                        onGrant: { InputMonitoringService.shared.openSettings() },
+                        onShowIntro: { showingMonitorIntro = true })
                 }
                 SettingGroup {
                     SettingRow(title: "Enable Mouse",
@@ -87,6 +93,9 @@ struct MouseTabView: View {
         }
         .sheet(isPresented: $showingMouseIntro) {
             ShowcaseSheet(title: "Mouse", content: AnyView(MouseIntroView()))
+        }
+        .sheet(isPresented: $showingMonitorIntro) {
+            ShowcaseSheet(title: "Input Monitoring", content: AnyView(InputMonitoringIntroView()))
         }
         .onAppear {
             AccessibilityService.shared.refresh()

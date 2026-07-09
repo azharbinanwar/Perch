@@ -1,8 +1,3 @@
-//
-//  MouseTargetSheet.swift
-//  Perch
-//
-
 import SwiftUI
 
 struct MappingTarget: Identifiable {

@@ -1,8 +1,3 @@
-//
-//  ThemeSwatch.swift
-//  Perch
-//
-
 import SwiftUI
 
 struct ThemeSwatch: View {

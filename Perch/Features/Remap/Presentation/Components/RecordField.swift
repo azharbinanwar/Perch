@@ -1,8 +1,3 @@
-//
-//  RecordField.swift
-//  Perch
-//
-
 import SwiftUI
 
 // A labeled key-record field: tap the box to start/stop recording. Shows the captured value or a

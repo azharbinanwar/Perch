@@ -1,11 +1,3 @@
-//
-//  ClipboardPermissionOverlay.swift
-//  Perch
-//
-//  The clipboard's Accessibility gate — the animated showcase on top (the reward) with a
-//  compact amber "grant it" strip below, via the generic PermissionOverlay's intro slot.
-//
-
 import SwiftUI
 
 struct ClipboardPermissionOverlay: View {

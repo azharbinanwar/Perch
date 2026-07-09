@@ -1,8 +1,3 @@
-//
-//  ShowcaseSheet.swift
-//  Perch
-//
-
 import SwiftUI
 
 struct ShowcaseSheet: View {

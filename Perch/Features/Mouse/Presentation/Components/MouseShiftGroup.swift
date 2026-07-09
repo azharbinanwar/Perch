@@ -1,8 +1,3 @@
-//
-//  MouseShiftGroup.swift
-//  Perch
-//
-
 import SwiftUI
 
 struct MouseShiftGroup: View {

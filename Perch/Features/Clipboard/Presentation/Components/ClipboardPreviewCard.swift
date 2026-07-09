@@ -1,11 +1,3 @@
-//
-//  ClipboardPreviewCard.swift
-//  Perch
-//
-//  Full-content preview of a clipboard item (Quick-Look style): source app + time
-//  header, then the whole text, scrollable and selectable.
-//
-
 import SwiftUI
 
 struct ClipboardPreviewCard: View {

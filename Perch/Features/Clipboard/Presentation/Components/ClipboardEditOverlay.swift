@@ -1,11 +1,3 @@
-//
-//  ClipboardEditOverlay.swift
-//  Perch
-//
-//  Edit-before-paste: a focused text editor over the popup. ⌘⏎ pastes the edited text into
-//  the target app (the stored clip is untouched); Esc cancels back to the list.
-//
-
 import SwiftUI
 
 struct ClipboardEditOverlay: View {
