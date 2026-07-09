@@ -87,18 +87,22 @@ struct GeneralView: View {
             }
 
             SettingGroup("About") {
-                HStack(spacing: 12) {
-                    Image("perch").resizable().scaledToFit()
-                        .frame(width: 34, height: 34)
-                        .foregroundStyle(Color.accentColor)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
-                             ?? Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "Perch")
-                            .font(.system(size: 13, weight: .semibold))
-                        Text("Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—") (\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—"))")
-                            .font(.system(size: 11)).foregroundStyle(.secondary)
+                VStack(spacing: 10) {
+                    HStack(spacing: 12) {
+                        Image("perch").resizable().scaledToFit()
+                            .frame(width: 34, height: 34)
+                            .foregroundStyle(Color.accentColor)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
+                                 ?? Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "Perch")
+                                .font(.system(size: 13, weight: .semibold))
+                            Text("Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—") (\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—"))")
+                                .font(.system(size: 11)).foregroundStyle(.secondary)
+                        }
+                        Spacer()
                     }
-                    Spacer()
+                    Divider()
+                    UpdateSection()
                 }
             }
 
