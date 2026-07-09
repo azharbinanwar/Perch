@@ -43,14 +43,15 @@ struct ScrollGroup: View {
                     SettingRow(title: "Hold key",
                                subtitle: mouse.editingScroll.turboKey == .control
                                    ? "⌃ can conflict with macOS scroll-zoom if you enabled it in Accessibility."
-                                   : "Held only while you want the boost.") {
+                                   : "Held only while you want the boost.",
+                               indented: true) {
                         Picker("", selection: Binding(get: { mouse.editingScroll.turboKey },
                                                       set: { key in mouse.updateScroll { $0.turboKey = key } })) {
                             ForEach(TurboKey.allCases) { Text($0.rawValue).tag($0) }
                         }
                         .labelsHidden().frame(width: 130)
                     }
-                    SettingRow(title: "Turbo speed", subtitle: "Multiplies your scroll speed while the key is held.") {
+                    SettingRow(title: "Turbo speed", subtitle: "Multiplies your scroll speed while the key is held.", indented: true) {
                         ValueSlider(value: mouse.editingScroll.turboSpeed, range: 2...10, step: 0.5, format: "%.1f×") { v in
                             mouse.updateScroll { $0.turboSpeed = v }
                         }
@@ -63,7 +64,7 @@ struct ScrollGroup: View {
                     SwitchToggle(isOn: mouse.editingScroll.autoOn) { on in mouse.updateScroll { $0.autoOn = on } }
                 }
                 if mouse.editingScroll.autoOn {
-                    SettingRow(title: "Sensitivity") {
+                    SettingRow(title: "Sensitivity", indented: true) {
                         ValueSlider(value: mouse.editingScroll.autoSpeed, range: 0.1...4, step: 0.05, format: "%.2f×") { v in
                             mouse.updateScroll { $0.autoSpeed = v }
                         }

@@ -12,7 +12,7 @@ struct ReliabilityGroup: View {
                     SwitchToggle(isOn: mouse.debounce) { mouse.setDebounce($0) }
                 }
                 if mouse.debounce {
-                    SettingRow(title: "Ignore window", subtitle: "A second click within this time is dropped.") {
+                    SettingRow(title: "Ignore window", subtitle: "A second click within this time is dropped.", indented: true) {
                         ValueSlider(value: mouse.debounceMs, range: 20...100, step: 5, format: "%.0f ms") { mouse.setDebounceMs($0) }
                     }
                 }

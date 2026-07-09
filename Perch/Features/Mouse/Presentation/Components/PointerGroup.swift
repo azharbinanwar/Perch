@@ -14,7 +14,7 @@ struct PointerGroup: View {
                 }
                 if mouse.editingPointer.override {
                     Divider()
-                    SettingRow(title: "Acceleration", subtitle: "0 = flat 1:1 tracking; higher = more.") {
+                    SettingRow(title: "Acceleration", subtitle: "0 = flat 1:1 tracking; higher = more.", indented: true) {
                         ValueSlider(value: mouse.editingPointer.value, range: 0...20, step: 0.5, format: "%.1f") { v in
                             mouse.updatePointer { $0.value = v }
                         }

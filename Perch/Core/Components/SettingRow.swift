@@ -6,6 +6,7 @@ struct SettingRow<Trailing: View>: View {
     var icon: String? = nil
     var onTap: (() -> Void)? = nil          // set → whole row becomes a tappable button
     var compact: Bool = false               // tighter title, for dense action-slot rows
+    var indented: Bool = false              // leading indent so a sub-row aligns under its parent's text
     @ViewBuilder let trailing: () -> Trailing
 
     var body: some View {
@@ -26,6 +27,7 @@ struct SettingRow<Trailing: View>: View {
             trailing()
         }
         .frame(minHeight: compact ? 34 : 0)
+        .padding(.leading, indented ? 32 : 0)   // 22 icon + 10 spacing → aligns under the parent text
 
         if let onTap {
             Button(action: onTap) { row.contentShape(Rectangle()) }
@@ -57,8 +59,9 @@ struct SettingRowValue: View {
 extension SettingRow where Trailing == SettingRowValue {
     /// Convenience: a whole-row button showing `value ›` on the right (no manual trailing needed).
     init(title: String, subtitle: String? = nil, icon: String? = nil,
-         value: String, placeholder: String = "—", compact: Bool = false, onTap: @escaping () -> Void) {
-        self.init(title: title, subtitle: subtitle, icon: icon, onTap: onTap, compact: compact) {
+         value: String, placeholder: String = "—", compact: Bool = false, indented: Bool = false,
+         onTap: @escaping () -> Void) {
+        self.init(title: title, subtitle: subtitle, icon: icon, onTap: onTap, compact: compact, indented: indented) {
             SettingRowValue(value: value, placeholder: placeholder)
         }
     }
