@@ -22,12 +22,23 @@ final class RemapManager {
     private var translated: [Int: KeyCombo] = [:]   // keycode → rewritten combo, so keyUp mirrors keyDown
     private var swallowed: Set<Int> = []            // keycodes whose keyDown we ate for an action
 
+    // Smart detect: a hardware shortcut key sends modifier+key as one burst (measured ≤5.4ms);
+    // human rolls are ≥17.5ms. Below the threshold = machine → remap; above = typed → pass
+    // through (⌃C in Terminal stays an interrupt). Timestamps come from the events themselves,
+    // never arrival time (a busy main thread would stretch the gap and misclassify).
+    static let smartThresholdMs = 10.0
+    private let selfPID = Int64(ProcessInfo.processInfo.processIdentifier)
+    private var prevFlags = CGEventFlags()
+    private var modDownTS: UInt64 = 0            // when the last significant modifier went down
+    private var smartHumanHeld: Set<Int> = []    // keycodes judged "typed" — latched until keyUp
+
     @discardableResult
     func start() -> Bool {
         guard eventTap == nil else { return true }
         guard AccessibilityService.shared.trusted else { return false }
 
-        let mask = CGEventMask((1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.keyUp.rawValue))
+        let mask = CGEventMask((1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.keyUp.rawValue)
+            | (1 << CGEventType.flagsChanged.rawValue))   // smart detect: time the modifier press
         guard let tap = CGEvent.tapCreate(
             tap: .cgSessionEventTap,
             place: .tailAppendEventTap,   // always AFTER the hyper/recorder taps — so a hyper'd
@@ -76,10 +87,24 @@ final class RemapManager {
             return Unmanaged.passUnretained(event)
         }
 
+        // Our own synthesized keystrokes (actions, paste) pass through untouched — they'd
+        // read as sub-ms hardware bursts and could be re-remapped by our own rules.
+        if event.getIntegerValueField(.eventSourceUnixProcessID) == selfPID {
+            return Unmanaged.passUnretained(event)
+        }
+
         let keyCode = Int(event.getIntegerValueField(.keyboardEventKeycode))
 
+        // Remember when a significant modifier physically went down (any of ⌃⌥⇧⌘).
+        if type == .flagsChanged {
+            let now = event.flags.intersection(KeyCombo.significant)
+            if !now.subtracting(prevFlags).isEmpty { modDownTS = event.timestamp }
+            prevFlags = now
+            return Unmanaged.passUnretained(event)
+        }
         // keyUp: mirror whatever we did to the keyDown so the app sees a matching pair.
         if type == .keyUp {
+            smartHumanHeld.remove(keyCode)
             if let output = translated.removeValue(forKey: keyCode) { rewrite(event, to: output) }
             else if swallowed.remove(keyCode) != nil { return nil }   // swallow the up of an eaten key
             return Unmanaged.passUnretained(event)
@@ -91,6 +116,21 @@ final class RemapManager {
             $0.isEnabled && $0.input.keyCode == keyCode && $0.input.modifiers == mods
         }) else {
             return Unmanaged.passUnretained(event)
+        }
+
+        // Smart detect: modified rules fire only for hardware bursts. The verdict is decided
+        // on the FIRST press and latched until keyUp — auto-repeats carry a stale modifier
+        // timestamp and would otherwise flip to "human" mid-hold.
+        if rule.smartDetect, rule.input.hasModifiers {
+            if event.getIntegerValueField(.keyboardEventAutorepeat) != 0 {
+                if smartHumanHeld.contains(keyCode) { return Unmanaged.passUnretained(event) }
+            } else {
+                let ms = Double(event.timestamp &- modDownTS) / 1_000_000
+                if modDownTS == 0 || ms >= Self.smartThresholdMs {
+                    smartHumanHeld.insert(keyCode)
+                    return Unmanaged.passUnretained(event)   // typed by hand → native meaning
+                }
+            }
         }
 
         let action = rule.output

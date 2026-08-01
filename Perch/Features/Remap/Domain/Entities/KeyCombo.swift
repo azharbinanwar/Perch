@@ -17,6 +17,9 @@ struct KeyCombo: Codable, Equatable, Hashable {
     /// The modifier bits we care about — everything else (caps lock, fn, numeric) is ignored.
     static let significant: CGEventFlags = [.maskCommand, .maskShift, .maskAlternate, .maskControl]
 
+    /// Any significant modifier in this combo — the ones smart detect can discriminate.
+    var hasModifiers: Bool { modifiers != 0 }
+
     static func keyName(_ code: Int) -> String {
         if let name = names[code] { return name }
         return "Key \(code)"

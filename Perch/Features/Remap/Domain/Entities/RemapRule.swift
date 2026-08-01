@@ -15,19 +15,22 @@ struct RemapRule: Identifiable, Codable, Equatable {
     var output: Action
     var isEnabled: Bool
     var isHyperKey: Bool   // recorded via the held Hyper key — migrated when the ⇧ option changes
+    var smartDetect: Bool  // modified input fires only from a hardware key (<10ms burst), typed passes through
 
-    init(id: UUID = UUID(), input: KeyCombo, output: Action, isEnabled: Bool = true, isHyperKey: Bool = false) {
+    init(id: UUID = UUID(), input: KeyCombo, output: Action, isEnabled: Bool = true,
+         isHyperKey: Bool = false, smartDetect: Bool = true) {
         self.id = id
         self.input = input
         self.output = output
         self.isEnabled = isEnabled
         self.isHyperKey = isHyperKey
+        self.smartDetect = smartDetect
     }
 
     /// No rules seeded — the user adds their own.
     static let defaults: [RemapRule] = []
 
-    enum CodingKeys: String, CodingKey { case id, input, output, isEnabled, isHyperKey }
+    enum CodingKeys: String, CodingKey { case id, input, output, isEnabled, isHyperKey, smartDetect }
 
     // Lenient decode: older rules stored `output` as a raw KeyCombo — wrap it as a custom keystroke.
     init(from decoder: Decoder) throws {
@@ -36,6 +39,7 @@ struct RemapRule: Identifiable, Codable, Equatable {
         input = try c.decode(KeyCombo.self, forKey: .input)
         isEnabled = try c.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? true
         isHyperKey = try c.decodeIfPresent(Bool.self, forKey: .isHyperKey) ?? false
+        smartDetect = try c.decodeIfPresent(Bool.self, forKey: .smartDetect) ?? true
         if let action = try? c.decode(Action.self, forKey: .output) {
             output = action
         } else if let combo = try? c.decode(KeyCombo.self, forKey: .output) {

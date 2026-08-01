@@ -45,6 +45,10 @@ struct RemapRuleRow: View {
                     Chip(text: rule.input.displayName)
                     Image(systemName: "arrow.right").font(.system(size: 11)).foregroundStyle(.secondary)
                     Chip(text: rule.output.displayLabel)
+                    if rule.smartDetect, rule.input.hasModifiers {
+                        Chip(text: "⚡ Smart", size: .small)
+                            .help("Fires only from a dedicated keyboard key. Typed \(rule.input.displayName) keeps its normal meaning.")
+                    }
                 }
                 .contentShape(Rectangle())
             }

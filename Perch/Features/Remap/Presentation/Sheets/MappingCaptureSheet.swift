@@ -6,6 +6,11 @@ struct MappingCaptureSheet: View {
     @State private var picking = false
     @State private var targetPrompt: ActionKind?
 
+    /// Visible once a modified combo is recorded; hidden again while re-recording the input.
+    private var showSmartRow: Bool {
+        vm.draftInput?.hasModifiers == true && vm.recording != .input
+    }
+
     var body: some View {
         let editing = vm.editingRuleID != nil
         VStack(spacing: 0) {
@@ -57,6 +62,20 @@ struct MappingCaptureSheet: View {
                     Label("\(input.displayName) is already mapped.", systemImage: "exclamationmark.triangle.fill")
                         .font(.system(size: 11)).foregroundStyle(.orange)
                 }
+
+                // Slot is ALWAYS present (fixed height) so the sheet never resizes —
+                // the row only fades in/out; nothing else moves.
+                VStack(spacing: 12) {
+                    Divider()
+                    SettingRow(title: "Smart detect",
+                               subtitle: "Fires only when a dedicated keyboard key sends this shortcut. Typing it by hand keeps its normal meaning, like ⌃C stopping a process in Terminal.",
+                               icon: "bolt.fill") {
+                        SwitchToggle(isOn: vm.draftSmart, onChange: { vm.draftSmart = $0 })
+                    }
+                }
+                .opacity(showSmartRow ? 1 : 0)
+                .allowsHitTesting(showSmartRow)
+                .animation(.easeInOut(duration: 0.2), value: showSmartRow)
             }
             .padding(20)
 

@@ -26,6 +26,7 @@ final class RemapViewModel {
     private(set) var draftInput: KeyCombo?
     private var draftViaHyper = false            // input recorded with the Hyper key held
     private(set) var draftOutput: Action?
+    var draftSmart = true                        // smart detect for the drafted rule (modified inputs)
     private(set) var recording: RemapField?
     private(set) var editingRuleID: UUID?   // non-nil = editing an existing rule in place
 
@@ -262,6 +263,8 @@ final class RemapViewModel {
             if self.recording == .input {
                 self.draftInput = KeyCombo(keyCode: code, modifiers: mods)
                 self.draftViaHyper = self.recorder.lastCaptureViaHyper
+                // Recording IS the detector: hardware burst → smart on, typed by hand → off.
+                self.draftSmart = self.recorder.lastCaptureWasHardware
             } else {
                 self.draftOutput = Action(kind: .customKeystroke, keyCode: code, modifiers: mods)
             }
@@ -279,6 +282,7 @@ final class RemapViewModel {
         draftInput = rule.input
         draftViaHyper = rule.isHyperKey
         draftOutput = rule.output
+        draftSmart = rule.smartDetect
         editingRuleID = rule.id
         cancelRecording()
     }
@@ -303,9 +307,11 @@ final class RemapViewModel {
                 p.rules[i].input = input
                 p.rules[i].output = output
                 p.rules[i].isHyperKey = self.draftViaHyper
+                p.rules[i].smartDetect = self.draftSmart
             }
         } else {
-            mutateEditing { $0.rules.append(RemapRule(input: input, output: output, isHyperKey: draftViaHyper)) }
+            mutateEditing { $0.rules.append(RemapRule(input: input, output: output,
+                                                      isHyperKey: draftViaHyper, smartDetect: draftSmart)) }
         }
         clearDraft()
     }
@@ -314,6 +320,7 @@ final class RemapViewModel {
         draftInput = nil
         draftViaHyper = false
         draftOutput = nil
+        draftSmart = true
         editingRuleID = nil
         cancelRecording()
     }

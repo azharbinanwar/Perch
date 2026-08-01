@@ -21,6 +21,13 @@ final class KeyChordRecorder {
     /// True when the last capture happened while the hyper key was held (set synchronously).
     private(set) var lastCaptureViaHyper = false
 
+    /// True when the last capture came as a hardware burst (modifier→key under the smart
+    /// threshold) — a dedicated shortcut key, not fingers. Set synchronously like ViaHyper.
+    private(set) var lastCaptureWasHardware = false
+
+    private var prevFlags = CGEventFlags()
+    private var modDownTS: UInt64 = 0   // event timestamp of the last modifier press
+
     private let hyperKeyCode = 79   // F18 — what Caps Lock becomes while Hyper is enabled
 
     private var eventTap: CFMachPort?
@@ -29,7 +36,12 @@ final class KeyChordRecorder {
     @discardableResult
     func start() -> Bool {
         guard eventTap == nil, AccessibilityService.shared.trusted else { return false }
-        let mask = CGEventMask(1 << CGEventType.keyDown.rawValue)
+        // Fresh session: modifier releases can land after stop(), leaving stale state that
+        // would hide the next modifier press (and misread a hardware burst as typed).
+        prevFlags = []
+        modDownTS = 0
+        let mask = CGEventMask((1 << CGEventType.keyDown.rawValue)
+            | (1 << CGEventType.flagsChanged.rawValue))   // time the modifier→key gap
         guard let tap = CGEvent.tapCreate(
             tap: .cgSessionEventTap, place: .headInsertEventTap, options: .defaultTap,
             eventsOfInterest: mask,
@@ -62,6 +74,14 @@ final class KeyChordRecorder {
             if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: true) }
             return Unmanaged.passUnretained(event)
         }
+        // Modifiers pass through untouched; remember when the last one went down.
+        if type == .flagsChanged {
+            let now = event.flags.intersection([.maskCommand, .maskShift, .maskAlternate, .maskControl])
+            if !now.subtracting(prevFlags).isEmpty { modDownTS = event.timestamp }
+            prevFlags = now
+            return Unmanaged.passUnretained(event)
+        }
+
         let code = Int(event.getIntegerValueField(.keyboardEventKeycode))
 
         // Hyper key: treat it like a modifier, not a key. Pass it through (the hyper engine
@@ -74,6 +94,9 @@ final class KeyChordRecorder {
         let extra = hyperFlags?() ?? []
         flags.formUnion(extra)                    // hyper held → record with ⌘⌥⌃(⇧)
         lastCaptureViaHyper = !extra.isEmpty
+        // Same verdict the engine uses: burst under the threshold = a hardware shortcut key.
+        let ms = Double(event.timestamp &- modDownTS) / 1_000_000
+        lastCaptureWasHardware = !flags.isEmpty && modDownTS != 0 && ms < RemapManager.smartThresholdMs
         let mods = flags.rawValue
         DispatchQueue.main.async { self.onCapture?(code, mods) }
         return nil   // swallow — the recorded combo must not actually fire
