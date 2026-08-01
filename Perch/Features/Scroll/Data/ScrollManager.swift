@@ -138,6 +138,11 @@ final class ScrollManager {
         if event.getIntegerValueField(.eventSourceUnixProcessID) == selfPID {
             return Unmanaged.passUnretained(event)
         }
+        // Perch-synthesized scroll from ANY instance (Dev + installed can run side by side) —
+        // two instances re-smoothing each other's glides is the feedback loop that overflowed take().
+        if event.getIntegerValueField(.eventSourceUserData) == Self.syntheticTag {
+            return Unmanaged.passUnretained(event)
+        }
 
         // Only transform the mouse — leave the trackpad alone.
         guard !isTrackpad(event) else { return Unmanaged.passUnretained(event) }
@@ -157,7 +162,9 @@ final class ScrollManager {
         transform(axis: (.scrollWheelEventDeltaAxis2, .scrollWheelEventPointDeltaAxis2, .scrollWheelEventFixedPtDeltaAxis2), of: event, config: config)
 
         // Smooth: swallow the chunky step and glide the same distance over the next frames.
-        if config.smooth { return smoothed(event, config: config) }
+        // Shift+scroll is exempt — apps only do the shift→horizontal swap for real wheel
+        // events, so it must travel as one (already reversed/scaled above).
+        if config.smooth, !event.flags.contains(.maskShift) { return smoothed(event, config: config) }
         return Unmanaged.passUnretained(event)
     }
 
@@ -182,12 +189,15 @@ final class ScrollManager {
     // MARK: - Smooth scrolling (glide)
 
     private let selfPID = Int64(ProcessInfo.processInfo.processIdentifier)
+    /// Stamped on every scroll event Perch posts, so no Perch instance ever re-processes one.
+    static let syntheticTag: Int64 = 0x50455243   // "PERC"
     private var pendingY = 0.0        // pixels left to glide (pixel-scrolling apps)
     private var pendingX = 0.0
     private var pendingLinesY = 0.0   // exact original lines left to emit (line-based apps like Terminal)
     private var pendingLinesX = 0.0
     private var lineFracY = 0.0       // fractional line carry between frames
     private var lineFracX = 0.0
+    private var glideFlags: CGEventFlags = []   // modifiers held when the scroll was swallowed
     private var glideTimer: Timer?
 
     /// Add the (already reversed/scaled) step to the glide target and swallow the original.
@@ -198,10 +208,13 @@ final class ScrollManager {
         let pointX = Double(event.getIntegerValueField(.scrollWheelEventPointDeltaAxis2))
         let lineY = Double(event.getIntegerValueField(.scrollWheelEventDeltaAxis1))
         let lineX = Double(event.getIntegerValueField(.scrollWheelEventDeltaAxis2))
-        pendingY += minimumStep(pointY != 0 ? pointY : lineY * 10, speed: config.speed)
-        pendingX += minimumStep(pointX != 0 ? pointX : lineX * 10, speed: config.speed)
-        pendingLinesY += lineY
-        pendingLinesX += lineX
+        glideFlags = event.flags   // the glide replays THESE keys, not whatever is held later
+        // Hard caps: pending beyond a few screens is garbage input (event floods), and
+        // unbounded pending is what crashed take()'s Int32 conversion.
+        pendingY = capped(pendingY + minimumStep(pointY != 0 ? pointY : lineY * 10, speed: config.speed), 20_000)
+        pendingX = capped(pendingX + minimumStep(pointX != 0 ? pointX : lineX * 10, speed: config.speed), 20_000)
+        pendingLinesY = capped(pendingLinesY + lineY, 300)
+        pendingLinesX = capped(pendingLinesX + lineX, 300)
 
         if glideTimer == nil {
             let timer = Timer(timeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in self?.glideTick() }
@@ -237,6 +250,8 @@ final class ScrollManager {
         // rounding up — that's what made Terminal fly 50 lines per tick).
         let event = CGEvent(scrollWheelEvent2Source: CGEventSource(stateID: .combinedSessionState),
                             units: .pixel, wheelCount: 2, wheel1: 0, wheel2: 0, wheel3: 0)
+        event?.flags = glideFlags   // not the live session state — release mid-glide must not leak
+        event?.setIntegerValueField(.eventSourceUserData, value: Self.syntheticTag)
         event?.setIntegerValueField(.scrollWheelEventDeltaAxis1, value: Int64(linesY))
         event?.setIntegerValueField(.scrollWheelEventDeltaAxis2, value: Int64(linesX))
         event?.setIntegerValueField(.scrollWheelEventPointDeltaAxis1, value: Int64(dy))
@@ -244,6 +259,10 @@ final class ScrollManager {
         event?.setIntegerValueField(.scrollWheelEventFixedPtDeltaAxis1, value: Int64(Double(linesY) * 65536))
         event?.setIntegerValueField(.scrollWheelEventFixedPtDeltaAxis2, value: Int64(Double(linesX) * 65536))
         event?.post(tap: .cgSessionEventTap)
+    }
+
+    private func capped(_ value: Double, _ limit: Double) -> Double {
+        max(-limit, min(limit, value))
     }
 
     private func take(_ pending: inout Double) -> Int32 {

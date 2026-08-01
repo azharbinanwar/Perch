@@ -52,6 +52,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// Dock icon click (and ⌘Tab / Finder reopen) → show the main window.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag { openMainWindow() }
+        return true
+    }
+
     // MARK: - Menu actions
 
     /// Called when the menu opens — remember the app to paste back into.

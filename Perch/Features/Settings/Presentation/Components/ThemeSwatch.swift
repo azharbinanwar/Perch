@@ -11,19 +11,18 @@ struct ThemeSwatch: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(background)
-                        .frame(width: 58, height: 42)
+                        .frame(width: 64, height: 44)
                         .overlay(RoundedRectangle(cornerRadius: 8)
                             .stroke(selected ? Color.accentColor : Color.secondary.opacity(0.25),
                                     lineWidth: selected ? 2 : 1))
+                    // Mini window: sidebar + content pane (same style as Miqat's theme picker).
                     HStack(spacing: 3) {
                         RoundedRectangle(cornerRadius: 2)
-                            .fill(theme == .dark ? Color.white.opacity(0.15)
-                                  : theme == .light ? Color.black.opacity(0.08) : Color.gray.opacity(0.45))
-                            .frame(width: 13, height: 26)
+                            .fill(sidebarColor)
+                            .frame(width: 16, height: 28)
                         RoundedRectangle(cornerRadius: 2)
-                            .fill(theme == .dark ? Color.white.opacity(0.08)
-                                  : theme == .light ? Color.black.opacity(0.04) : Color.gray.opacity(0.25))
-                            .frame(width: 30, height: 26)
+                            .fill(contentColor)
+                            .frame(width: 32, height: 28)
                     }
                 }
                 Text(theme.title)
@@ -42,6 +41,22 @@ struct ThemeSwatch: View {
             return AnyShapeStyle(LinearGradient(
                 stops: [.init(color: .black, location: 0.499), .init(color: .white, location: 0.501)],
                 startPoint: .topLeading, endPoint: .bottomTrailing))
+        }
+    }
+
+    private var sidebarColor: Color {
+        switch theme {
+        case .dark:   return .white.opacity(0.15)
+        case .light:  return .black.opacity(0.08)
+        case .system: return .gray.opacity(0.4)
+        }
+    }
+
+    private var contentColor: Color {
+        switch theme {
+        case .dark:   return .white.opacity(0.07)
+        case .light:  return .black.opacity(0.04)
+        case .system: return .gray.opacity(0.2)
         }
     }
 }
