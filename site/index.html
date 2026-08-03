@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perch: four things macOS forgot to ship</title>
+<meta name="description" content="Clipboard history, expanding snippets, a fully programmable mouse and a super key, one free menu-bar app for macOS.">
+<meta name="google-site-verification" content="9KXx56BD5_e1ufjfgeYq_2oIf_5Ki9fo4BRh6LsNshE">
+<link rel="canonical" href="https://perch.kodeelite.com/">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://perch.kodeelite.com">
+<meta property="og:title" content="Perch: four things macOS forgot to ship">
+<meta property="og:description" content="Clipboard history, expanding snippets, a fully programmable mouse and a super key, one free menu-bar app for macOS.">
+<meta property="og:image" content="https://perch.kodeelite.com/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Perch: four things macOS forgot to ship">
+<meta name="twitter:description" content="Clipboard history, expanding snippets, a fully programmable mouse and a super key, one free menu-bar app for macOS.">
+<meta name="twitter:image" content="https://perch.kodeelite.com/og.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="perch.css">
+</head>
+<body>
+
+<div class="bg" aria-hidden="true">
+  <div class="glow glow-hero"></div>
+  <div class="glow glow-mid"></div>
+  <div class="glow glow-amber"></div>
+  <div class="grain"></div>
+</div>
+
+<header class="nav wrap">
+  <a class="brand" href="#top">
+    <span class="brand-tile">
+      <svg width="17" height="14" viewBox="0 0 15 12" fill="#9CC0FF"><path d="M12.8202 11.174H10.2078L8.69599 9.00691C8.73341 9.00765 8.77099 9.00819 8.80875 9.00792C9.51761 9.00282 10.2464 8.81861 10.9811 8.46947L12.8202 11.174Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M1.76128 1.68235C3.58994 -1.45262 8.03084 0.202049 7.8568 3.511L7.85678 3.51108L14.0195 5.20792L13.9306 5.30997C12.139 7.36368 10.354 8.3872 8.80415 8.39837C8.33292 8.40176 7.8865 8.31163 7.47104 8.13087L8.98869 10.042C4.03817 12.2115 1.48744 8.5244 1.56434 3.78064L0.0195312 2.72736L1.75384 1.72678C1.7563 1.71197 1.75877 1.69716 1.76128 1.68235ZM2.96049 1.68241C2.72003 1.68241 2.5251 1.87735 2.5251 2.11781C2.52511 2.35827 2.72003 2.55319 2.96049 2.55319C3.20095 2.55319 3.39588 2.35827 3.39589 2.11781C3.39589 1.87735 3.20095 1.68241 2.96049 1.68241Z"/></svg>
+    </span>
+    Perch
+  </a>
+  <nav class="nav-links">
+    <a href="#clipboard">Clipboard</a>
+    <a href="#snippets">Snippets</a>
+    <a href="#mouse">Mouse</a>
+    <a href="#keys">Keys</a>
+    <a class="nav-cta" href="#get">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="M6 12l6 6 6-6"/><path d="M4 21h16"/></svg>Download</a>
+  </nav>
+</header>
+
+<!-- ================= HERO ================= -->
+<section class="hero wrap" id="top">
+  <div class="hero-copy reveal">
+    <div class="pill mono"><span class="pill-dot"></span>Free · macOS 14+ · no account, no tracking</div>
+    <h1>Four things macOS<br>forgot to ship.</h1>
+    <p class="lede">Perch sits in your menu bar with a clipboard history, expanding snippets, a fully programmable mouse and a super key. All of it follows whichever app is in front.</p>
+    <div class="cta-row">
+      <a class="btn-dl" href="https://github.com/azharbinanwar/perch-releases/releases/latest/download/Perch.dmg">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="M6 12l6 6 6-6"/><path d="M4 21h16"/></svg>Download for macOS</a>
+      <span class="mono dim" id="dl-meta">Apple&nbsp;Silicon</span>
+    </div>
+    <div class="hero-term">
+      <button class="term slim" id="hero-cmd" type="button" title="Copy the install command">
+        <span class="mono t-prompt">$</span>
+        <code class="mono">curl -fsSL perch.kodeelite.com/install.sh | sh</code>
+        <span class="t-copy mono" id="hero-copy">Copy</span>
+      </button>
+      <p class="mono dim sm">or install from Terminal, skips the security warning</p>
+    </div>
+  </div>
+
+  <div class="hero-visual reveal" data-parallax>
+    <div class="hero-halo"></div>
+    <div class="hero-stage" id="hero-stage">
+      <div class="h-tabs mono" id="hero-tabs">
+        <span data-f="0" class="on">Clipboard</span>
+        <span data-f="1">Snippets</span>
+        <span data-f="2">Mouse</span>
+        <span data-f="3">Keys</span>
+      </div>
+      <div class="h-scene">
+        <div class="h-panel" data-p="0">
+          <div class="hp-card" id="h-clip">
+            <div class="hp-search mono">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+              Search clipboard
+              <span class="mono hp-k right">⌘⇧V</span>
+            </div>
+            <div class="hp-rows" id="h-clip-rows"></div>
+            <div class="hp-pasted mono" id="h-clip-pasted">pasted into Mail</div>
+          </div>
+        </div>
+        <div class="h-panel" data-p="1">
+          <div class="h-note"><span class="h-typed mono" id="h-snip-text"></span><span class="caret"></span></div>
+        </div>
+        <div class="h-panel" data-p="2">
+          <div class="h-mouse" id="h-mouse"></div>
+          <span class="h-arrow">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+          </span>
+          <div class="chip chip-amber flow-chip h-fired" id="h-mouse-fired"></div>
+        </div>
+        <div class="h-panel" data-p="3">
+          <div class="h-caps">
+            <div class="kcap small" id="h-caps-key">Caps Lock</div>
+            <div class="kcap" id="h-w-key">W</div>
+          </div>
+          <span class="h-arrow">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+          </span>
+          <div class="chip chip-blue flow-chip h-fired" id="h-keys-fired"></div>
+        </div>
+      </div>
+      <p class="h-cap" id="hero-caption">Everything you copy, one shortcut away: search, pin, paste.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= QUAD ================= -->
+<section class="quad wrap reveal" data-stagger>
+  <a class="qcard" href="#clipboard">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#7FADFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="8" height="4" rx="1.4"/><path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/></svg>
+    <div class="q-name">Clipboard</div>
+    <div class="q-line">Everything you copy, one shortcut away: search, pin, paste.</div>
+  </a>
+  <a class="qcard" href="#snippets">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#7FADFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5h16v2"/><path d="M12 5v14"/><path d="M9 19h6"/></svg>
+    <div class="q-name">Snippets</div>
+    <div class="q-line">Type a short code anywhere and it becomes your saved text.</div>
+  </a>
+  <a class="qcard" href="#mouse">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#7FADFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="6"/><path d="M12 6.5v4"/></svg>
+    <div class="q-name">Mouse</div>
+    <div class="q-line">Hold one button, click another: every button gets a job. Per app.</div>
+  </a>
+  <a class="qcard" href="#keys">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#7FADFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8"/></svg>
+    <div class="q-name">Keys</div>
+    <div class="q-line">Caps Lock becomes a super key: a whole shortcut layer. Per app.</div>
+  </a>
+</section>
+
+<!-- ================= CLIPBOARD ================= -->
+<section id="clipboard" class="sec wrap">
+  <div class="sec-copy reveal">
+    <div class="eyebrow mono">01 · Clipboard</div>
+    <h2>Everything you copy,<br>one shortcut away.</h2>
+    <p class="body">Press ⌘⇧V in any app. A floating popup appears, fully keyboard-driven, and the app you came from keeps focus the whole time.</p>
+    <div class="bullets">
+      <div><span class="b-dot"></span>Search as you type, ↑↓ to walk, ⏎ to paste</div>
+      <div><span class="b-dot"></span>⌘1–9 for instant paste, ⌘P to pin</div>
+      <div><span class="b-dot"></span>Categories for text, links, images and snippets</div>
+      <div><span class="b-dot"></span>Per-app exclusions for anything sensitive</div>
+    </div>
+  </div>
+
+  <div class="stage reveal" id="clip-stage">
+    <div class="stage-top">
+      <div class="chips" id="clip-chips"></div>
+      <span class="mono dim sm" id="clip-label"></span>
+    </div>
+    <div class="popup">
+      <div class="pp-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6E7683" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <span class="mono" id="clip-query">Search clipboard</span>
+        <span class="caret"></span>
+        <span class="mono dim sm right" id="clip-count"></span>
+      </div>
+      <div class="pp-cats" id="clip-cats"></div>
+      <div class="pp-list" id="clip-list"></div>
+      <div class="pp-foot mono">
+        <span>↑↓ move</span><span>⏎ paste</span><span>⌘P pin</span>
+        <span class="pp-paste" id="clip-paste"></span>
+      </div>
+    </div>
+    <p class="cap" id="clip-cap"></p>
+    <div class="ctl" data-ctl="clip"></div>
+  </div>
+</section>
+
+<!-- ================= SNIPPETS ================= -->
+<section id="snippets" class="sec sec-flip wrap">
+  <div class="stage reveal" id="snip-stage">
+    <div class="stage-top">
+      <span class="chip mono" id="snip-token"></span>
+      <span class="mono dim sm" id="snip-label"></span>
+    </div>
+    <div class="notepad">
+      <div class="np-bar mono"><span class="tl"></span><span class="tl"></span><span class="tl"></span><span class="np-title">Notes · untitled</span></div>
+      <div class="np-body">
+        <div class="mono dim sm">typing…</div>
+        <div class="np-typed mono" id="snip-typed"><span id="snip-typed-text"></span><span class="caret"></span></div>
+        <div class="np-out" id="snip-out"></div>
+        <div class="np-chips" id="snip-chips"></div>
+      </div>
+    </div>
+    <p class="cap" id="snip-cap"></p>
+    <div class="ctl" data-ctl="snip"></div>
+  </div>
+  <div class="sec-copy reveal">
+    <div class="eyebrow mono">02 · Snippets</div>
+    <h2>Type a short code.<br>Get the whole thing.</h2>
+    <p class="body">Abbreviations expand anywhere you can type. Placeholders resolve the moment they land.</p>
+    <div class="tag-row">
+      <span class="tag mono">{date}</span>
+      <span class="tag mono">{time}</span>
+      <span class="tag mono">{clipboard}</span>
+      <span class="tag mono">{cursor}</span>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MOUSE ================= -->
+<section id="mouse" class="sec wrap">
+  <div class="sec-copy reveal">
+    <div class="eyebrow mono">03 · Mouse</div>
+    <h2>Every button<br>gets a job.</h2>
+    <p class="body">Click, double-click and hold are three separate actions on every button. Add flick gestures, per-app scroll control and a pointer acceleration override.</p>
+    <div class="bullets">
+      <div><span class="b-dot"></span>Three actions per button, plus hold-and-flick gestures</div>
+      <div><span class="b-dot"></span>Scroll: smooth, reversed, speed and turbo, per app</div>
+      <div><span class="b-dot"></span>Works on the mouse you already own</div>
+    </div>
+  </div>
+
+  <div class="stage reveal" id="mouse-stage">
+    <div class="m-grid">
+      <div class="m-col" id="mouse-diagram"></div>
+      <div class="flow">
+        <div class="flow-k mono">INPUT</div>
+        <div class="chip flow-chip" id="mouse-press"></div>
+        <div class="flow-arrow">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M6 13l6 6 6-6"/></svg>
+          <span class="flow-line"></span>
+        </div>
+        <div class="flow-k mono">PERCH FIRES</div>
+        <div class="chip chip-blue flow-chip" id="mouse-out"></div>
+      </div>
+    </div>
+    <p class="cap" id="mouse-cap"></p>
+    <div class="ctl" data-ctl="mouse"></div>
+  </div>
+</section>
+
+<!-- ================= MOUSE SHIFT ================= -->
+<section class="shift-band" id="shift">
+  <div class="sec sec-flip wrap">
+    <div class="stage stage-amber reveal" id="shift-stage">
+      <div class="shift-row">
+        <div class="shift-col">
+          <div class="m-col" id="shift-diagram"></div>
+          <div class="chip chip-amber flow-chip s-combo" id="shift-combo"></div>
+        </div>
+        <span class="s-arrow">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+        </span>
+        <div class="chip chip-amber s-fired" id="shift-out"></div>
+      </div>
+      <p class="cap cap-amber" id="shift-cap"></p>
+      <div class="ctl" data-ctl="shift"></div>
+    </div>
+    <div class="sec-copy reveal">
+      <div class="eyebrow mono amber-t">Mouse Shift</div>
+      <h2>A hidden layer on<br>an ordinary mouse.</h2>
+      <p class="body warm">Hold one chosen button and every other button gains a second action. Click, double-click and hold each get their own slot, and each hold key carries its own set of combos.</p>
+      <div class="amber-note">Five buttons become twenty actions, without buying a different mouse.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= KEYS ================= -->
+<section id="keys" class="sec wrap">
+  <div class="sec-copy reveal">
+    <div class="eyebrow mono">04 · Keys</div>
+    <h2>Caps Lock was<br>wasted on you.</h2>
+    <p class="body">Remap any key or shortcut. Turn Caps Lock into a Hyper Key: a private ⌘⌥⌃⇧ layer no app will ever fight you for. Double-tap a modifier to run an action.</p>
+    <div class="bullets">
+      <div><span class="b-dot"></span>Any key to any key, any shortcut to any action</div>
+      <div><span class="b-dot"></span>Hyper Key in Figma, plain Caps Lock in Terminal</div>
+    </div>
+  </div>
+
+  <div class="stage reveal" id="keys-stage">
+    <div class="k-grid">
+      <div class="k-caps" id="keys-caps"></div>
+      <div class="k-arrow">
+        <span class="k-line l"></span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+        <span class="k-line r"></span>
+      </div>
+      <div class="k-out-slot"><div class="k-out" id="keys-out"></div></div>
+    </div>
+    <p class="cap" id="keys-cap"></p>
+    <div class="ctl" data-ctl="keysd"></div>
+  </div>
+</section>
+
+<!-- ================= PER APP ================= -->
+<section id="perapp" class="wrap perapp">
+  <div class="perapp-head reveal">
+    <div class="eyebrow mono">The whole idea</div>
+    <h2>Everything is per app.</h2>
+    <p class="body">Mouse and keyboard behavior follows whichever app is in front, automatically. The same press does different things, because you meant different things.</p>
+  </div>
+
+  <div class="stage reveal" id="apps-stage">
+    <div class="tiles" id="apps-tiles">
+      <div class="tile" data-app="0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z"/></svg>
+        <span>WhatsApp</span>
+      </div>
+      <div class="tile" data-app="1">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 0 0 18a14 14 0 0 0 0-18"/></svg>
+        <span>Browser</span>
+      </div>
+      <div class="tile" data-app="2">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M3.5 12h17"/><circle cx="15.5" cy="16.5" r="2.6"/></svg>
+        <span>Figma</span>
+      </div>
+      <div class="tile" data-app="3">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="16" rx="2.5"/><path d="M7 10l2.5 2L7 14"/><path d="M12.5 14.5H17"/></svg>
+        <span>Terminal</span>
+      </div>
+    </div>
+
+    <div class="pa-scene">
+      <div class="pa-press">
+        <div class="flow-k mono">SAME PRESS</div>
+        <div class="chip flow-chip show" id="apps-press"></div>
+      </div>
+      <div class="pa-wire"><span class="pa-signal" id="apps-signal"></span></div>
+      <div class="pa-window" id="apps-window">
+        <div class="pa-titlebar">
+          <span class="tl"></span><span class="tl"></span><span class="tl"></span>
+          <span class="pa-app" id="apps-appicon"></span>
+          <span class="pa-name" id="apps-appname"></span>
+          <span class="mono pa-front">front</span>
+        </div>
+        <div class="pa-body">
+          <div class="chip chip-blue flow-chip" id="apps-out"></div>
+        </div>
+      </div>
+    </div>
+
+    <p class="cap" id="apps-cap"></p>
+    <div class="ctl" data-ctl="apps"></div>
+  </div>
+</section>
+
+<!-- ================= GET ================= -->
+<section id="get" class="wrap get">
+  <div class="get-card reveal">
+    <div class="get-halo"></div>
+    <h2>Put it in your menu bar.</h2>
+    <p class="body center">Free, forever. No account, no tracking, no subscription.</p>
+    <a class="btn-dl big" href="https://github.com/azharbinanwar/perch-releases/releases/latest/download/Perch.dmg">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="M6 12l6 6 6-6"/><path d="M4 21h16"/></svg>Download Perch.dmg</a>
+    <div class="term-wrap">
+      <div class="term">
+        <span class="mono t-prompt">$</span>
+        <code class="mono">curl -fsSL perch.kodeelite.com/install.sh | sh</code>
+        <button class="t-copy mono" id="copy-btn" type="button">Copy</button>
+      </div>
+      <p class="fineprint">The installer clears the Gatekeeper warning for you. Installing the DMG by hand? Right-click the app and choose Open, once.</p>
+    </div>
+    <div class="mono dim sm">Free · macOS 14+ · no account, no tracking</div>
+  </div>
+</section>
+
+<footer class="wrap footer">
+  <div class="f-left">
+    <svg width="16" height="13" viewBox="0 0 15 12" fill="#5B92F7"><path d="M12.8202 11.174H10.2078L8.69599 9.00691C8.73341 9.00765 8.77099 9.00819 8.80875 9.00792C9.51761 9.00282 10.2464 8.81861 10.9811 8.46947L12.8202 11.174Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M1.76128 1.68235C3.58994 -1.45262 8.03084 0.202049 7.8568 3.511L7.85678 3.51108L14.0195 5.20792L13.9306 5.30997C12.139 7.36368 10.354 8.3872 8.80415 8.39837C8.33292 8.40176 7.8865 8.31163 7.47104 8.13087L8.98869 10.042C4.03817 12.2115 1.48744 8.5244 1.56434 3.78064L0.0195312 2.72736L1.75384 1.72678C1.7563 1.71197 1.75877 1.69716 1.76128 1.68235ZM2.96049 1.68241C2.72003 1.68241 2.5251 1.87735 2.5251 2.11781C2.52511 2.35827 2.72003 2.55319 2.96049 2.55319C3.20095 2.55319 3.39588 2.35827 3.39589 2.11781C3.39589 1.87735 3.20095 1.68241 2.96049 1.68241Z"/></svg>
+    made by Kode Elite
+  </div>
+  <div class="f-right">
+    <!-- coffee link: restore when a real buy-me-a-coffee URL exists
+    <a href="#" id="coffee-link">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8z"/><path d="M17 9h2.5a2.5 2.5 0 0 1 0 5H17"/><path d="M5 22h12"/></svg>Buy me a coffee</a>
+    -->
+
+    <a class="dim" href="https://github.com/azharbinanwar/perch-releases/releases">Releases</a>
+  </div>
+</footer>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Perch",
+  "operatingSystem": "macOS 14.0 or later",
+  "applicationCategory": "UtilitiesApplication",
+  "description": "Clipboard history, expanding snippets, a fully programmable mouse and a super key, one free menu-bar app for macOS.",
+  "url": "https://perch.kodeelite.com",
+  "downloadUrl": "https://github.com/azharbinanwar/perch-releases/releases/latest/download/Perch.dmg",
+  "image": "https://perch.kodeelite.com/og.png",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "author": { "@type": "Organization", "name": "Kode Elite", "url": "https://perch.kodeelite.com" }
+}
+</script>
+<script src="demo.js"></script>
+</body>
+</html>

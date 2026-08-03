@@ -21,85 +21,31 @@ struct MouseTabView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                HStack {
-                    PageHeader("Mouse", subtitle: mouse.deviceSubtitle)
-                    Spacer()
-                    if trusted && mouse.masterEnabled {
-                        HeaderIconButton(icon: "arrow.counterclockwise",
-                                         help: "Reset Mouse settings to default — your mappings, gestures and profiles aren't affected") {
-                            showingReset = true
-                        }
-                    }
-                }
-                if !trusted {
-                    PermissionTile(
-                        icon: "cursorarrow.click",
-                        title: "Accessibility needed",
-                        message: "Perch needs Accessibility to remap your mouse buttons, gestures and scroll.",
-                        onGrant: { AccessibilityService.shared.request() },
-                        onShowIntro: { showingMouseIntro = true })
-                }
-                if !monitoring {
-                    PermissionTile(
-                        icon: "cable.connector",
-                        title: "Input Monitoring (optional)",
-                        message: "Allow Input Monitoring to see your connected mouse and its details. Remapping works without it.",
-                        grantTitle: "Allow",
-                        onGrant: { InputMonitoringService.shared.openSettings() },
-                        onShowIntro: { showingMonitorIntro = true })
-                }
-                SettingGroup {
-                    SettingRow(title: "Enable Mouse",
-                               subtitle: "Master switch for the whole tab — buttons, scroll, pointer and gestures. Applies to all mice.",
-                               icon: "magicmouse") {
-                        SwitchToggle(isOn: mouse.masterEnabled) { mouse.setMasterEnabled($0) }
-                    }
-                }
-                .disabled(!trusted)
-                .opacity(trusted ? 1 : 0.5)
-                Group {
-                    if showNoMouse {
-                        ContentUnavailableView("No mouse connected",
-                                               systemImage: "magicmouse",
-                                               description: Text("Connect a mouse to configure buttons, scroll and gestures."))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 40)
-                    } else {
-                    SettingGroup {
-                        AppProfileStrip(
-                            items: [AppProfileStrip.Item(bundleID: nil, name: "All apps")]
-                                + mouse.appProfiles.map { AppProfileStrip.Item(bundleID: $0.appBundleID, name: $0.displayName) },
-                            selectedBundleID: mouse.editingBundleID,
-                            subtitle: mouse.isEditingDefault
-                                ? "Applies to every app without its own profile."
-                                : "Active only while \(mouse.editingProfileName) is frontmost.",
-                            onSelect: { mouse.selectProfile($0) },
-                            onAdd: { addingProfile = true },
-                            onRemove: { bundleID in mouse.selectProfile(bundleID); mouse.removeEditingProfile() },
-                            onInfo: { profileIntroShowing = true }
-                        )
-                    }
-                    ButtonsGroup()
-                    MouseShiftGroup()
-                    SettingGroup {
-                        SettingRow(title: "Swap primary & secondary buttons",
-                                   subtitle: "Left-handed use — left click becomes right click and vice versa.",
-                                   icon: "arrow.left.arrow.right") {
-                            SwitchToggle(isOn: mouse.swapButtons) { mouse.setSwapButtons($0) }
-                        }
-                    }
-                    .opacity(mouse.isEnabled ? 1 : 0.5)
-                    .disabled(!mouse.isEnabled)
-                    PointerGroup()
-                    ScrollGroup()
-                    ReliabilityGroup()
-                    }
-                }
-                .opacity(moduleActive ? 1 : 0.4)
-                .disabled(!moduleActive)
+            VStack(spacing: 0) {
+                Divider()
+                content
             }
-            .padding(20)
+        }
+        .navigationTitle("Mouse")
+        .navigationSubtitle(mouse.deviceSubtitle)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { showingMouseIntro = true } label: {
+                    Label("How Mouse works", systemImage: "info.circle")
+                }
+                .help("See what the Mouse tab can do")
+            }
+            if trusted && mouse.masterEnabled {
+                if #available(macOS 26.0, *) {
+                    ToolbarSpacer(.fixed, placement: .primaryAction)
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button { showingReset = true } label: {
+                        Label("Reset Mouse settings", systemImage: "arrow.counterclockwise")
+                    }
+                    .help("Reset Mouse settings to default — your mappings, gestures and profiles aren't affected")
+                }
+            }
         }
         .sheet(isPresented: $showingMouseIntro) {
             ShowcaseSheet(title: "Mouse", content: AnyView(MouseIntroView()))
@@ -136,4 +82,77 @@ struct MouseTabView: View {
         }
     }
 
+    // MARK: - Content
+
+    private var content: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            if !trusted {
+                PermissionTile(
+                    icon: "cursorarrow.click",
+                    title: "Accessibility needed",
+                    message: "Perch needs Accessibility to remap your mouse buttons, gestures and scroll.",
+                    onGrant: { AccessibilityService.shared.request() },
+                    onShowIntro: { showingMouseIntro = true })
+            }
+            if !monitoring {
+                PermissionTile(
+                    icon: "cable.connector",
+                    title: "Input Monitoring (optional)",
+                    message: "Allow Input Monitoring to see your connected mouse and its details. Remapping works without it.",
+                    grantTitle: "Allow",
+                    onGrant: { InputMonitoringService.shared.openSettings() },
+                    onShowIntro: { showingMonitorIntro = true })
+            }
+            SettingGroup {
+                SettingRow(title: "Enable Mouse",
+                           subtitle: "Master switch for the whole tab — buttons, scroll, pointer and gestures. Applies to all mice.",
+                           icon: "magicmouse") {
+                    SwitchToggle(isOn: mouse.masterEnabled) { mouse.setMasterEnabled($0) }
+                }
+            }
+            .disabled(!trusted)
+            .opacity(trusted ? 1 : 0.5)
+            Group {
+                if showNoMouse {
+                    ContentUnavailableView("No mouse connected",
+                                           systemImage: "magicmouse",
+                                           description: Text("Connect a mouse to configure buttons, scroll and gestures."))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 40)
+                } else {
+                    SettingGroup {
+                        AppProfileStrip(
+                            items: [AppProfileStrip.Item(bundleID: nil, name: "All apps")]
+                                + mouse.appProfiles.map { AppProfileStrip.Item(bundleID: $0.appBundleID, name: $0.displayName) },
+                            selectedBundleID: mouse.editingBundleID,
+                            subtitle: mouse.isEditingDefault
+                                ? "Applies to every app without its own profile."
+                                : "Active only while \(mouse.editingProfileName) is frontmost.",
+                            onSelect: { mouse.selectProfile($0) },
+                            onAdd: { addingProfile = true },
+                            onRemove: { bundleID in mouse.selectProfile(bundleID); mouse.removeEditingProfile() },
+                            onInfo: { profileIntroShowing = true }
+                        )
+                    }
+                    ButtonsGroup()
+                    MouseShiftGroup()
+                    SettingGroup {
+                        SettingRow(title: "Swap primary & secondary buttons",
+                                   subtitle: "Left-handed use — left click becomes right click and vice versa.",
+                                   icon: "arrow.left.arrow.right") {
+                            SwitchToggle(isOn: mouse.swapButtons) { mouse.setSwapButtons($0) }
+                        }
+                    }
+                    .opacity(mouse.isEnabled ? 1 : 0.5)
+                    .disabled(!mouse.isEnabled)
+                    PointerGroup()
+                    ScrollGroup()
+                    ReliabilityGroup()
+                }
+            }
+            .opacity(moduleActive ? 1 : 0.4)
+            .disabled(!moduleActive)
+        }
+        .padding(20)
+    }
 }

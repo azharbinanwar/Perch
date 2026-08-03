@@ -24,64 +24,42 @@ struct RemapTabView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                HStack {
-                    PageHeader("Keys", subtitle: "Remap keys and shortcuts, app by app.")
-                    Spacer()
-                    // Header actions only make sense on a usable tab (hidden behind the lock otherwise).
-                    if trusted {
-                        HeaderIconButton(icon: "arrow.counterclockwise",
-                                         help: "Reset Keys settings to default — your mappings and profiles aren't affected") {
-                            showingReset = true
-                        }
-                        HeaderIconButton(icon: "plus", help: "Add a key mapping") {
-                            vm.clearDraft(); addingRule = true
-                        }
-                        .disabled(!moduleActive)
-                    }
-                }
-                // Tile appears only when Accessibility is off (nothing else is ever hidden).
-                if !trusted {
-                    PermissionTile(
-                        icon: "keyboard",
-                        title: "Accessibility needed",
-                        message: "Perch needs Accessibility to remap your keys, Hyper Key and double-tap shortcuts.",
-                        onGrant: { AccessibilityService.shared.request() },
-                        onShowIntro: { showingKeysIntro = true })
-                }
-                // Master: interactive only when Accessibility is on; dimmed (not hidden) when off.
-                // Just a setting — inlined, not its own component.
-                SettingGroup("Keyboard") {
-                    SettingRow(title: "Enable Keys",
-                               subtitle: "Master switch — key remapping, Hyper Key, and double-tap. Applies to all keyboards.",
-                               icon: "keyboard") {
-                        Toggle("", isOn: Binding(get: { vm.isEnabled }, set: { _ in vm.toggleEnabled() }))
-                            .toggleStyle(.switch).labelsHidden()
-                    }
-                }
-                .disabled(!trusted)
-                .opacity(trusted ? 1 : 0.5)
-                // Profile strip on top, like Mouse — it governs the per-app section below.
-                SettingGroup {
-                    AppProfileStrip(
-                        items: [AppProfileStrip.Item(bundleID: nil, name: "All apps")]
-                            + vm.appProfiles.map { AppProfileStrip.Item(bundleID: $0.appBundleID, name: $0.displayName) },
-                        selectedBundleID: vm.editingBundleID,
-                        subtitle: vm.isEditingDefault
-                            ? "Applies to every app without its own profile."
-                            : "Active only while \(vm.editingProfileName) is frontmost.",
-                        onSelect: { vm.selectProfile($0) },
-                        onAdd: { addingProfile = true },
-                        onRemove: { bundleID in vm.selectProfile(bundleID); vm.removeEditingProfile() },
-                        onInfo: { profileIntroShowing = true }
-                    )
-                }
-                .opacity(moduleActive ? 1 : 0.5)
-                ShortcutsGroup(onEdit: { rule in vm.beginEdit(rule); addingRule = true })
-                HyperKeyGroup()
-                DoubleTapGroup()
+            VStack(spacing: 0) {
+                Divider()
+                content
             }
-            .padding(20)
+        }
+        .navigationTitle("Keys")
+        .navigationSubtitle(keysSubtitle)
+        // Toolbar actions only make sense on a usable tab (hidden behind the lock otherwise).
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { showingKeysIntro = true } label: {
+                    Label("How Keys works", systemImage: "info.circle")
+                }
+                .help("See what the Keys tab can do")
+            }
+            if trusted {
+                if #available(macOS 26.0, *) {
+                    ToolbarSpacer(.fixed, placement: .primaryAction)
+                }
+                ToolbarItemGroup(placement: .primaryAction) {
+                    Button { showingReset = true } label: {
+                        Label("Reset Keys settings", systemImage: "arrow.counterclockwise")
+                    }
+                    .help("Reset Keys settings to default — your mappings and profiles aren't affected")
+                }
+                if #available(macOS 26.0, *) {
+                    ToolbarSpacer(.fixed, placement: .primaryAction)
+                }
+                ToolbarItemGroup(placement: .primaryAction) {
+                    Button { vm.clearDraft(); addingRule = true } label: {
+                        Label("Add a key mapping", systemImage: "plus")
+                    }
+                    .help("Add a key mapping")
+                    .disabled(!moduleActive)
+                }
+            }
         }
         .sheet(isPresented: $showingKeysIntro) {
             ShowcaseSheet(title: "Keys", content: AnyView(KeysIntroView()))
@@ -108,5 +86,61 @@ struct RemapTabView: View {
         }
     }
 
+    /// Mappings in the profile being edited, plus the profile count — or an honest empty state.
+    private var keysSubtitle: String {
+        let profiles = vm.appProfiles.count + 1   // + "All apps"
+        guard !vm.rules.isEmpty else {
+            return profiles > 1 ? "No mappings in this profile · \(profiles) profiles" : "No mappings yet"
+        }
+        let count = "\(vm.rules.count) mapping\(vm.rules.count == 1 ? "" : "s")"
+        return profiles > 1 ? "\(count) · \(profiles) profiles" : count
+    }
 
+    // MARK: - Content
+
+    private var content: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            // Tile appears only when Accessibility is off (nothing else is ever hidden).
+            if !trusted {
+                PermissionTile(
+                    icon: "keyboard",
+                    title: "Accessibility needed",
+                    message: "Perch needs Accessibility to remap your keys, Hyper Key and double-tap shortcuts.",
+                    onGrant: { AccessibilityService.shared.request() },
+                    onShowIntro: { showingKeysIntro = true })
+            }
+            // Master: interactive only when Accessibility is on; dimmed (not hidden) when off.
+            // Just a setting — inlined, not its own component.
+            SettingGroup("Keyboard") {
+                SettingRow(title: "Enable Keys",
+                           subtitle: "Master switch — key remapping, Hyper Key, and double-tap. Applies to all keyboards.",
+                           icon: "keyboard") {
+                    Toggle("", isOn: Binding(get: { vm.isEnabled }, set: { _ in vm.toggleEnabled() }))
+                        .toggleStyle(.switch).labelsHidden()
+                }
+            }
+            .disabled(!trusted)
+            .opacity(trusted ? 1 : 0.5)
+            // Profile strip on top, like Mouse — it governs the per-app section below.
+            SettingGroup {
+                AppProfileStrip(
+                    items: [AppProfileStrip.Item(bundleID: nil, name: "All apps")]
+                        + vm.appProfiles.map { AppProfileStrip.Item(bundleID: $0.appBundleID, name: $0.displayName) },
+                    selectedBundleID: vm.editingBundleID,
+                    subtitle: vm.isEditingDefault
+                        ? "Applies to every app without its own profile."
+                        : "Active only while \(vm.editingProfileName) is frontmost.",
+                    onSelect: { vm.selectProfile($0) },
+                    onAdd: { addingProfile = true },
+                    onRemove: { bundleID in vm.selectProfile(bundleID); vm.removeEditingProfile() },
+                    onInfo: { profileIntroShowing = true }
+                )
+            }
+            .opacity(moduleActive ? 1 : 0.5)
+            ShortcutsGroup(onEdit: { rule in vm.beginEdit(rule); addingRule = true })
+            HyperKeyGroup()
+            DoubleTapGroup()
+        }
+        .padding(20)
+    }
 }

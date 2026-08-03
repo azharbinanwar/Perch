@@ -20,11 +20,13 @@ struct GeneralView: View {
     var body: some View {
         @Bindable var vm = settings
         ScrollView {
+        VStack(spacing: 0) {
+        // The 7-tap dev backdoor moved from the old title to the strip under the toolbar.
+        Divider()
+            .padding(.bottom, 2)
+            .contentShape(Rectangle())
+            .onTapGesture { devTaps += 1; if devTaps >= 7 { showDev = true } }
         VStack(alignment: .leading, spacing: 16) {
-            PageHeader("General", subtitle: "Startup, permissions, and how Perch behaves.")
-                .contentShape(Rectangle())
-                .onTapGesture { devTaps += 1; if devTaps >= 7 { showDev = true } }
-
             SettingGroup("Permissions") {
                 VStack(spacing: 10) {
                     PermissionStatusRow(
@@ -114,6 +116,9 @@ struct GeneralView: View {
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
         }
+        }
+        .navigationTitle("General")
+        .navigationSubtitle("Startup, permissions, and how Perch behaves.")
         .sheet(isPresented: $importingFile) {
             ImportDropSheet { config in
                 backup = BackupRequest(mode: .importing, config: config)

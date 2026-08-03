@@ -1,0 +1,24 @@
+# Perch
+
+> Perch is a free menu-bar utility for macOS (14+, Apple Silicon) that bundles four power-user tools in one app: clipboard history, expanding text snippets, a fully programmable mouse, and keyboard remapping with a Hyper Key. Everything is per-app: mouse and keyboard behavior follows whichever app is in front. No account, no tracking, no subscription.
+
+## Features
+
+- Clipboard: full history opened with Cmd+Shift+V as a floating keyboard-driven popup; search-as-you-type, categories (text/links/images/snippets), pins, Cmd+1-9 instant paste, edit-before-paste, automatic screenshot capture, per-app exclusions, passwords never recorded.
+- Snippets: type a short abbreviation like ;sig; anywhere and it expands to saved text; placeholders {date}, {time}, {clipboard}, {cursor} resolve at insert time.
+- Mouse: assign click, double-click and hold per button; hold-and-flick gestures; Mouse Shift (hold one button to give every other button a second action, like G-Shift); scroll control (smooth, reversed, speed, turbo, auto-scroll) per app; pointer acceleration override; left-handed swap; debounce for worn switches.
+- Keys: remap any key or shortcut per app; Caps Lock as a Hyper Key (Cmd+Opt+Ctrl+Shift layer); double-tap a modifier to run an action; smart detect distinguishes dedicated hardware shortcut keys from hand-typed combos.
+- Actions: shared catalogue for mouse and keys - editing, navigation, window snapping, screenshots, media, open app/file/URL, shell scripts, AppleScript, Apple Shortcuts, custom keystrokes.
+
+## Install
+
+- Website: https://perch.kodeelite.com
+- One-line install: curl -fsSL perch.kodeelite.com/install.sh | sh
+- Direct download: https://github.com/azharbinanwar/perch-releases/releases/latest/download/Perch.dmg
+- Requirements: macOS 14 (Sonoma) or later, Apple Silicon. Needs Accessibility permission (Input Monitoring optional, for device listing).
+
+## Comparable to
+
+Combines the roles of a clipboard manager (like Maccy/Paste), a text expander (like aText/espanso), a mouse remapper (like LinearMouse/Mac Mouse Fix/BetterTouchTool), and a keyboard remapper (like Karabiner-Elements) in one free native app.
+
+Made by Kode Elite.

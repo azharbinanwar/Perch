@@ -23,56 +23,46 @@ struct ClipboardTabView: View {
     private var moduleActive: Bool { trusted && clipboard.isEnabled }
 
     var body: some View {
-        @Bindable var vm = settings
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                HStack(alignment: .firstTextBaseline) {
-                    PageHeader("Clipboard", subtitle: storageSubtitle)
-                    Spacer()
-                    HeaderIconButton(icon: "info.circle", help: "See how the clipboard popup works") {
-                        showingIntro = true
-                    }
-                    HeaderIconButton(icon: "doc.on.clipboard", help: "Open the clipboard popup") {
-                        NotificationCenter.default.post(name: .openClipboardPopup, object: nil)
-                    }
-                    .disabled(!moduleActive)
-                    HeaderIconButton(icon: "keyboard", help: "Keyboard shortcuts") {
-                        showingShortcuts.toggle()
-                    }
-                    HeaderIconButton(icon: "arrow.counterclockwise",
-                                     help: "Reset clipboard settings to default — your items aren't affected") {
-                        showingReset = true
-                    }
-                    .disabled(!trusted)
-                    HeaderIconButton(icon: "trash", help: "Clear all clipboard items", destructive: true) {
-                        showingClearAll = true
-                    }
-                    .disabled(itemCount == 0 || !trusted)
-                }
-                // Tile appears only when Accessibility is off (nothing else is ever hidden).
-                // (The full blocking overlay lives on the floating ⌘⇧V window, not this tab.)
-                if !trusted {
-                    PermissionTile(
-                        icon: "doc.on.clipboard",
-                        title: "Accessibility needed",
-                        message: "Perch needs Accessibility to paste items for you. Your clipboard history still records without it.",
-                        onGrant: { AccessibilityService.shared.request() },
-                        onShowIntro: { showingShowcase = true })
-                }
-                // Master: interactive only when Accessibility is on; dimmed (not hidden) when off.
-                ClipboardMasterGroup()
-                    .disabled(!trusted)
-                    .opacity(trusted ? 1 : 0.5)
-                InfoNote(systemImage: "lock.fill", text: "Passwords and sensitive copies are never recorded.")
-                ClipboardRecordingGroup()
-                ClipboardScreenshotGroup()
-                ClipboardLimitsGroup(menuItemCount: $vm.settings.menuItemCount)
-                ClipboardAppearanceGroup()
-                ClipboardBehaviorGroup()
-                ClipboardPrivacyGroup()
-                ClipboardExclusionsGroup()
+            VStack(spacing: 0) {
+                Divider()
+                content
             }
-            .padding(20)
+        }
+        .navigationTitle("Clipboard")
+        .navigationSubtitle(storageSubtitle)
+        // Native toolbar, two glass islands: learn/open · reset/destructive.
+        .toolbar {
+            ToolbarItemGroup(placement: .primaryAction) {
+                Button { showingIntro = true } label: {
+                    Label("How the clipboard works", systemImage: "info.circle")
+                }
+                .help("See how the clipboard popup works")
+                Button { NotificationCenter.default.post(name: .openClipboardPopup, object: nil) } label: {
+                    Label("Open the clipboard popup", systemImage: "doc.on.clipboard")
+                }
+                .help("Open the clipboard popup")
+                .disabled(!moduleActive)
+                Button { showingShortcuts.toggle() } label: {
+                    Label("Keyboard shortcuts", systemImage: "keyboard")
+                }
+                .help("Keyboard shortcuts")
+            }
+            if #available(macOS 26.0, *) {
+                ToolbarSpacer(.fixed, placement: .primaryAction)
+            }
+            ToolbarItemGroup(placement: .primaryAction) {
+                Button { showingReset = true } label: {
+                    Label("Reset settings", systemImage: "arrow.counterclockwise")
+                }
+                .help("Reset clipboard settings to default — your items aren't affected")
+                .disabled(!trusted)
+                Button(role: .destructive) { showingClearAll = true } label: {
+                    Label("Clear all clipboard items", systemImage: "trash")
+                }
+                .help("Clear all clipboard items")
+                .disabled(itemCount == 0 || !trusted)
+            }
         }
         .alert("Reset Clipboard settings to default?", isPresented: $showingReset) {
             Button("Cancel", role: .cancel) {}
@@ -123,7 +113,36 @@ struct ClipboardTabView: View {
         }
     }
 
-    // MARK: - Header
+    // MARK: - Content
+
+    private var content: some View {
+        @Bindable var vm = settings
+        // Tile appears only when Accessibility is off (nothing else is ever hidden).
+        // (The full blocking overlay lives on the floating ⌘⇧V window, not this tab.)
+        return VStack(alignment: .leading, spacing: 18) {
+            if !trusted {
+                PermissionTile(
+                    icon: "doc.on.clipboard",
+                    title: "Accessibility needed",
+                    message: "Perch needs Accessibility to paste items for you. Your clipboard history still records without it.",
+                    onGrant: { AccessibilityService.shared.request() },
+                    onShowIntro: { showingShowcase = true })
+            }
+            // Master: interactive only when Accessibility is on; dimmed (not hidden) when off.
+            ClipboardMasterGroup()
+                .disabled(!trusted)
+                .opacity(trusted ? 1 : 0.5)
+            InfoNote(systemImage: "lock.fill", text: "Passwords and sensitive copies are never recorded.")
+            ClipboardRecordingGroup()
+            ClipboardScreenshotGroup()
+            ClipboardLimitsGroup(menuItemCount: $vm.settings.menuItemCount)
+            ClipboardAppearanceGroup()
+            ClipboardBehaviorGroup()
+            ClipboardPrivacyGroup()
+            ClipboardExclusionsGroup()
+        }
+        .padding(20)
+    }
 
     // MARK: - Data
 

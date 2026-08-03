@@ -24,7 +24,7 @@ struct SnippetsTabView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                header
+                Divider().padding(.bottom, 20)   // match the 20pt content inset of the other tabs
                 // Tile appears only when Accessibility is off (nothing else is ever hidden).
                 if !trusted {
                     PermissionTile(
@@ -65,6 +65,40 @@ struct SnippetsTabView: View {
                 .disabled(!moduleActive)
             }
         }
+        .navigationTitle("Snippets")
+        .navigationSubtitle(snippetSubtitle)
+        // Native toolbar: icon-only buttons get the system's glassy material for free.
+        .toolbar {
+            // Learn/configure cluster.
+            ToolbarItemGroup(placement: .primaryAction) {
+                Button { showingIntro = true } label: {
+                    Label("How snippets work", systemImage: "info.circle")
+                }
+                .help("See how snippets work")
+                Button { showingSettings = true } label: {
+                    Label("Expansion settings", systemImage: "gearshape")
+                }
+                .help("Text expansion settings")
+                .disabled(!trusted)
+            }
+            // Content-action cluster: destructive + create, plus rightmost. On macOS 26 the
+            // spacer splits the Liquid Glass capsule; earlier systems space buttons anyway.
+            if #available(macOS 26.0, *) {
+                ToolbarSpacer(.fixed, placement: .primaryAction)
+            }
+            ToolbarItemGroup(placement: .primaryAction) {
+                Button(role: .destructive) { showingClearAll = true } label: {
+                    Label("Delete all snippets", systemImage: "trash")
+                }
+                .help("Delete all snippets")
+                .disabled(vm.snippets.isEmpty || !trusted)
+                Button { showingNew = true } label: {
+                    Label("New snippet", systemImage: "plus")
+                }
+                .help("New snippet")
+                .disabled(!trusted)
+            }
+        }
         .onAppear { AccessibilityService.shared.refresh() }
         .sheet(isPresented: $showingShowcase) {
             ShowcaseSheet(title: "Snippets", content: AnyView(SnippetIntroView()))
@@ -87,30 +121,11 @@ struct SnippetsTabView: View {
         }
     }
 
-    private var header: some View {
-        HStack {
-            PageHeader("Snippets", subtitle: "Saved clips you reuse — always available in the clipboard.")
-            Spacer()
-            HeaderIconButton(icon: "info.circle", help: "See how snippets work") {
-                showingIntro = true
-            }
-            // Config/destructive actions are disabled (not hidden) until Accessibility is granted.
-            HeaderIconButton(icon: "gearshape", help: "Text expansion settings") {
-                showingSettings = true
-            }
-            .disabled(!trusted)
-            HeaderIconButton(icon: "trash", help: "Delete all snippets", destructive: true) {
-                showingClearAll = true
-            }
-            .disabled(vm.snippets.isEmpty || !trusted)
-            HeaderIconButton(icon: "plus", help: "New snippet") {
-                showingNew = true
-            }
-            .disabled(!trusted)
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 20)
-        .padding(.bottom, 12)
+    /// "N snippets · expansion on" — or an honest empty state.
+    private var snippetSubtitle: String {
+        guard !vm.snippets.isEmpty else { return "No snippets yet" }
+        let count = "\(vm.snippets.count) snippet\(vm.snippets.count == 1 ? "" : "s")"
+        return "\(count) · expansion \(moduleActive ? "on" : "off")"
     }
 
     private var emptyState: some View {
