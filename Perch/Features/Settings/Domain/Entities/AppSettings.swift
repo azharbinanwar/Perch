@@ -23,7 +23,7 @@ struct AppSettings: Codable, Equatable {
     var theme: AppTheme            // system / light / dark
 
     init(menuItemCount: Int = 10, openAtLogin: Bool = true,
-         openWindowAtLaunch: Bool = false, showInDock: Bool = false,
+         openWindowAtLaunch: Bool = true, showInDock: Bool = true,
          theme: AppTheme = .system) {
         self.menuItemCount = menuItemCount
         self.openAtLogin = openAtLogin
@@ -39,8 +39,8 @@ struct AppSettings: Codable, Equatable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         menuItemCount = try c.decodeIfPresent(Int.self, forKey: .menuItemCount) ?? 10
         openAtLogin = try c.decodeIfPresent(Bool.self, forKey: .openAtLogin) ?? true
-        openWindowAtLaunch = try c.decodeIfPresent(Bool.self, forKey: .openWindowAtLaunch) ?? false
-        showInDock = try c.decodeIfPresent(Bool.self, forKey: .showInDock) ?? false
+        openWindowAtLaunch = try c.decodeIfPresent(Bool.self, forKey: .openWindowAtLaunch) ?? true
+        showInDock = try c.decodeIfPresent(Bool.self, forKey: .showInDock) ?? true
         theme = try c.decodeIfPresent(AppTheme.self, forKey: .theme) ?? .system
     }
 }
