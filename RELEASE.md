@@ -65,8 +65,9 @@ cask "perch" do
   app "Perch.app"
 
   caveats <<~EOS
-    Perch is not notarized. If macOS blocks the first launch, either install with
-    --no-quarantine, or right-click Perch.app and choose Open once.
+    Perch is not notarized, so macOS blocks the first launch. Approve it once in
+    System Settings -> Privacy & Security -> "Open Anyway", or install with
+    --no-quarantine to skip the prompt entirely.
   EOS
 
   zap trash: [

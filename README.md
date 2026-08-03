@@ -9,6 +9,14 @@
   <a href="https://github.com/azharbinanwar/perch-releases/releases">Releases</a>
 </div>
 
+```sh
+# install (clears the Gatekeeper warning for you)
+curl -fsSL perch.kodeelite.com/install.sh | sh
+
+# or with Homebrew
+brew install --cask azharbinanwar/tap/perch
+```
+
 <br>
 
 <div align="center">
@@ -193,6 +201,12 @@ Grant both in **System Settings → Privacy & Security**, then relaunch Perch.
 curl -fsSL perch.kodeelite.com/install.sh | sh
 ```
 
+**With Homebrew:**
+
+```sh
+brew install --cask azharbinanwar/tap/perch
+```
+
 **Or manually:**
 
 1. Download the latest [`Perch.dmg`](https://github.com/azharbinanwar/perch-releases/releases/latest/download/Perch.dmg).
@@ -200,7 +214,7 @@ curl -fsSL perch.kodeelite.com/install.sh | sh
 3. Launch Perch from Applications.
 4. Grant **Accessibility** and **Input Monitoring** when prompted, then relaunch.
 
-> **First-launch note (manual install only):** Perch isn't notarized yet, so macOS may warn about an "unidentified developer." Right-click the app → **Open** → **Open** once; macOS remembers after that. The Terminal installer handles this for you.
+> **First-launch note (Homebrew & manual installs):** Perch isn't notarized yet, so macOS blocks the first launch. Open **System Settings → Privacy & Security**, scroll to *"Perch was blocked"*, and click **Open Anyway** (on macOS 14, right-click → Open also works). One time only. The Terminal installer skips this entirely, and brew users can too with `--no-quarantine`.
 
 ---
 

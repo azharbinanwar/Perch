@@ -749,3 +749,19 @@ $("hero-cmd")?.addEventListener("click", () => {
   clearTimeout(h._t);
   h._t = setTimeout(() => (h.textContent = "Copy"), 1800);
 });
+
+$("copy-brew")?.addEventListener("click", () => {
+  navigator.clipboard?.writeText("brew install --cask azharbinanwar/tap/perch");
+  const b = $("copy-brew");
+  b.textContent = "Copied";
+  clearTimeout(b._t);
+  b._t = setTimeout(() => (b.textContent = "Copy"), 1800);
+});
+
+$("hero-brew")?.addEventListener("click", () => {
+  navigator.clipboard?.writeText("brew install --cask azharbinanwar/tap/perch");
+  const b = $("hero-brew-copy");
+  b.textContent = "Copied";
+  clearTimeout(b._t);
+  b._t = setTimeout(() => (b.textContent = "Copy"), 1800);
+});
