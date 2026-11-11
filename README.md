@@ -233,7 +233,7 @@ brew install --cask azharbinanwar/tap/perch
 
 ## Privacy
 
-Everything stays on your Mac. Clipboard history is stored locally, passwords and sensitive copies are never recorded, and nothing is sent anywhere.
+Everything stays on your Mac. Clipboard history is stored locally and passwords and sensitive copies are never recorded. The only thing Perch sends is the daily update check to GitHub.
 
 ## Build from source
 

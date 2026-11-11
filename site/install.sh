@@ -19,7 +19,7 @@ if curl -fsL "$URL.sha256" -o "$TMP/Perch.dmg.sha256" 2>/dev/null; then
   want="$(awk '{print $1}' "$TMP/Perch.dmg.sha256")"
   got="$(shasum -a 256 "$TMP/Perch.dmg" | awk '{print $1}')"
   if [ "$want" != "$got" ]; then
-    echo "Checksum mismatch — download may be corrupted. Aborting." >&2
+    echo "The download doesn't match its checksum and may be corrupted. Nothing was installed." >&2
     exit 1
   fi
   echo "Checksum verified."

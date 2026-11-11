@@ -1,0 +1,202 @@
+# Perch: full reference
+
+> Free, open-source (MIT) menu-bar app for macOS 14+ on Apple Silicon: clipboard history, text snippets, mouse remapping with Mouse Shift, and key remapping with a Caps Lock Hyper Key. Website: https://perch.kodeelite.com. Source: https://github.com/azharbinanwar/Perch. Short summary: https://perch.kodeelite.com/llms.txt.
+
+## Why Perch?
+
+macOS is great, but power users end up installing four separate apps: a clipboard manager, a snippet expander, a mouse remapper, and a keyboard tool. Perch is all four — designed to feel like one app, live in your menu bar, and respect your privacy. No accounts, no cloud, no telemetry. Passwords and sensitive copies are never recorded, and everything stays on your Mac.
+
+- **One app, four tools** — Clipboard, Snippets, Mouse, Keys.
+- **Menu-bar first** — a Dock icon is optional; it stays out of your way.
+- **Per-app aware** — Mouse and Keys can behave differently in each app.
+- **Keyboard-driven** — `⇧⌘V` and a private Hyper Key layer put everything a keystroke away.
+
+## 📋 Clipboard
+
+A full clipboard history you open with **`⇧⌘V`** (a floating, non-activating popup) or peek at from the menu bar.
+
+- **History** of text, images, and files, with de-duplication and configurable caps (default **50** in the popup, **10** in the menu peek).
+- **Non-activating popup** — the app you're in keeps focus the whole time; `⏎` drops the item straight into it. The hotkey itself is customizable.
+- **Categories** — filter by All / Text / Images / Snippets right in the popup (`⇥` cycles them).
+- **Pins** — keep your go-to items at the top permanently (default **5**, configurable).
+- **Search-as-you-type**, per-item actions (pin, copy, delete), and timestamps.
+- **Edit before paste** (`⌘E`) — tweak a clip on the way out without touching the stored copy.
+- **Screenshots** — screenshots and screen recordings saved to file are captured into history automatically (toggleable).
+- **Restore after paste** — quick-pasting an old item puts your current clipboard back afterwards.
+- **Auto-clear** — optionally expire history on a schedule.
+- **Privacy** — passwords and sensitive copies are never recorded; exclude any app from recording (or from quick paste) per app.
+- **Appearance** — adjustable row density for how roomy each item looks.
+
+### ⌨️ Full keyboard shortcuts (press ⌘/ in the popup for this cheat-sheet)
+
+| Key | Action | Key | Action |
+|-----|--------|-----|--------|
+| `↑ ↓` | Move (wraps) | `⌘C` | Copy (no paste) |
+| `⇥ / ⇧⇥` | Next / previous category | `⌘P` | Pin / Unpin |
+| `⌥1–9` | Jump to category | `⌘O` | Open link |
+| `⌘↑ / ⌘↓` | Top / Bottom | `⌘R` | Reveal file in Finder |
+| `Space` | Preview (empty search) | `⌘S` | Save image to Downloads |
+| `⌘Y` | Preview (always) | `⌘E` | Edit text & paste |
+| `↵` | Paste & close | `⌘K` | Clear all |
+| `⌘↵` | Paste & keep open | `⌫` | Delete search char |
+| `⌘⇧↵` | Paste plain (no formatting) | `⌘/` | All shortcuts |
+| `⌘1–9` | Quick paste | `esc` | Close |
+| `⌘⌫` | Delete item | | |
+
+## ✂️ Snippets
+
+Saved clips you reuse — always in the clipboard, and expandable by typing a trigger **anywhere**.
+
+- **Type-to-expand** — type `;meet;` and it's instantly replaced by the snippet. `;` is the default prefix; `:abbr:` and `//abbr//` are available in settings. The *closing* prefix triggers it, so `;a;` and `;ab;` happily coexist.
+- **Dynamic placeholders**, resolved as you paste:
+  - `{date}` (with a format picker) · `{time}` · `{clipboard}` (your last copy) · `{cursor}` (where the caret lands afterward).
+- **Starter snippets** included (Meeting notes, Signature, Quote clipboard, Meeting summary) to teach by example — all editable, never re-seeded after you clear them.
+- **Per-app exclusions** — turn expansion off in apps where triggers would collide (editors, terminals).
+- Snippets are also a category inside the `⇧⌘V` popup — "Open Snippets" opens it pre-filtered.
+
+## 🖱️ Mouse
+
+Turn any mouse into a productivity device — per app or for all apps.
+
+### Buttons & gestures
+
+- **Scan buttons** to detect every button your mouse has (even extras) — the detected list drives everything else.
+- Assign **Click / Double-click / Hold** per button → a shortcut, an action, or a typed keystroke.
+- **Keystroke buttons** — some mice have keys that type keyboard combos instead of clicking; Perch captures and maps those too.
+- **Gestures** — hold & flick **Up / Down / Left / Right** for four more actions per button.
+- **Per-app profiles** — the profile strip on top governs the whole tab; buttons, gestures, scroll and pointer can all differ per app, switching automatically with the frontmost app.
+- **Connected mice** readout (via Input Monitoring) so you can see exactly which devices Perch sees.
+- **Reliability** — a debounce filter fixes a worn switch that double-fires on one click, without breaking real double-clicks.
+
+### Mouse Shift (a "G-Shift" layer)
+
+Hold a chosen button (e.g. Middle), then press another button to fire that combo's action — a whole second layer for every button. Each hold key keeps its own independent, unlimited set of combos, and each combo gets its own Click / Double-click / Hold slots. A tap on the hold key alone still performs its normal click actions — nothing is lost.
+
+### Scroll & pointer
+
+- **Swap primary & secondary buttons** (left-handed mode).
+- **Pointer acceleration** override (leaves trackpad untouched).
+- **Scroll**: Reverse direction (mouse only), Smooth scrolling (glide on a notchy wheel), No acceleration (flat), Scroll speed, Turbo scroll (hold a key to fly), and Auto-scroll — Windows-style: long-press the trigger button and move to scroll (a quick click still passes through), release to latch and scroll hands-free, any click stops. All per app.
+
+## ⌨️ Keys
+
+Remap keys and shortcuts **app by app**, with a private shortcut layer.
+
+- **Key & shortcut remapping** — e.g. `⌃C → ⌘C`, `⌃V → ⌘V` (Windows muscle memory), or map a combo to **Open App** (e.g. `⇧⌘B → Android Studio`).
+- **Smart detect** — dedicated shortcut keys on keyboards send their combo as one instant burst; Perch measures this while you record and can remap **only the hardware key**, so a hand-typed `⌃C` keeps its native meaning (say, Terminal's interrupt) while the copy key on your keyboard still remaps.
+- **Per-app profiles** — "All apps" by default, plus custom profiles (e.g. Terminal) that override it.
+
+### Hyper Key & double-tap
+
+- **Hyper Key** — hold **Caps Lock** to act as `⌘⌥⌃⇧` together: a private shortcut layer no app conflicts with. Single-tap and double-tap get their own actions (e.g. tap → Caps Lock, double-tap → Escape). In apps with a profile that turns it off, Caps Lock stays a real Caps Lock.
+- **Double-tap modifiers** — tap a modifier twice quickly to run an action (e.g. double-tap `⇧` → Spotlight) — normal shortcuts are never affected.
+
+## ⚡ Actions
+
+Everything a mouse button, gesture, combo, Hyper shortcut or double-tap can trigger comes from one shared catalogue:
+
+| Group | Actions |
+|-------|---------|
+| **Editing** | Copy · Cut · Paste · Paste as Plain Text · Undo · Redo · Select All · Delete · Find · Save · Emoji & Symbols |
+| **Navigation** | Back · Forward · Mission Control · App Exposé · Spotlight · Previous / Next Space |
+| **Window** | Minimize · Close · Toggle Full Screen · Snap Left / Right Half · Maximize · Center |
+| **App & System** | Quit App · Hide App · Force Quit · Lock Screen |
+| **Screenshots** | Area · Window · Full Screen · Screenshot Toolbar |
+| **View** | Zoom In · Zoom Out |
+| **Media** | Play/Pause · Next / Previous Track · Volume Up / Down · Mute · Brightness Up / Down |
+| **Clicks** | Double Click · Triple Click · Middle Click |
+| **Perch** | Open Clipboard · Open Snippets · Paste Last · Open Perch |
+| **Open** | Any App · Any File · Any URL |
+| **Custom & Scripts** | Type any keystroke · Run shell commands · Run AppleScript · Run your Apple Shortcuts — with curated ready-made presets so you don't need to know the syntax |
+
+Window snapping works through Accessibility (no extra window manager needed), and "tryable" actions can be tested right from the picker before you commit.
+
+## ⚙️ General
+
+- **Startup** — Launch at login · Open window at launch · Show in Dock (off = menu-bar only).
+- **Appearance** — Theme: System / Light / Dark, applied everywhere in Perch.
+- **Permissions** — live status for Accessibility and Input Monitoring.
+- **Backup** — export everything to one file; import by dropping it onto Perch, then pick exactly which sections to bring in (with live counts of what would change).
+- **Updates** — Perch checks its releases for new versions and can install them itself.
+- **Built-in demos** — every non-obvious feature has an ⓘ button that plays a short animated demo of the feature actually working, right inside the app.
+
+## Permissions
+
+Perch needs two macOS permissions and asks only when a feature requires them:
+
+| Permission | Why | Without it |
+|-----------|-----|-----------|
+| **Accessibility** | Controls input | Mouse, Keys, Scroll & quick clipboard paste stop |
+| **Input Monitoring** | Observes devices | Mouse detection & key watching stop |
+
+Grant both in **System Settings → Privacy & Security**, then relaunch Perch.
+
+## Installation
+
+**Recommended — one line in Terminal** (downloads the latest release, verifies it, installs to Applications, and clears the Gatekeeper warning):
+
+```sh
+curl -fsSL perch.kodeelite.com/install.sh | sh
+```
+
+**With Homebrew:**
+
+```sh
+brew install --cask azharbinanwar/tap/perch
+```
+
+**Or manually:**
+
+1. Download the latest [`Perch.dmg`](https://perch.kodeelite.com/download).
+2. Open it and drag **Perch** onto **Applications**.
+3. Launch Perch from Applications.
+4. Grant **Accessibility** and **Input Monitoring** when prompted, then relaunch.
+
+> **First-launch note (Homebrew & manual installs):** Perch isn't notarized yet, so macOS blocks the first launch. Open **System Settings → Privacy & Security**, scroll to *"Perch was blocked"*, and click **Open Anyway** (on macOS 14, right-click → Open also works). One time only. The Terminal installer skips this entirely, and brew users can too with `--no-quarantine`.
+
+## Requirements
+
+- macOS 14 (Sonoma) or later
+- Apple Silicon
+
+## Privacy
+
+Everything stays on your Mac. Clipboard history is stored locally and passwords and sensitive copies are never recorded. The only thing Perch sends is the daily update check to GitHub.
+
+## Questions
+
+### Is Perch free?
+
+Yes. Perch is free and open source under the MIT license. There is no account, subscription, ads or tracking.
+
+### Which Macs does it run on?
+
+macOS 14 Sonoma or later, on Apple Silicon Macs.
+
+### Why does Perch need Accessibility and Input Monitoring?
+
+Perch reads your mouse buttons and keys and sends new ones, which macOS only allows with these two permissions. Everything stays on your Mac, and the source code is on GitHub for anyone to check.
+
+### Does the clipboard history record passwords?
+
+No. Passwords and other copies apps mark as sensitive are never recorded, and you can exclude any app from recording.
+
+### Why does macOS say it can’t verify the developer?
+
+Perch isn’t notarized yet. The Terminal installer clears the warning for you. If you install with Homebrew or the DMG, open System Settings → Privacy & Security and click Open Anyway, once.
+
+### How do updates work?
+
+Perch checks GitHub for a new version once a day, verifies the download’s checksum and opens it for you. Homebrew users can run brew upgrade --cask perch.
+
+### Can I move my settings to another Mac?
+
+Yes. General → Backup exports everything to one file. Drop it on Perch on the other Mac and pick which sections to bring in.
+
+## Project
+
+- Source code: https://github.com/azharbinanwar/Perch (Swift and SwiftUI, MIT license)
+- Releases and changelog: https://github.com/azharbinanwar/Perch/releases
+- Report a bug: https://github.com/azharbinanwar/Perch/issues
+- Privacy: https://perch.kodeelite.com/privacy.html
+- Made by Kode Elite

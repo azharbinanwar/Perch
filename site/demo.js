@@ -6,6 +6,8 @@
 const $ = (id) => document.getElementById(id);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const ICON_PLAY = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.52.85l10.4-6.5a1 1 0 0 0 0-1.7l-10.4-6.5A1 1 0 0 0 8 5.5Z"/></svg>';
+const ICON_PAUSE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.2"/><rect x="14" y="5" width="4" height="14" rx="1.2"/></svg>';
 
 /* ---------- player: visibility-gated scene loop with injected controls ---------- */
 
@@ -38,7 +40,7 @@ class Player {
     const chev = (d) =>
       `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M${d ? 10 : 14} 6l${d ? "" : "-"}6 6l${d ? "-" : ""}6 6"/></svg>`;
     el.appendChild(btn("c-nav", chev(0), () => this.jump(this.i - 1), "Previous scene"));
-    this.playBtn = btn("c-play", "Pause", () => this.togglePause());
+    this.playBtn = btn("c-play", ICON_PAUSE, () => this.togglePause(), "Pause");
     el.appendChild(this.playBtn);
     el.appendChild(btn("c-nav", chev(1), () => this.jump(this.i + 1), "Next scene"));
     const dots = document.createElement("div");
@@ -54,7 +56,10 @@ class Player {
 
   updateCtl() {
     this.dots?.forEach((d, n) => d.classList.toggle("on", n === this.i));
-    if (this.playBtn) this.playBtn.textContent = this.paused ? "Play" : "Pause";
+    if (this.playBtn) {
+      this.playBtn.innerHTML = this.paused ? ICON_PLAY : ICON_PAUSE;
+      this.playBtn.setAttribute("aria-label", this.paused ? "Play" : "Pause");
+    }
   }
 
   async run(i) {
@@ -163,7 +168,7 @@ const fmtTime = new Date().toTimeString().slice(0, 5);
     "Everything you copy, one shortcut away: search, pin, paste.",
     "Type a short code anywhere and it becomes your saved text.",
     "Hold one button, click another: every button gets a job. Per app.",
-    "Caps Lock becomes a super key: a whole shortcut layer. Per app.",
+    "Caps Lock becomes a Hyper Key: a whole shortcut layer. Per app.",
   ];
   const ROWS = [
     { label: "Invoice #2291, due Friday", k: "⌘1" },
@@ -274,7 +279,7 @@ const fmtTime = new Date().toTimeString().slice(0, 5);
   ];
   const SCENES = [
     { chips: ["⌘", "⇧", "V"], label: "popup opens", cat: 0, q: "", sel: 0,
-      cap: "Press ⌘⇧V over whatever you are doing. Focus never leaves your app." },
+      cap: "Press ⌘⇧V over whatever you're doing. Focus never leaves your app." },
     { chips: ["↓", "↓"], label: "walk the list", cat: 0, q: "", sel: 2, walk: true,
       cap: "↑↓ walks everything you have copied. No mouse involved." },
     { chips: ["i", "n", "v"], label: "filtering", cat: 0, q: "inv", sel: 0, typeQ: true,
@@ -288,7 +293,7 @@ const fmtTime = new Date().toTimeString().slice(0, 5);
     { chips: ["⇥"], label: "category: Snippets", cat: 4, q: "", sel: 0,
       cap: "Your snippets live in here too, same shortcut, same window." },
     { chips: ["⏎"], label: "pasted", cat: 0, q: "", sel: 0, flash: 0, paste: true,
-      cap: "Enter drops it into the app you came from. Copy once, paste forever." },
+      cap: "Enter drops it into the app you came from. Copy once, paste whenever." },
   ];
 
   const chipsEl = $("clip-chips"), labelEl = $("clip-label"), queryEl = $("clip-query"),
@@ -367,12 +372,12 @@ const fmtTime = new Date().toTimeString().slice(0, 5);
 
 (() => {
   const SCENES = [
-    { token: ";meet;", out: [`Meeting notes · ${fmtDate}`, "Attendees:"], chips: ["{date} resolved"],
+    { token: ";meet;", out: [`Meeting notes · ${fmtDate}`, "Attendees:"], chips: ["{date} filled in"],
       cap: "A short code becomes the whole block, wherever you are typing." },
-    { token: ";q;", out: ["Ship it Friday, says Sam"], chips: ["{clipboard} resolved"],
+    { token: ";q;", out: ["Ship it Friday, says Sam"], chips: ["{clipboard} filled in"],
       cap: "Snippets can reach into your clipboard as they expand." },
     { token: ";sig;", out: ["Azhar Bin Anwar", "Kode Elite · perch.kodeelite.com"], chips: [],
-      cap: "Your signature, four characters at a time." },
+      cap: "Your whole signature from five keystrokes." },
     { token: ";sum;", out: [`${fmtDate} · ${fmtTime}`, "Ship it Friday, says Sam", "Next steps: "], chips: ["{date}", "{time}", "{clipboard}", "{cursor}"],
       cap: "Date, time, clipboard, and the cursor left exactly where you want it." },
   ];
@@ -420,7 +425,7 @@ const fmtTime = new Date().toTimeString().slice(0, 5);
 (() => {
   const SCENES = [
     { lit: ["middle"], press: "Middle click", out: "Spotlight opens",
-      cap: "One click for the thing you open forty times a day." },
+      cap: "One click for the thing you open all day." },
     { lit: ["back"], press: "Hold button 4", out: "Copy", holdPress: true,
       cap: "Click, double-click and hold are three separate jobs on every button." },
     { lit: ["top"], press: "Hold + flick up", out: "Mission Control", flick: true,
@@ -430,7 +435,7 @@ const fmtTime = new Date().toTimeString().slice(0, 5);
     { lit: [], press: "Scroll wheel", out: "Smooth scroll · 1.0×", scroll: true,
       cap: "Smooth, reversed, faster, turbo, and different in every app." },
     { lit: ["right"], press: "Left-handed layout", out: "Buttons swapped", mirror: true,
-      cap: "Swap the sides and the whole map follows your hand." },
+      cap: "Swap the sides and the layout follows your hand." },
   ];
 
   const mouse = buildMouse($("mouse-diagram"));
@@ -474,7 +479,7 @@ const fmtTime = new Date().toTimeString().slice(0, 5);
     { hold: "back", target: "right", mode: "hold", holdLabel: "Back button", press: "Hold Right", out: "Screenshot Area",
       cap: "And holding gives you a third." },
     { hold: "fwd", target: "left", mode: "click", holdLabel: "Forward button", press: "Click Left", out: "Paste as Plain Text",
-      cap: "Each hold key carries its own set of combos." },
+      cap: "Each hold button has its own set of combos." },
   ];
 
   const mouse = buildMouse($("shift-diagram"));
@@ -565,8 +570,8 @@ const fmtTime = new Date().toTimeString().slice(0, 5);
       cap: "In your chat app, the Back button opens Spotlight." },
     { app: 1, press: "Click Back button", out: "Just a normal click", active: false,
       cap: "In the browser, the very same click stays a click." },
-    { app: 0, press: "Scroll", out: "Slow and smooth", active: true, cap: "Chat wants gentle scrolling." },
-    { app: 1, press: "Scroll", out: "Fast · 3×", active: true, cap: "The browser wants to move." },
+    { app: 0, press: "Scroll", out: "Slow and smooth", active: true, cap: "Chat scrolls gently." },
+    { app: 1, press: "Scroll", out: "Fast · 3×", active: true, cap: "The browser scrolls fast." },
     { app: 2, press: "Hold Forward button", out: "Zoom In", active: true,
       cap: "In Figma the same button becomes a zoom." },
     { app: 2, press: "Caps Lock + Z", out: "Zoom to Fit", active: true,
@@ -632,42 +637,43 @@ document.querySelectorAll(".reveal, [data-stagger]").forEach((el) => {
 
 if (!REDUCED) {
   const heroVis = document.querySelector("[data-parallax]");
-  const glows = [
-    { el: document.querySelector(".glow-hero"), f: -0.06 },
-    { el: document.querySelector(".glow-mid"), f: 0.04 },
-    { el: document.querySelector(".glow-amber"), f: -0.03 },
-  ];
   let ticking = false;
   addEventListener("scroll", () => {
     if (ticking) return;
     ticking = true;
     requestAnimationFrame(() => {
       const y = scrollY;
-      glows.forEach((g) => { if (g.el) g.el.style.transform = `translateY(${y * g.f}px)`; });
       if (heroVis && y < 900) heroVis.style.transform = `translateY(${y * 0.05}px)`;
       ticking = false;
     });
   }, { passive: true });
 }
 
-$("copy-btn").addEventListener("click", () => {
-  navigator.clipboard?.writeText("curl -fsSL perch.kodeelite.com/install.sh | sh");
-  const b = $("copy-btn");
-  b.textContent = "Copied";
-  clearTimeout(b._t);
-  b._t = setTimeout(() => (b.textContent = "Copy"), 1800);
-});
+/* install commands: copy, then a check for a moment */
+const CURL = "curl -fsSL perch.kodeelite.com/install.sh | sh";
+const BREW = "brew install --cask azharbinanwar/tap/perch";
+[["hero-cmd", "hero-copy", CURL], ["copy-btn", "copy-btn", CURL], ["hero-brew", "hero-brew-copy", BREW], ["copy-brew", "copy-brew", BREW]]
+  .forEach(([trigger, badge, text]) => $(trigger)?.addEventListener("click", () => {
+    navigator.clipboard?.writeText(text);
+    const b = $(badge), label = b.querySelector("span");
+    b.classList.add("done"); label.textContent = "Copied";
+    clearTimeout(b._t);
+    b._t = setTimeout(() => { b.classList.remove("done"); label.textContent = "Copy"; }, 1800);
+  }));
 
-/* cursor spotlight (idea 1) */
-if (!REDUCED && matchMedia("(pointer: fine)").matches) {
-  const spot = document.createElement("div");
-  spot.className = "spot";
-  document.body.appendChild(spot);
-  addEventListener("pointermove", (e) => {
-    spot.style.setProperty("--mx", e.clientX + "px");
-    spot.style.setProperty("--my", e.clientY + "px");
+/* sticky header: hides while scrolling down, comes back on the way up */
+(() => {
+  const nav = document.querySelector("header.nav");
+  if (!nav) return;
+  let last = scrollY;
+  addEventListener("scroll", () => {
+    const y = scrollY;
+    nav.classList.toggle("scrolled", y > 8);
+    if (Math.abs(y - last) < 6) return;
+    nav.classList.toggle("hide", y > last && y > 160);
+    last = y;
   }, { passive: true });
-}
+})();
 
 /* the page obeys Perch shortcuts (idea 2) */
 (() => {
@@ -676,7 +682,7 @@ if (!REDUCED && matchMedia("(pointer: fine)").matches) {
   pop.innerHTML = `
     <div>
       <div class="hp-card">
-        <div class="hp-search mono">
+        <div class="hp-search">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
           Search clipboard<span class="mono hp-k right">⌘⇧V</span>
         </div>
@@ -686,7 +692,7 @@ if (!REDUCED && matchMedia("(pointer: fine)").matches) {
           <div class="hp-row"><span class="hp-dot alt"></span><span class="hp-label">Meeting notes from Monday</span><span class="mono hp-k">⌘3</span></div>
         </div>
       </div>
-      <div class="kbd-hint">this is Perch's popup. In the app it works everywhere · Esc closes</div>
+      <div class="kbd-hint">This is Perch's popup. In Perch itself, it opens over any app. Press Esc to close.</div>
     </div>`;
   document.body.appendChild(pop);
   pop.addEventListener("click", () => pop.classList.remove("open"));
@@ -730,6 +736,49 @@ if (!REDUCED && matchMedia("(pointer: fine)").matches) {
   }
 }
 
+/* tour video: one big play button, native controls once it's playing */
+(() => {
+  const player = document.querySelector(".tour-player");
+  if (!player) return;
+  const video = player.querySelector("video");
+  const play = player.querySelector(".tour-play");
+  video.controls = false;
+  player.classList.add("ready");
+  play.addEventListener("click", () => {
+    player.classList.add("playing");
+    video.controls = true;
+    video.play();
+  });
+  video.addEventListener("ended", () => {
+    player.classList.remove("playing");
+    video.controls = false;
+    video.load();
+  });
+})();
+
+/* FAQ: animate the answer open and closed instead of snapping */
+document.querySelectorAll(".faq-item").forEach((item) => {
+  const summary = item.querySelector("summary");
+  const body = item.querySelector(".faq-body");
+  const ease = "cubic-bezier(0.2, 0.7, 0.3, 1)";
+  let running = null;
+  summary.addEventListener("click", (e) => {
+    e.preventDefault();
+    if (running) return;
+    const opening = !item.open;
+    item.classList.toggle("is-open", opening);
+    if (opening) item.open = true;
+    if (REDUCED) { item.open = opening; return; }
+    const h = body.scrollHeight;
+    running = body.animate(
+      opening ? [{ height: "0px", opacity: 0 }, { height: h + "px", opacity: 1 }]
+              : [{ height: h + "px", opacity: 1 }, { height: "0px", opacity: 0 }],
+      { duration: opening ? 320 : 260, easing: ease }
+    );
+    running.onfinish = () => { if (!opening) item.open = false; running = null; };
+  });
+});
+
 /* live release info: real version + size from the latest GitHub release */
 fetch("https://api.github.com/repos/azharbinanwar/Perch/releases/latest")
   .then((r) => (r.ok ? r.json() : null))
@@ -737,31 +786,8 @@ fetch("https://api.github.com/repos/azharbinanwar/Perch/releases/latest")
     const dmg = rel?.assets?.find((a) => a.name.endsWith(".dmg"));
     if (!dmg) return;
     const mb = (dmg.size / 1048576).toFixed(1);
-    $("dl-meta").innerHTML = `Apple&nbsp;Silicon · ${rel.tag_name} · ${mb}&nbsp;MB`;
+    $("dl-meta").innerHTML = `Free and open source. Version ${rel.tag_name.replace(/^v/, "")}, ${mb}&nbsp;MB. Needs macOS&nbsp;14+ on Apple&nbsp;Silicon.`;
   })
   .catch(() => {});
 
 /* hero install command: click anywhere on it to copy */
-$("hero-cmd")?.addEventListener("click", () => {
-  navigator.clipboard?.writeText("curl -fsSL perch.kodeelite.com/install.sh | sh");
-  const h = $("hero-copy");
-  h.textContent = "Copied";
-  clearTimeout(h._t);
-  h._t = setTimeout(() => (h.textContent = "Copy"), 1800);
-});
-
-$("copy-brew")?.addEventListener("click", () => {
-  navigator.clipboard?.writeText("brew install --cask azharbinanwar/tap/perch");
-  const b = $("copy-brew");
-  b.textContent = "Copied";
-  clearTimeout(b._t);
-  b._t = setTimeout(() => (b.textContent = "Copy"), 1800);
-});
-
-$("hero-brew")?.addEventListener("click", () => {
-  navigator.clipboard?.writeText("brew install --cask azharbinanwar/tap/perch");
-  const b = $("hero-brew-copy");
-  b.textContent = "Copied";
-  clearTimeout(b._t);
-  b._t = setTimeout(() => (b.textContent = "Copy"), 1800);
-});

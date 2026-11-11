@@ -3,39 +3,47 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Perch: four things macOS forgot to ship</title>
-<meta name="description" content="Clipboard history, expanding snippets, a fully programmable mouse and a super key, one free menu-bar app for macOS.">
+<title>Perch: clipboard manager, snippets, mouse remapper and Hyper Key for Mac</title>
+<meta name="description" content="Free, open-source menu-bar app for macOS. Clipboard history on ⇧⌘V, text snippets that expand anywhere, mouse button remapping with Mouse Shift, and a Caps Lock Hyper Key.">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="author" content="Kode Elite">
+<meta name="theme-color" content="#08090C">
+<meta name="color-scheme" content="dark">
 <meta name="google-site-verification" content="9KXx56BD5_e1ufjfgeYq_2oIf_5Ki9fo4BRh6LsNshE">
 <link rel="canonical" href="https://perch.kodeelite.com/">
-<link rel="icon" type="image/png" href="icon.png">
-<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" href="/icon.png">
+<link rel="alternate" type="text/plain" title="LLM summary" href="https://perch.kodeelite.com/llms.txt">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://perch.kodeelite.com">
-<meta property="og:title" content="Perch: four things macOS forgot to ship">
-<meta property="og:description" content="Clipboard history, expanding snippets, a fully programmable mouse and a super key, one free menu-bar app for macOS.">
+<meta property="og:site_name" content="Perch">
+<meta property="og:locale" content="en_US">
+<meta property="og:url" content="https://perch.kodeelite.com/">
+<meta property="og:title" content="Perch: clipboard manager, snippets, mouse remapper and Hyper Key for Mac">
+<meta property="og:description" content="Free, open-source menu-bar app for macOS. Clipboard history on ⇧⌘V, text snippets that expand anywhere, mouse button remapping with Mouse Shift, and a Caps Lock Hyper Key.">
 <meta property="og:image" content="https://perch.kodeelite.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Perch: clipboard, snippets, mouse and keys for your Mac. Free and open source.">
+<meta property="og:video" content="https://perch.kodeelite.com/perch-tour.mp4">
+<meta property="og:video:type" content="video/mp4">
+<meta property="og:video:width" content="1280">
+<meta property="og:video:height" content="800">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Perch: four things macOS forgot to ship">
-<meta name="twitter:description" content="Clipboard history, expanding snippets, a fully programmable mouse and a super key, one free menu-bar app for macOS.">
+<meta name="twitter:title" content="Perch: clipboard manager, snippets, mouse remapper and Hyper Key for Mac">
+<meta name="twitter:description" content="Free, open-source menu-bar app for macOS. Clipboard history on ⇧⌘V, text snippets that expand anywhere, mouse button remapping with Mouse Shift, and a Caps Lock Hyper Key.">
 <meta name="twitter:image" content="https://perch.kodeelite.com/og.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="perch.css">
+<meta name="twitter:image:alt" content="Perch: clipboard, snippets, mouse and keys for your Mac. Free and open source.">
+<link rel="preload" href="fonts/instrument-sans.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/jetbrains-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="perch.css?v=7">
 </head>
 <body>
-
-<div class="bg" aria-hidden="true">
-  <div class="glow glow-hero"></div>
-  <div class="glow glow-mid"></div>
-  <div class="glow glow-amber"></div>
-  <div class="grain"></div>
-</div>
 
 <header class="nav wrap">
   <a class="brand" href="#top">
     <span class="brand-tile">
-      <svg width="17" height="14" viewBox="0 0 15 12" fill="#9CC0FF"><path d="M12.8202 11.174H10.2078L8.69599 9.00691C8.73341 9.00765 8.77099 9.00819 8.80875 9.00792C9.51761 9.00282 10.2464 8.81861 10.9811 8.46947L12.8202 11.174Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M1.76128 1.68235C3.58994 -1.45262 8.03084 0.202049 7.8568 3.511L7.85678 3.51108L14.0195 5.20792L13.9306 5.30997C12.139 7.36368 10.354 8.3872 8.80415 8.39837C8.33292 8.40176 7.8865 8.31163 7.47104 8.13087L8.98869 10.042C4.03817 12.2115 1.48744 8.5244 1.56434 3.78064L0.0195312 2.72736L1.75384 1.72678C1.7563 1.71197 1.75877 1.69716 1.76128 1.68235ZM2.96049 1.68241C2.72003 1.68241 2.5251 1.87735 2.5251 2.11781C2.52511 2.35827 2.72003 2.55319 2.96049 2.55319C3.20095 2.55319 3.39588 2.35827 3.39589 2.11781C3.39589 1.87735 3.20095 1.68241 2.96049 1.68241Z"/></svg>
+      <svg width="24" height="19" viewBox="0 0 15 12" fill="#5B92F7" aria-hidden="true"><path d="M12.8202 11.174H10.2078L8.69599 9.00691C8.73341 9.00765 8.77099 9.00819 8.80875 9.00792C9.51761 9.00282 10.2464 8.81861 10.9811 8.46947L12.8202 11.174Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M1.76128 1.68235C3.58994 -1.45262 8.03084 0.202049 7.8568 3.511L7.85678 3.51108L14.0195 5.20792L13.9306 5.30997C12.139 7.36368 10.354 8.3872 8.80415 8.39837C8.33292 8.40176 7.8865 8.31163 7.47104 8.13087L8.98869 10.042C4.03817 12.2115 1.48744 8.5244 1.56434 3.78064L0.0195312 2.72736L1.75384 1.72678C1.7563 1.71197 1.75877 1.69716 1.76128 1.68235ZM2.96049 1.68241C2.72003 1.68241 2.5251 1.87735 2.5251 2.11781C2.52511 2.35827 2.72003 2.55319 2.96049 2.55319C3.20095 2.55319 3.39588 2.35827 3.39589 2.11781C3.39589 1.87735 3.20095 1.68241 2.96049 1.68241Z"/></svg>
     </span>
     Perch
   </a>
@@ -44,6 +52,7 @@
     <a href="#snippets">Snippets</a>
     <a href="#mouse">Mouse</a>
     <a href="#keys">Keys</a>
+    <a class="nav-gh" href="https://github.com/azharbinanwar/Perch" aria-label="Perch on GitHub"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.25.45-2.28 1.19-3.08-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.78 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.08 0 4.41-2.69 5.38-5.26 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>GitHub</a>
     <a class="nav-cta" href="#get">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="M6 12l6 6 6-6"/><path d="M4 21h16"/></svg>Download</a>
   </nav>
@@ -52,33 +61,31 @@
 <!-- ================= HERO ================= -->
 <section class="hero wrap" id="top">
   <div class="hero-copy reveal">
-    <div class="pill mono"><span class="pill-dot"></span>Free · macOS 14+ · no account, no tracking</div>
     <h1>Four things macOS<br>forgot to ship.</h1>
-    <p class="lede">Perch sits in your menu bar with a clipboard history, expanding snippets, a fully programmable mouse and a super key. All of it follows whichever app is in front.</p>
+    <p class="lede">Perch sits in your menu bar with a clipboard history, expanding snippets, a fully programmable mouse and a Hyper Key. All of it follows whichever app is in front.</p>
     <div class="cta-row">
       <a class="btn-dl" href="https://perch.kodeelite.com/download">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="M6 12l6 6 6-6"/><path d="M4 21h16"/></svg>Download for macOS</a>
-      <span class="mono dim" id="dl-meta">Apple&nbsp;Silicon</span>
+      <span class="dim" id="dl-meta">Free and open source. Needs macOS&nbsp;14+ on Apple&nbsp;Silicon.</span>
     </div>
     <div class="hero-term">
       <button class="term slim" id="hero-cmd" type="button" title="Copy the install command">
         <span class="mono t-prompt">$</span>
         <code class="mono">curl -fsSL perch.kodeelite.com/install.sh | sh</code>
-        <span class="t-copy mono" id="hero-copy">Copy</span>
+        <span class="t-copy" id="hero-copy"><svg class="i-copy" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg><svg class="i-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg><span>Copy</span></span>
       </button>
       <button class="term slim" id="hero-brew" type="button" title="Copy the brew command">
         <span class="mono t-prompt">$</span>
         <code class="mono">brew install --cask azharbinanwar/tap/perch</code>
-        <span class="t-copy mono" id="hero-brew-copy">Copy</span>
+        <span class="t-copy" id="hero-brew-copy"><svg class="i-copy" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg><svg class="i-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg><span>Copy</span></span>
       </button>
-      <p class="mono dim sm">Terminal skips the security warning · brew for developers</p>
+      <p class="dim sm">No account, no tracking. The Terminal command also clears the macOS security warning.</p>
     </div>
   </div>
 
   <div class="hero-visual reveal" data-parallax>
-    <div class="hero-halo"></div>
     <div class="hero-stage" id="hero-stage">
-      <div class="h-tabs mono" id="hero-tabs">
+      <div class="h-tabs" id="hero-tabs">
         <span data-f="0" class="on">Clipboard</span>
         <span data-f="1">Snippets</span>
         <span data-f="2">Mouse</span>
@@ -87,13 +94,13 @@
       <div class="h-scene">
         <div class="h-panel" data-p="0">
           <div class="hp-card" id="h-clip">
-            <div class="hp-search mono">
+            <div class="hp-search">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
               Search clipboard
               <span class="mono hp-k right">⌘⇧V</span>
             </div>
             <div class="hp-rows" id="h-clip-rows"></div>
-            <div class="hp-pasted mono" id="h-clip-pasted">pasted into Mail</div>
+            <div class="hp-pasted" id="h-clip-pasted">pasted into Mail</div>
           </div>
         </div>
         <div class="h-panel" data-p="1">
@@ -142,18 +149,33 @@
   <a class="qcard" href="#keys">
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#7FADFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8"/></svg>
     <div class="q-name">Keys</div>
-    <div class="q-line">Caps Lock becomes a super key: a whole shortcut layer. Per app.</div>
+    <div class="q-line">Caps Lock becomes a Hyper Key: a whole shortcut layer. Per app.</div>
   </a>
+</section>
+
+<section id="tour" class="wrap tour">
+  <h2>Watch the tour</h2>
+  <p class="body">Under two minutes. Each feature is set up and then used, from the clipboard to backup.</p>
+  <div class="tour-player">
+    <video class="tour-video" controls preload="none" playsinline width="1280" height="800" poster="perch-tour-poster.png">
+      <source src="perch-tour.mp4" type="video/mp4">
+      <a href="perch-tour.mp4">Watch the Perch tour (MP4)</a>
+    </video>
+    <button class="tour-play" type="button" aria-label="Play the Perch tour, 1 minute 44 seconds">
+      <span class="tp-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.52.85l10.4-6.5a1 1 0 0 0 0-1.7l-10.4-6.5A1 1 0 0 0 8 5.5Z"/></svg></span>
+      <span class="tp-label">Play the tour<span class="tp-time">1:44</span></span>
+    </button>
+  </div>
 </section>
 
 <!-- ================= CLIPBOARD ================= -->
 <section id="clipboard" class="sec wrap">
   <div class="sec-copy reveal">
-    <div class="eyebrow mono">01 · Clipboard</div>
+    <div class="eyebrow">Clipboard</div>
     <h2>Everything you copy,<br>one shortcut away.</h2>
     <p class="body">Press ⌘⇧V in any app. A floating popup appears, fully keyboard-driven, and the app you came from keeps focus the whole time.</p>
     <div class="bullets">
-      <div><span class="b-dot"></span>Search as you type, ↑↓ to walk, ⏎ to paste</div>
+      <div><span class="b-dot"></span>Search as you type, ↑↓ to move, ⏎ to paste</div>
       <div><span class="b-dot"></span>⌘1–9 for instant paste, ⌘P to pin</div>
       <div><span class="b-dot"></span>Categories for text, links, images and snippets</div>
       <div><span class="b-dot"></span>Per-app exclusions for anything sensitive</div>
@@ -163,18 +185,18 @@
   <div class="stage reveal" id="clip-stage">
     <div class="stage-top">
       <div class="chips" id="clip-chips"></div>
-      <span class="mono dim sm" id="clip-label"></span>
+      <span class="dim sm" id="clip-label"></span>
     </div>
     <div class="popup">
       <div class="pp-search">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6E7683" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        <span class="mono" id="clip-query">Search clipboard</span>
+        <span id="clip-query">Search clipboard</span>
         <span class="caret"></span>
-        <span class="mono dim sm right" id="clip-count"></span>
+        <span class="dim sm right" id="clip-count"></span>
       </div>
       <div class="pp-cats" id="clip-cats"></div>
       <div class="pp-list" id="clip-list"></div>
-      <div class="pp-foot mono">
+      <div class="pp-foot">
         <span>↑↓ move</span><span>⏎ paste</span><span>⌘P pin</span>
         <span class="pp-paste" id="clip-paste"></span>
       </div>
@@ -189,12 +211,12 @@
   <div class="stage reveal" id="snip-stage">
     <div class="stage-top">
       <span class="chip mono" id="snip-token"></span>
-      <span class="mono dim sm" id="snip-label"></span>
+      <span class="dim sm" id="snip-label"></span>
     </div>
     <div class="notepad">
-      <div class="np-bar mono"><span class="tl"></span><span class="tl"></span><span class="tl"></span><span class="np-title">Notes · untitled</span></div>
+      <div class="np-bar"><span class="tl"></span><span class="tl"></span><span class="tl"></span><span class="np-title">Untitled</span></div>
       <div class="np-body">
-        <div class="mono dim sm">typing…</div>
+        <div class="dim sm">typing…</div>
         <div class="np-typed mono" id="snip-typed"><span id="snip-typed-text"></span><span class="caret"></span></div>
         <div class="np-out" id="snip-out"></div>
         <div class="np-chips" id="snip-chips"></div>
@@ -204,9 +226,9 @@
     <div class="ctl" data-ctl="snip"></div>
   </div>
   <div class="sec-copy reveal">
-    <div class="eyebrow mono">02 · Snippets</div>
+    <div class="eyebrow">Snippets</div>
     <h2>Type a short code.<br>Get the whole thing.</h2>
-    <p class="body">Abbreviations expand anywhere you can type. Placeholders resolve the moment they land.</p>
+    <p class="body">Abbreviations expand anywhere you can type. Placeholders like {date} fill in as the text lands.</p>
     <div class="tag-row">
       <span class="tag mono">{date}</span>
       <span class="tag mono">{time}</span>
@@ -219,7 +241,7 @@
 <!-- ================= MOUSE ================= -->
 <section id="mouse" class="sec wrap">
   <div class="sec-copy reveal">
-    <div class="eyebrow mono">03 · Mouse</div>
+    <div class="eyebrow">Mouse</div>
     <h2>Every button<br>gets a job.</h2>
     <p class="body">Click, double-click and hold are three separate actions on every button. Add flick gestures, per-app scroll control and a pointer acceleration override.</p>
     <div class="bullets">
@@ -233,13 +255,13 @@
     <div class="m-grid">
       <div class="m-col" id="mouse-diagram"></div>
       <div class="flow">
-        <div class="flow-k mono">INPUT</div>
+        <div class="flow-k">You press</div>
         <div class="chip flow-chip" id="mouse-press"></div>
         <div class="flow-arrow">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M6 13l6 6 6-6"/></svg>
           <span class="flow-line"></span>
         </div>
-        <div class="flow-k mono">PERCH FIRES</div>
+        <div class="flow-k">Perch does</div>
         <div class="chip chip-blue flow-chip" id="mouse-out"></div>
       </div>
     </div>
@@ -268,8 +290,8 @@
     <div class="sec-copy reveal">
       <div class="eyebrow mono amber-t">Mouse Shift</div>
       <h2>A hidden layer on<br>an ordinary mouse.</h2>
-      <p class="body warm">Hold one chosen button and every other button gains a second action. Click, double-click and hold each get their own slot, and each hold key carries its own set of combos.</p>
-      <div class="amber-note">Five buttons become twenty actions, without buying a different mouse.</div>
+      <p class="body warm">Hold one button and every other button gets a second action. Each has its own click, double-click and hold slots.</p>
+      <div class="amber-note">More actions from the mouse you already own.</div>
     </div>
   </div>
 </section>
@@ -277,9 +299,9 @@
 <!-- ================= KEYS ================= -->
 <section id="keys" class="sec wrap">
   <div class="sec-copy reveal">
-    <div class="eyebrow mono">04 · Keys</div>
-    <h2>Caps Lock was<br>wasted on you.</h2>
-    <p class="body">Remap any key or shortcut. Turn Caps Lock into a Hyper Key: a private ⌘⌥⌃⇧ layer no app will ever fight you for. Double-tap a modifier to run an action.</p>
+    <div class="eyebrow">Keys</div>
+    <h2>Give Caps Lock<br>a better job.</h2>
+    <p class="body">Remap any key or shortcut. Caps Lock becomes a Hyper Key, a private ⌘⌥⌃⇧ layer no app uses. Double-tap a modifier to run an action.</p>
     <div class="bullets">
       <div><span class="b-dot"></span>Any key to any key, any shortcut to any action</div>
       <div><span class="b-dot"></span>Hyper Key in Figma, plain Caps Lock in Terminal</div>
@@ -304,8 +326,8 @@
 <!-- ================= PER APP ================= -->
 <section id="perapp" class="wrap perapp">
   <div class="perapp-head reveal">
-    <div class="eyebrow mono">The whole idea</div>
-    <h2>Everything is per app.</h2>
+    <div class="eyebrow">Per app</div>
+    <h2>Different in every app.</h2>
     <p class="body">Mouse and keyboard behavior follows whichever app is in front, automatically. The same press does different things, because you meant different things.</p>
   </div>
 
@@ -331,7 +353,7 @@
 
     <div class="pa-scene">
       <div class="pa-press">
-        <div class="flow-k mono">SAME PRESS</div>
+        <div class="flow-k">Same press</div>
         <div class="chip flow-chip show" id="apps-press"></div>
       </div>
       <div class="pa-wire"><span class="pa-signal" id="apps-signal"></span></div>
@@ -340,7 +362,7 @@
           <span class="tl"></span><span class="tl"></span><span class="tl"></span>
           <span class="pa-app" id="apps-appicon"></span>
           <span class="pa-name" id="apps-appname"></span>
-          <span class="mono pa-front">front</span>
+          <span class="pa-front">Front</span>
         </div>
         <div class="pa-body">
           <div class="chip chip-blue flow-chip" id="apps-out"></div>
@@ -354,43 +376,94 @@
 </section>
 
 <!-- ================= GET ================= -->
+<section id="faq" class="wrap faq">
+  <h2>Questions</h2>
+  <div class="faq-list">
+    <details class="faq-item">
+      <summary>Is Perch free?</summary>
+      <div class="faq-body"><p>Yes. Perch is free and open source under the MIT license. There’s no account, subscription, ads or tracking.</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>Which Macs does it run on?</summary>
+      <div class="faq-body"><p>macOS 14 Sonoma or later, on Apple Silicon Macs. Intel Macs aren’t supported.</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>Is it on the Mac App Store?</summary>
+      <div class="faq-body"><p>No. Perch needs system access the App Store sandbox doesn’t allow. Get it from this site, the Terminal command or Homebrew.</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>Will it work with my mouse?</summary>
+      <div class="faq-body"><p>Yes, with any mouse your Mac sees. Click Scan buttons in the Mouse tab to detect every button, including the extra ones. Your trackpad settings aren’t touched.</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>Can each app behave differently?</summary>
+      <div class="faq-body"><p>Yes. Mouse and Keys start with an All apps profile, and you can add a profile for any app. Perch switches to it automatically when that app comes to the front.</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>Why does Perch need Accessibility and Input Monitoring?</summary>
+      <div class="faq-body"><p>Perch reads your mouse buttons and keys and sends new ones, which macOS only allows with these two permissions. Everything stays on your Mac, and the source code is on GitHub for anyone to check.</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>Does the clipboard history record passwords?</summary>
+      <div class="faq-body"><p>No. Perch skips passwords and anything apps mark as sensitive, and you can exclude any app from recording.</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>How many copies does the clipboard keep?</summary>
+      <div class="faq-body"><p>The popup keeps your last 50 copies and the menu bar shows 10. You can change both, pin favourites to the top, and clear the history on a schedule.</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>Why does macOS say it can’t verify the developer?</summary>
+      <div class="faq-body"><p>Perch isn’t notarized yet. The Terminal installer clears the macOS security warning for you. If you install with Homebrew or the DMG, open System Settings → Privacy &amp; Security and click Open Anyway. You only need to do this once.</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>How do updates work?</summary>
+      <div class="faq-body"><p>Perch checks GitHub for a new version once a day, verifies the download’s checksum and opens it for you. Homebrew users can run <code>brew upgrade --cask perch</code>.</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>Can I move my settings to another Mac?</summary>
+      <div class="faq-body"><p>Yes. General → Backup exports everything to one file. Drop it on Perch on the other Mac and pick which sections to bring in.</p></div>
+    </details>
+    <details class="faq-item">
+      <summary>How do I uninstall it?</summary>
+      <div class="faq-body"><p>Quit Perch and move it from Applications to the Trash. With Homebrew, run <code>brew uninstall --cask --zap perch</code>, which also removes its settings.</p></div>
+    </details>
+  </div>
+</section>
+
 <section id="get" class="wrap get">
   <div class="get-card reveal">
-    <div class="get-halo"></div>
     <h2>Put it in your menu bar.</h2>
-    <p class="body center">Free, forever. No account, no tracking, no subscription.</p>
+    <p class="body center">Free and open source. No account, no tracking.</p>
     <a class="btn-dl big" href="https://perch.kodeelite.com/download">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="M6 12l6 6 6-6"/><path d="M4 21h16"/></svg>Download Perch.dmg</a>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="M6 12l6 6 6-6"/><path d="M4 21h16"/></svg>Download for macOS</a>
     <div class="term-wrap">
       <div class="term">
         <span class="mono t-prompt">$</span>
         <code class="mono">curl -fsSL perch.kodeelite.com/install.sh | sh</code>
-        <button class="t-copy mono" id="copy-btn" type="button">Copy</button>
+        <button class="t-copy" id="copy-btn" type="button"><svg class="i-copy" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg><svg class="i-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg><span>Copy</span></button>
       </div>
       <div class="term" style="margin-top:10px">
         <span class="mono t-prompt">$</span>
         <code class="mono">brew install --cask azharbinanwar/tap/perch</code>
-        <button class="t-copy mono" id="copy-brew" type="button">Copy</button>
+        <button class="t-copy" id="copy-brew" type="button"><svg class="i-copy" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg><svg class="i-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg><span>Copy</span></button>
       </div>
-      <p class="fineprint">The installer clears the Gatekeeper warning for you. Installed via brew or the DMG? Approve the first launch in System Settings → Privacy &amp; Security → Open Anyway, once.</p>
+      <p class="fineprint">The installer clears the macOS security warning for you. Installed with Homebrew or the DMG? Approve the first launch in System Settings → Privacy &amp; Security → Open Anyway. You only need to do this once.</p>
     </div>
-    <div class="mono dim sm">Free · macOS 14+ · no account, no tracking</div>
+    <div class="dim sm">Needs macOS 14 or later on Apple Silicon.</div>
   </div>
 </section>
 
 <footer class="wrap footer">
   <div class="f-left">
     <svg width="16" height="13" viewBox="0 0 15 12" fill="#5B92F7"><path d="M12.8202 11.174H10.2078L8.69599 9.00691C8.73341 9.00765 8.77099 9.00819 8.80875 9.00792C9.51761 9.00282 10.2464 8.81861 10.9811 8.46947L12.8202 11.174Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M1.76128 1.68235C3.58994 -1.45262 8.03084 0.202049 7.8568 3.511L7.85678 3.51108L14.0195 5.20792L13.9306 5.30997C12.139 7.36368 10.354 8.3872 8.80415 8.39837C8.33292 8.40176 7.8865 8.31163 7.47104 8.13087L8.98869 10.042C4.03817 12.2115 1.48744 8.5244 1.56434 3.78064L0.0195312 2.72736L1.75384 1.72678C1.7563 1.71197 1.75877 1.69716 1.76128 1.68235ZM2.96049 1.68241C2.72003 1.68241 2.5251 1.87735 2.5251 2.11781C2.52511 2.35827 2.72003 2.55319 2.96049 2.55319C3.20095 2.55319 3.39588 2.35827 3.39589 2.11781C3.39589 1.87735 3.20095 1.68241 2.96049 1.68241Z"/></svg>
-    made by Kode Elite
+    Made by Kode Elite. Open source under the MIT license.
   </div>
-  <div class="f-right">
-    <!-- coffee link: restore when a real buy-me-a-coffee URL exists
-    <a href="#" id="coffee-link">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8z"/><path d="M17 9h2.5a2.5 2.5 0 0 1 0 5H17"/><path d="M5 22h12"/></svg>Buy me a coffee</a>
-    -->
-
-    <a class="dim" href="https://github.com/azharbinanwar/Perch/releases">Releases</a>
-  </div>
+  <nav class="f-right" aria-label="Footer">
+    <a class="dim" href="https://github.com/azharbinanwar/Perch">GitHub</a>
+    <a class="dim" href="https://github.com/azharbinanwar/Perch/releases">Changelog</a>
+    <a class="dim" href="https://github.com/azharbinanwar/Perch/issues/new">Report a bug</a>
+    <a class="dim" href="privacy.html">Privacy</a>
+  </nav>
 </footer>
 
 <script type="application/ld+json">
@@ -400,14 +473,155 @@
   "name": "Perch",
   "operatingSystem": "macOS 14.0 or later",
   "applicationCategory": "UtilitiesApplication",
-  "description": "Clipboard history, expanding snippets, a fully programmable mouse and a super key, one free menu-bar app for macOS.",
-  "url": "https://perch.kodeelite.com",
+  "applicationSubCategory": "Productivity",
+  "description": "Free, open-source menu-bar app for macOS. Clipboard history on ⇧⌘V, text snippets that expand anywhere, mouse button remapping with Mouse Shift, and a Caps Lock Hyper Key.",
+  "url": "https://perch.kodeelite.com/",
   "downloadUrl": "https://perch.kodeelite.com/download",
+  "installUrl": "https://perch.kodeelite.com/download",
   "image": "https://perch.kodeelite.com/og.png",
-  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-  "author": { "@type": "Organization", "name": "Kode Elite", "url": "https://perch.kodeelite.com" }
+  "screenshot": "https://perch.kodeelite.com/perch-tour.png",
+  "license": "https://opensource.org/licenses/MIT",
+  "isAccessibleForFree": true,
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "featureList": [
+    "Clipboard history with search, pins and categories",
+    "Text snippets with date, time, clipboard and cursor placeholders",
+    "Mouse button remapping per app",
+    "Mouse Shift: a second action layer for every button",
+    "Key and shortcut remapping per app",
+    "Caps Lock Hyper Key and double-tap modifiers",
+    "Backup export and import"
+  ],
+  "sameAs": [
+    "https://github.com/azharbinanwar/Perch"
+  ],
+  "author": {
+    "@type": "Organization",
+    "name": "Kode Elite",
+    "url": "https://perch.kodeelite.com/"
+  }
 }
 </script>
-<script src="demo.js"></script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is Perch free?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Perch is free and open source under the MIT license. There's no account, subscription, ads or tracking."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which Macs does it run on?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "macOS 14 Sonoma or later, on Apple Silicon Macs. Intel Macs aren't supported."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is it on the Mac App Store?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Perch needs system access the App Store sandbox doesn't allow. Get it from this site, the Terminal command or Homebrew."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Will it work with my mouse?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, with any mouse your Mac sees. Click Scan buttons in the Mouse tab to detect every button, including the extra ones. Your trackpad settings aren't touched."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can each app behave differently?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Mouse and Keys start with an All apps profile, and you can add a profile for any app. Perch switches to it automatically when that app comes to the front."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why does Perch need Accessibility and Input Monitoring?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Perch reads your mouse buttons and keys and sends new ones, which macOS only allows with these two permissions. Everything stays on your Mac, and the source code is on GitHub for anyone to check."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does the clipboard history record passwords?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Perch skips passwords and anything apps mark as sensitive, and you can exclude any app from recording."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How many copies does the clipboard keep?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The popup keeps your last 50 copies and the menu bar shows 10. You can change both, pin favourites to the top, and clear the history on a schedule."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why does macOS say it can't verify the developer?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Perch isn't notarized yet. The Terminal installer clears the macOS security warning for you. If you install with Homebrew or the DMG, open System Settings → Privacy & Security and click Open Anyway. You only need to do this once."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do updates work?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Perch checks GitHub for a new version once a day, verifies the download's checksum and opens it for you. Homebrew users can run brew upgrade --cask perch."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I move my settings to another Mac?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. General → Backup exports everything to one file. Drop it on Perch on the other Mac and pick which sections to bring in."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I uninstall it?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Quit Perch and move it from Applications to the Trash. With Homebrew, run brew uninstall --cask --zap perch, which also removes its settings."
+      }
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  "name": "Perch tour",
+  "description": "Every Perch feature, set up and then used.",
+  "thumbnailUrl": "https://perch.kodeelite.com/perch-tour.png",
+  "contentUrl": "https://perch.kodeelite.com/perch-tour.mp4",
+  "uploadDate": "2026-11-11",
+  "duration": "PT1M44S"
+}
+</script>
+<script src="demo.js?v=7"></script>
 </body>
 </html>

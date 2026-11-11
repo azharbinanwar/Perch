@@ -1,24 +1,36 @@
 # Perch
 
-> Perch is a free menu-bar utility for macOS (14+, Apple Silicon) that bundles four power-user tools in one app: clipboard history, expanding text snippets, a fully programmable mouse, and keyboard remapping with a Hyper Key. Everything is per-app: mouse and keyboard behavior follows whichever app is in front. No account, no tracking, no subscription.
+> Perch is a free, open-source (MIT) menu-bar app for macOS 14+ on Apple Silicon. It combines four power-user tools in one native app: clipboard history, expanding text snippets, mouse button remapping (with a second "Mouse Shift" layer), and keyboard remapping with a Caps Lock Hyper Key. Mouse and keyboard behavior can be different in every app. No account, no tracking, no subscription; everything stays on the Mac.
 
 ## Features
 
-- Clipboard: full history opened with Cmd+Shift+V as a floating keyboard-driven popup; search-as-you-type, categories (text/links/images/snippets), pins, Cmd+1-9 instant paste, edit-before-paste, automatic screenshot capture, per-app exclusions, passwords never recorded.
-- Snippets: type a short abbreviation like ;sig; anywhere and it expands to saved text; placeholders {date}, {time}, {clipboard}, {cursor} resolve at insert time.
-- Mouse: assign click, double-click and hold per button; hold-and-flick gestures; Mouse Shift (hold one button to give every other button a second action, like G-Shift); scroll control (smooth, reversed, speed, turbo, auto-scroll) per app; pointer acceleration override; left-handed swap; debounce for worn switches.
-- Keys: remap any key or shortcut per app; Caps Lock as a Hyper Key (Cmd+Opt+Ctrl+Shift layer); double-tap a modifier to run an action; smart detect distinguishes dedicated hardware shortcut keys from hand-typed combos.
-- Actions: shared catalogue for mouse and keys - editing, navigation, window snapping, screenshots, media, open app/file/URL, shell scripts, AppleScript, Apple Shortcuts, custom keystrokes.
+- [Clipboard](https://perch.kodeelite.com/#clipboard): history of text, images and files opened with Shift+Cmd+V as a floating, keyboard-driven popup that keeps the current app focused; search as you type, categories (all/text/images/snippets), pins, Cmd+1-9 quick paste, edit before paste (Cmd+E), paste as plain text, screenshots captured automatically, restore-after-paste, auto-clear, per-app exclusions; passwords and sensitive copies are never recorded.
+- [Snippets](https://perch.kodeelite.com/#snippets): type a trigger like ;meet; anywhere and it is replaced with saved text; placeholders {date}, {time}, {clipboard} and {cursor}; triggers can use ; : or // prefixes; per-app exclusions.
+- [Mouse](https://perch.kodeelite.com/#mouse): scan to detect every button; click, double-click and hold actions per button; hold-and-flick gestures in four directions; per-app profiles; debounce for worn switches; scroll options (reverse, smooth, speed, no acceleration, turbo, Windows-style auto-scroll); pointer acceleration override; left-handed swap.
+- [Mouse Shift](https://perch.kodeelite.com/#shift): hold a chosen button, then press another, to run a second action (like Logitech G-Shift). Each hold button has its own unlimited combos with click, double-click and hold slots.
+- [Keys](https://perch.kodeelite.com/#keys): remap any key or shortcut per app, or map it to open an app; smart detect remaps only dedicated hardware shortcut keys; Caps Lock as a Hyper Key (Cmd+Opt+Ctrl+Shift) with its own tap and double-tap actions; double-tap a modifier to run an action.
+- Actions: one shared catalogue for buttons, combos and shortcuts: editing, navigation, window snapping, Mission Control, screenshots, media, open any app/file/URL, custom keystrokes, shell scripts, AppleScript and Apple Shortcuts.
+- Backup: export all settings to one JSON file; import by dropping it on Perch and choosing which sections to bring in.
 
 ## Install
 
-- Website: https://perch.kodeelite.com
-- One-line install: curl -fsSL perch.kodeelite.com/install.sh | sh
-- Direct download: https://perch.kodeelite.com/download
-- Requirements: macOS 14 (Sonoma) or later, Apple Silicon. Needs Accessibility permission (Input Monitoring optional, for device listing).
+- Download: https://perch.kodeelite.com/download (always the latest Perch.dmg)
+- Terminal: curl -fsSL perch.kodeelite.com/install.sh | sh (verifies the checksum, installs to /Applications, clears the Gatekeeper warning)
+- Homebrew: brew install --cask azharbinanwar/tap/perch
+- Requirements: macOS 14 Sonoma or later, Apple Silicon. Perch asks for Accessibility (to control input) and Input Monitoring (to see devices and watch keys).
+- Perch is not notarized; for DMG or Homebrew installs, approve the first launch once in System Settings > Privacy & Security > Open Anyway.
+- Updates: the app checks GitHub releases daily, verifies the checksum and opens the new DMG; Homebrew users run brew upgrade --cask perch.
+
+## Project
+
+- Source code: https://github.com/azharbinanwar/Perch (Swift, SwiftUI; MIT license)
+- Releases and changelog: https://github.com/azharbinanwar/Perch/releases
+- Report a bug: https://github.com/azharbinanwar/Perch/issues
+- Privacy: https://perch.kodeelite.com/privacy.html (collects no personal data)
+- Full reference for AI assistants: https://perch.kodeelite.com/llms-full.txt
 
 ## Comparable to
 
-Combines the roles of a clipboard manager (like Maccy/Paste), a text expander (like aText/espanso), a mouse remapper (like LinearMouse/Mac Mouse Fix/BetterTouchTool), and a keyboard remapper (like Karabiner-Elements) in one free native app.
+Perch covers the roles of a clipboard manager (like Maccy or Paste), a text expander (like aText or espanso), a mouse remapper (like LinearMouse, Mac Mouse Fix or BetterTouchTool) and a keyboard remapper (like Karabiner-Elements) in one free app.
 
 Made by Kode Elite.
