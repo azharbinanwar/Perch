@@ -1,0 +1,115 @@
+name: homebrew cask
+
+# Runs after the release workflow publishes a release (it calls this file), or
+# when a release is published by hand. It rewrites the cask in
+# azharbinanwar/homebrew-tap to match. Nothing else to do.
+#
+# It doubles as a release check: both assets must be present and the checksum
+# must match the disk image. Those are the exact names and the exact hash the
+# in-app updater fetches, so a release that would break self-update fails here
+# loudly instead of quietly shipping.
+#
+# Re-runnable: if the tap push fails, use "Run workflow" and give it the tag.
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: true
+    secrets:
+      TAP_TOKEN:
+        required: true
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to sync, e.g. v1.0.1'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  cask:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: check the release and read its checksum
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag='${{ inputs.tag || github.event.release.tag_name }}'
+          case "$tag" in
+            v*) version="${tag#v}" ;;
+            *)  echo "::error::tag '$tag' does not start with v"; exit 1 ;;
+          esac
+
+          gh release download "$tag" --repo "$GITHUB_REPOSITORY" \
+            -p Perch.dmg -p Perch.dmg.sha256 || true
+          [ -f Perch.dmg ] || { echo "::error::release $tag has no asset named exactly Perch.dmg — brew and the in-app updater both build that URL by hand"; exit 1; }
+          [ -f Perch.dmg.sha256 ] || { echo "::error::release $tag has no Perch.dmg.sha256 — the in-app updater refuses to install without it"; exit 1; }
+
+          # Compared field by field rather than with `sha256sum -c`, which also
+          # checks the filename recorded inside the file. The updater only ever
+          # reads the first whitespace-separated token, so that is all that has
+          # to be right.
+          expected="$(cut -d' ' -f1 Perch.dmg.sha256 | tr 'A-Z' 'a-z')"
+          actual="$(sha256sum Perch.dmg | cut -d' ' -f1)"
+          [ "$expected" = "$actual" ] || {
+            echo "::error::Perch.dmg.sha256 says $expected but the dmg hashes to $actual — the in-app updater would reject this release"; exit 1; }
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "sha=$actual" >> "$GITHUB_OUTPUT"
+          echo "release $tag looks good: $actual"
+
+      # The cask is regenerated whole, so the tap never needs hand-editing and
+      # the first run creates it from scratch.
+      - name: update the tap
+        env:
+          TAP_TOKEN: ${{ secrets.TAP_TOKEN }}
+          VERSION: ${{ steps.release.outputs.version }}
+          SHA: ${{ steps.release.outputs.sha }}
+        run: |
+          # The tap is public, so cloning needs no credentials at all.
+          git clone -q "https://github.com/${{ github.repository_owner }}/homebrew-tap.git" tap
+          mkdir -p tap/Casks
+          cat > tap/Casks/perch.rb <<EOF
+          cask "perch" do
+            version "$VERSION"
+            sha256 "$SHA"
+
+            url "https://github.com/${{ github.repository }}/releases/download/v#{version}/Perch.dmg"
+            name "Perch"
+            desc "Clipboard history, snippets, mouse remapping and a Hyper Key in one menu-bar app"
+            homepage "https://perch.kodeelite.com"
+
+            app "Perch.app"
+
+            caveats <<~EOS
+              Perch is not notarized, so macOS blocks the first launch. Approve it once in
+              System Settings -> Privacy & Security -> "Open Anyway", or install with
+              --no-quarantine to skip the prompt entirely.
+            EOS
+
+            zap trash: [
+              "~/Library/Preferences/com.kodeelite.perch.plist",
+              "~/Library/Application Support/Perch",
+            ]
+          end
+          EOF
+          cd tap
+          git add Casks/perch.rb
+          git diff --cached --quiet && { echo "cask already at $VERSION, nothing to push"; exit 0; }
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -qm "perch $VERSION"
+          # Auth goes in a header, not the URL. A stray newline in the secret
+          # makes the URL form die with "Malformed input to a URL function",
+          # so the token is stripped of whitespace first.
+          token="$(printf '%s' "$TAP_TOKEN" | tr -d '[:space:]')"
+          auth="$(printf 'x-access-token:%s' "$token" | base64 | tr -d '\n')"
+          git -c http.extraheader="AUTHORIZATION: basic $auth" push -q origin HEAD
+          echo "tap updated to $VERSION"

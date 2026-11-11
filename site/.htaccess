@@ -1,0 +1,3 @@
+# perch.kodeelite.com/download always serves the newest release's DMG.
+RedirectMatch 302 ^/download/?$ https://github.com/azharbinanwar/Perch/releases/latest/download/Perch.dmg
+RedirectMatch 302 ^/download\.sha256$ https://github.com/azharbinanwar/Perch/releases/latest/download/Perch.dmg.sha256

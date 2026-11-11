@@ -2,7 +2,7 @@
 //  UpdateChecker.swift
 //  Perch
 //
-//  Checks the public perch-releases repo for a newer version, then
+//  Checks the Perch repo's GitHub releases for a newer version, then
 //  downloads Perch.dmg, verifies it against Perch.dmg.sha256, and opens
 //  the mounted DMG so the user can drag Perch into Applications.
 //
@@ -33,7 +33,7 @@ final class UpdateChecker {
         didSet { UserDefaults.standard.set(lastChecked, forKey: Self.lastCheckedKey) }
     }
 
-    static let repo = "azharbinanwar/perch-releases"
+    static let repo = "azharbinanwar/Perch"
     private static let lastCheckedKey = "updates.lastChecked"
 
     private init() {

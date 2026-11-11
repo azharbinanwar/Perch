@@ -1,94 +1,99 @@
-# Perch release runbook
+# Releasing Perch
 
-When the user says "help me release" (or similar), follow this file top to bottom.
-The user builds the DMG themselves; everything else can be run by the assistant.
+Pushing a version tag is the release. GitHub Actions builds the app, signs it, makes
+`Perch.dmg` and `Perch.dmg.sha256`, publishes the GitHub release, and updates the Homebrew
+cask.
 
-Key facts:
-- Public releases repo: `azharbinanwar/perch-releases` (DMG + sha256 + README live here)
-- Brew tap repo: `azharbinanwar/homebrew-tap` (cask `Casks/perch.rb`)
-- Website: https://perch.kodeelite.com — hosted on Hostinger, files uploaded manually by the user
-  from `site/`. The site fetches version + size live from the GitHub API, so a normal release
-  needs NO site changes.
-- Bundle ID: `com.kodeelite.perch` (Release), `com.kodeelite.perch.debug` (Debug "Perch Dev")
-- The download button and `install.sh` point at `releases/latest` — between deleting a release
-  and publishing the next one, downloads are DEAD. Never leave that gap open.
+## Release
 
-## 1. Version bump
+1. In a pull request, bump `MARKETING_VERSION` (e.g. `1.0.1`) and `CURRENT_PROJECT_VERSION`
+   in `Perch.xcodeproj/project.pbxproj`. Each appears twice, Debug and Release, and both must
+   match. Merge it.
+2. Tag `main` and push the tag:
 
-`MARKETING_VERSION` in `Perch.xcodeproj/project.pbxproj` (two occurrences, Debug + Release
-must match). Bump `CURRENT_PROJECT_VERSION` (build number) as well.
+   ```sh
+   git checkout main && git pull
+   git tag v1.0.1 && git push origin v1.0.1
+   ```
 
-## 2. Build + DMG (user does this)
+3. Watch **Actions → Release**. It fails early if the tag doesn't match `MARKETING_VERSION`.
 
-User archives Release in Xcode and produces `Perch.dmg` (create-dmg; `--volicon` must be a
-`.icns`, never a `.png`). Ask where the DMG is if not stated.
+The release notes are generated from the merged pull requests. Edit them on the release page
+if they need it.
 
-## 3. Checksum
+## Check it
+
+- `curl -sIL -o /dev/null -w "%{http_code}\n" https://github.com/azharbinanwar/Perch/releases/latest/download/Perch.dmg`
+  prints `200`.
+- `curl -fsSL perch.kodeelite.com/install.sh | sh` installs the new version.
+- `brew upgrade --cask perch` picks it up.
+- An older install offers the update from Settings → Updates, and keeps its permissions
+  afterwards.
+- The website shows the new version and size. It reads them from the GitHub API, so a hard
+  refresh is enough.
+
+## How it works
+
+| File | Job |
+|---|---|
+| `.github/workflows/release.yml` | On a `v*` tag: checks the version, loads the signing certificate, runs `scripts/build-dmg.sh`, publishes the release, then calls `homebrew.yml` |
+| `.github/workflows/homebrew.yml` | Checks the release has `Perch.dmg` and a matching `Perch.dmg.sha256`, then rewrites `Casks/perch.rb` in `azharbinanwar/homebrew-tap`. Re-run it by hand with a tag if the tap push failed |
+| `.github/workflows/checks.yml` | Builds every pull request and every push to `main` |
+| `scripts/build-dmg.sh` | Builds Release, signs it when `SIGN_IDENTITY` is set, packages the DMG with `make-a-dmg` |
+
+The in-app updater, `install.sh` and the cask all download the assets by their exact names,
+`Perch.dmg` and `Perch.dmg.sha256`. Never rename them.
+
+## Signing
+
+macOS keys Accessibility and Input Monitoring to the app's signature. An ad-hoc signature
+changes with every build, so every update would make users grant both permissions again.
+Releases are signed with a self-signed certificate (free, no Apple account) so the signer
+stays the same and permissions survive updates. It doesn't remove the first-launch
+"Open Anyway" prompt; only notarization does that.
+
+Repository secrets:
+
+| Secret | Value |
+|---|---|
+| `SIGNING_P12_BASE64` | The certificate and key, `base64 -i signing.p12` |
+| `SIGNING_P12_PASSWORD` | The `.p12` password |
+| `TAP_TOKEN` | A fine-grained token with *Contents: read and write* on `azharbinanwar/homebrew-tap` only |
 
 ```sh
-shasum -a 256 Perch.dmg > Perch.dmg.sha256
+base64 -i signing.p12 | gh secret set SIGNING_P12_BASE64 -R azharbinanwar/Perch
+gh secret set SIGNING_P12_PASSWORD -R azharbinanwar/Perch < password.txt
+gh secret set TAP_TOKEN -R azharbinanwar/Perch
 ```
 
-## 4. Publish the GitHub release
+The same certificate can sign several apps; each keeps its own permissions because macOS also
+checks the bundle ID. Keep an encrypted backup of the `.p12` and its password: GitHub secrets
+can't be read back. Losing or replacing the certificate makes users grant permissions once
+more.
+
+Check a build with `codesign -dr - Perch.app`. A signed build shows
+`certificate leaf = H"…"`. `cdhash H"…"` means it's still ad-hoc.
+
+## Building a DMG locally
 
 ```sh
-gh release create vX.Y.Z Perch.dmg Perch.dmg.sha256 \
-  --repo azharbinanwar/perch-releases \
-  --title "Perch X.Y.Z" \
-  --notes "<short changelog, bullet per user-visible change, no AI attribution>"
+brew install azharbinanwar/tap/make-a-dmg   # once, or the script downloads it
+scripts/build-dmg.sh                        # dist/Perch.dmg, ad-hoc signed
 ```
 
-## 5. Verify
+To sign it locally, import `signing.p12` into your login keychain and set `SIGN_IDENTITY` to
+the certificate's SHA-1 from `security find-identity -p codesigning`.
 
-- `curl -sIL -o /dev/null -w "%{http_code}" https://github.com/azharbinanwar/perch-releases/releases/latest/download/Perch.dmg` → `200`
-- Website hero shows the new version + size (auto, may need a hard refresh)
-- `curl -fsSL perch.kodeelite.com/install.sh | sh` installs the new version (checksum verified by the script)
-- In-app updater on an older install offers the new version
+## Website
 
-## 6. Update the brew cask
+`site/` is perch.kodeelite.com. It isn't deployed by these workflows: upload changed files
+to the host by hand. A normal release needs no site changes.
 
-In `azharbinanwar/homebrew-tap`, edit `Casks/perch.rb`: set `version` and `sha256`
-(first field of `Perch.dmg.sha256`). Commit + push to that repo only.
+## Good to know
 
-If the cask does not exist yet, create `Casks/perch.rb`:
-
-```ruby
-cask "perch" do
-  version "X.Y.Z"
-  sha256 "<sha256 of Perch.dmg>"
-
-  url "https://github.com/azharbinanwar/perch-releases/releases/download/v#{version}/Perch.dmg"
-  name "Perch"
-  desc "Clipboard history, snippets, mouse remapping and a Hyper Key in one menu-bar app"
-  homepage "https://perch.kodeelite.com"
-
-  app "Perch.app"
-
-  caveats <<~EOS
-    Perch is not notarized, so macOS blocks the first launch. Approve it once in
-    System Settings -> Privacy & Security -> "Open Anyway", or install with
-    --no-quarantine to skip the prompt entirely.
-  EOS
-
-  zap trash: [
-    "~/Library/Preferences/com.kodeelite.perch.plist",
-  ]
-end
-```
-
-Verify with: `brew install --cask azharbinanwar/tap/perch` (on a machine without Perch, or
-`brew reinstall`).
-
-## 7. After the release
-
-- If README screenshots or feature docs changed, sync the README to `perch-releases`
-  (adapted copy lives there with images under `docs/`; icon path differs from the app repo).
-- Site changes (if any were made): user uploads changed files from `site/` to Hostinger.
-- Announce wherever appropriate (r/macapps, X, etc.) — user's call.
-
-## Notes
-
-- Deleting releases: `gh release delete vX.Y.Z --repo azharbinanwar/perch-releases --yes --cleanup-tag`
-  — remember downloads break until a new release exists.
-- Changing the bundle ID resets TCC permissions and UserDefaults for users — avoid; if ever
-  needed again, users migrate settings via Backup export/import.
+- `install.sh`, the website and the cask point at `releases/latest`. Deleting the newest
+  release before the next one is published breaks downloads.
+- Delete a broken release with
+  `gh release delete vX.Y.Z --repo azharbinanwar/Perch --yes --cleanup-tag`.
+- Don't change the bundle ID (`com.kodeelite.perch`). It resets permissions and settings for
+  every user; they would have to move settings over with Backup export and import.

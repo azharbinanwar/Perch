@@ -3,7 +3,7 @@
 # Usage: curl -fsSL perch.kodeelite.com/install.sh | sh
 set -eu
 
-URL="https://github.com/azharbinanwar/perch-releases/releases/latest/download/Perch.dmg"
+URL="https://github.com/azharbinanwar/Perch/releases/latest/download/Perch.dmg"
 TMP="$(mktemp -d)"
 MNT=""
 cleanup() {

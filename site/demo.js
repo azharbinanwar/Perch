@@ -731,7 +731,7 @@ if (!REDUCED && matchMedia("(pointer: fine)").matches) {
 }
 
 /* live release info: real version + size from the latest GitHub release */
-fetch("https://api.github.com/repos/azharbinanwar/perch-releases/releases/latest")
+fetch("https://api.github.com/repos/azharbinanwar/Perch/releases/latest")
   .then((r) => (r.ok ? r.json() : null))
   .then((rel) => {
     const dmg = rel?.assets?.find((a) => a.name.endsWith(".dmg"));

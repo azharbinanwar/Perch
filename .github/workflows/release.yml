@@ -1,0 +1,83 @@
+# Pushing a version tag is the release.
+#
+#   1. bump MARKETING_VERSION (Debug and Release) and merge it to main
+#   2. git tag v1.0.1 && git push origin v1.0.1
+#
+# The tag must match the app's version, so v1.0.1 can never ship an app that
+# reports 1.0.0.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-26
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tag matches app version
+        id: version
+        run: |
+          v=$(xcodebuild -project Perch.xcodeproj -scheme Perch -configuration Release -showBuildSettings \
+                | awk '$1 == "MARKETING_VERSION" {print $3; exit}')
+          [ -n "$v" ] || { echo "::error::Could not read MARKETING_VERSION"; exit 1; }
+          if [ "$GITHUB_REF_NAME" != "v$v" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME doesn't match the app version $v. Bump MARKETING_VERSION or fix the tag."
+            exit 1
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+      # Self-signed certificate (free, no Apple account). Signing every release with
+      # the same certificate keeps Accessibility and Input Monitoring granted across updates.
+      - name: Signing certificate
+        env:
+          P12: ${{ secrets.SIGNING_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.SIGNING_P12_PASSWORD }}
+        run: |
+          [ -n "$P12" ] || { echo "::error::SIGNING_P12_BASE64 secret is missing"; exit 1; }
+          kc="$RUNNER_TEMP/signing.keychain-db"
+          security create-keychain -p ci "$kc"
+          security set-keychain-settings -lut 3600 "$kc"
+          security unlock-keychain -p ci "$kc"
+          echo "$P12" | base64 --decode > "$RUNNER_TEMP/signing.p12"
+          security import "$RUNNER_TEMP/signing.p12" -k "$kc" -P "$P12_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k ci "$kc"
+          rm "$RUNNER_TEMP/signing.p12"
+          security list-keychains -d user -s "$kc" $(security list-keychains -d user | tr -d '"')
+          # A self-signed certificate is never "trusted", so codesign can't find it
+          # by name; sign with its SHA-1 fingerprint. The keychain holds only this one.
+          id=$(security find-identity -p codesigning "$kc" | awk '/^ *[0-9]+\)/ {print $2; exit}')
+          [ -n "$id" ] || { security find-identity -p codesigning "$kc"; echo "::error::Signing certificate not found in the keychain"; exit 1; }
+          echo "SIGN_KEYCHAIN=$kc" >> "$GITHUB_ENV"
+          echo "SIGN_IDENTITY=$id" >> "$GITHUB_ENV"
+
+      - name: Build and package
+        run: scripts/build-dmg.sh
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh release create "v$VERSION" dist/Perch.dmg dist/Perch.dmg.sha256 \
+            --title "Perch $VERSION" --verify-tag --generate-notes
+
+  # A release made with github.token doesn't fire the release event, so the
+  # tap update is called directly.
+  homebrew:
+    needs: release
+    uses: ./.github/workflows/homebrew.yml
+    with:
+      tag: ${{ github.ref_name }}
+    secrets:
+      TAP_TOKEN: ${{ secrets.TAP_TOKEN }}

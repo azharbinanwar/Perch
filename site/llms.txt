@@ -14,7 +14,7 @@
 
 - Website: https://perch.kodeelite.com
 - One-line install: curl -fsSL perch.kodeelite.com/install.sh | sh
-- Direct download: https://github.com/azharbinanwar/perch-releases/releases/latest/download/Perch.dmg
+- Direct download: https://perch.kodeelite.com/download
 - Requirements: macOS 14 (Sonoma) or later, Apple Silicon. Needs Accessibility permission (Input Monitoring optional, for device listing).
 
 ## Comparable to

@@ -5,8 +5,8 @@
   <sub>Native macOS · SwiftUI · runs quietly in your menu bar · everything stays on your Mac</sub>
   <br><br>
   <a href="https://perch.kodeelite.com"><b>perch.kodeelite.com</b></a> ·
-  <a href="https://github.com/azharbinanwar/perch-releases/releases/latest/download/Perch.dmg">Download</a> ·
-  <a href="https://github.com/azharbinanwar/perch-releases/releases">Releases</a>
+  <a href="https://perch.kodeelite.com/download">Download</a> ·
+  <a href="https://github.com/azharbinanwar/Perch/releases">Releases</a>
 </div>
 
 ```sh
@@ -16,6 +16,14 @@ curl -fsSL perch.kodeelite.com/install.sh | sh
 # or with Homebrew
 brew install --cask azharbinanwar/tap/perch
 ```
+
+<br>
+
+<div align="center">
+  <a href="docs/perch-tour.mp4"><img src="docs/perch-tour.png" width="720" alt="Watch the Perch tour"></a>
+  <br>
+  <sub>▶ <a href="docs/perch-tour.mp4"><b>Watch the 1:44 tour</b></a>: Clipboard, Snippets, Mouse, Mouse Shift, Keys and Backup, each set up and used.</sub>
+</div>
 
 <br>
 
@@ -209,7 +217,7 @@ brew install --cask azharbinanwar/tap/perch
 
 **Or manually:**
 
-1. Download the latest [`Perch.dmg`](https://github.com/azharbinanwar/perch-releases/releases/latest/download/Perch.dmg).
+1. Download the latest [`Perch.dmg`](https://perch.kodeelite.com/download).
 2. Open it and drag **Perch** onto **Applications**.
 3. Launch Perch from Applications.
 4. Grant **Accessibility** and **Input Monitoring** when prompted, then relaunch.
@@ -226,5 +234,23 @@ brew install --cask azharbinanwar/tap/perch
 ## Privacy
 
 Everything stays on your Mac. Clipboard history is stored locally, passwords and sensitive copies are never recorded, and nothing is sent anywhere.
+
+## Build from source
+
+```sh
+git clone https://github.com/azharbinanwar/Perch.git
+cd Perch
+open Perch.xcodeproj
+```
+
+Requires Xcode 26+. In the Perch target's *Signing & Capabilities*, pick your own team or *Sign to Run Locally*, then press ⌘R. This runs **Perch Dev**, a separate app with its own bundle ID, so it never touches an installed Perch. Grant it Accessibility and Input Monitoring like the real one.
+
+## Contributing
+
+Pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the layout, branch names and how to test a change. Releases are covered in [RELEASE.md](RELEASE.md).
+
+## License
+
+[MIT](LICENSE) © 2026 Azhar Ali
 
 <div align="center"><br><sub><b>Perch</b> · made for macOS · <a href="https://perch.kodeelite.com">perch.kodeelite.com</a> · by Kode Elite</sub></div>
