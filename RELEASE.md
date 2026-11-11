@@ -16,7 +16,7 @@ cask.
    git tag v1.0.1 && git push origin v1.0.1
    ```
 
-3. Watch **Actions → Release**. It fails early if the tag doesn't match `MARKETING_VERSION`.
+3. Watch **Actions → Release**. It fails early if the tagged commit isn't on `main` or the tag doesn't match `MARKETING_VERSION`.
 
 The release notes are generated from the merged pull requests. Edit them on the release page
 if they need it.
